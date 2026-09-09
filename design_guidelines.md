@@ -1,3 +1,16 @@
+> REVISION 3 (FINAL, user-confirmed): the v2 hot-pink/iOS-blue system was ALSO rejected ("AI vibe": neon accents, big radii,
+> bouncy springs, confetti, rich toasts). CURRENT BINDING SYSTEM = "Apple/iOS monochrome + one deep muted accent":
+> - Palette: ink #1D1D1F (labels, PRIMARY BUTTONS, ACTIVE HEARTS), ink2 #3A3A3C, mute #6E6E73, mute2 #8E8E93, paper #FFFFFF,
+>   surface2 #F5F5F7 (fills), surface3 #E8E8ED (pressed), line #E5E5EA, tint (accent) #2B4C7E deep navy (links, progress,
+>   selected radios, slider, compat ring, sent chat bubbles, Voila bolt, active tab), tint-dark #1F3A63, tint-soft #EDF1F7,
+>   danger #D70015 (destructive TEXT only), online #34C759 (tiny presence dot only). NO pink/orange/yellow/gradients anywhere.
+> - Type: system stack -apple-system, BlinkMacSystemFont, "SF Pro Text/Display", Inter fallback. h1 28px/700/-0.02em, h2 20px/600, body 15-17px.
+> - Radii: 12px buttons+inputs (rounded-btn), 16px cards (rounded-card), 20px sheets/modals/swipe card (rounded-sheet), 40px desktop phone frame.
+> - Motion: tween ease [0.25,0.1,0.25,1] 150-300ms; opacity/transform only; drag return spring stiff+damped (no overshoot). NO confetti, NO pop-in springs, NO layoutId pill.
+> - Toasts: iOS banner (white/blur, 14px, top-center), no richColors, only meaningful toasts (errors, saved, blocked, report received).
+> - Bottom nav: flat iOS tab bar (hairline top, icon+label, navy active). Landing: monochrome line-art SVG illustration.
+> - Tailwind tokens: ink, ink2, paper, surface2, surface3, line, mute, mute2, tint, tint-dark, tint-soft, danger, online; rounded-btn/card/sheet/frame; shadow-soft/card/float.
+
 
 > REVISION (user feedback after v1 preview): The teal/"ocean" palette and Space Grotesk/Figtree fonts were REJECTED by the user
 > ("feels AI"). CURRENT SYSTEM: iPhone-native look.

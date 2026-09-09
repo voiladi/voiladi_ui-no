@@ -3,7 +3,8 @@
 Gen-Z dating app (18-30). Phone+OTP auth, onboarding wizard, swipe discovery with compatibility score, likes, mutual matching,
 real-time chat (WebSocket + polling fallback), vibe-check prompts & icebreakers (curated, non-AI), filters (age/distance/show me),
 Hinge-style reactions (heart a specific photo/prompt -> opens the chat on match), block/report/unmatch, profile edit, preferences,
-delete account, admin reports review. Light theme, iPhone-native look (bold Apple-like type, black buttons, hot-pink #FF2D75 accent). NO AI features (user rule).
+delete account, admin reports review. Light theme, Apple/iOS design system v3 (monochrome ink/greys, ONE deep-navy accent #2B4C7E, black hearts + black primary buttons, flat iOS tab bar,
+iOS banner toasts, tween-only motion, line-art landing illustration). Pink/neon/confetti/springs were REJECTED by the user ("AI vibe"). NO AI features (user rule).
 
 ## Stack
 FastAPI + MongoDB (motor) backend at /api (server.py, core.py, content.py, routes_auth/profile/discover/chat/admin.py, ws_manager.py, seed.py)
@@ -20,6 +21,11 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   (https://voiladi.com TLS pending on GoDaddy side). Railway defaults still work: voiladi-web-production / voiladi-api-production .up.railway.app
   Deployed via `railway up ./backend|./frontend --path-as-root` (see /app/deploy/README.md). 24 demo profiles seeded in prod.
   NOTE: user said "existing project" but the token's account had none, so a new project was created.
+
+- Phase 7 Apple restyle + swipe perf: DONE (iteration_4 FE 100%). Tokens live in tailwind.config.js (ink, ink2, mute, mute2, surface2, surface3, line,
+  tint, tint-dark, tint-soft, danger, online; rounded-btn 12 / card 16 / sheet 20; shadow-soft/card/float) + src/lib/motion.js (EASE, tween, slideX, SETTLE).
+  Swipe lag fix: no backdrop-blur inside cards, .vo-gpu drag layer (will-change), tween stack, decoding=async, server-side resize on upload
+  (Pillow: EXIF transpose, max 1280px, JPEG q84 / WEBP if alpha, HEIC via pillow-heif). Trivial toasts removed. Redeployed to Railway.
 
 ## Key decisions
 - `profile_complete` (validation) + `onboarded` (explicit finish flag) both required to enter the app / appear in discovery.

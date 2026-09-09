@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 
 /**
- * Heart button placed on a specific photo or prompt. Plays a quick burst, then calls onReact.
+ * Heart button placed on a specific photo or prompt. Fills black on tap, then calls onReact.
  * Stops pointer events from bubbling so it never starts a card drag or a photo-tap.
+ * Plain CSS transitions only (no framer) so it stays cheap inside the draggable card.
  */
 export const ReactHeart = ({ onReact, label = "Like this", size = "md", className = "", testId }) => {
   const [burst, setBurst] = useState(false);
@@ -19,42 +19,31 @@ export const ReactHeart = ({ onReact, label = "Like this", size = "md", classNam
     setTimeout(() => {
       onReact?.();
       setBurst(false);
-    }, 240);
+    }, 220);
   };
 
   return (
-    <motion.button
+    <button
       type="button"
-      whileTap={{ scale: 0.86 }}
       onClick={fire}
       onPointerDown={(e) => e.stopPropagation()}
       aria-label={label}
       title={label}
-      className={`relative flex ${dims} items-center justify-center rounded-full border border-white/70 bg-white/95 text-brand shadow-[var(--vo-shadow-soft)] backdrop-blur transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 ${className}`}
+      className={`relative flex ${dims} items-center justify-center rounded-full bg-white text-ink shadow-soft transition-transform duration-150 ease-ios hover:bg-surface2 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 ${className}`}
       data-testid={testId}
     >
-      <motion.span animate={burst ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.26, ease: "easeOut" }} className="flex">
-        <Heart className={`${icon} ${burst ? "fill-brand" : ""}`} strokeWidth={2.5} />
-      </motion.span>
-      <AnimatePresence>
-        {burst && (
-          <motion.span
-            className="pointer-events-none absolute inset-0 rounded-full border-2 border-brand"
-            initial={{ scale: 1, opacity: 0.7 }}
-            animate={{ scale: 2, opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          />
-        )}
-      </AnimatePresence>
-    </motion.button>
+      <Heart
+        className={`${icon} transition-transform duration-200 ease-ios ${burst ? "scale-125 fill-ink" : "scale-100"}`}
+        strokeWidth={2.25}
+      />
+    </button>
   );
 };
 
-/** Small pink pill used in chat / likes to describe a reaction. */
+/** Small neutral pill used in chat / likes to describe a reaction. */
 export const ReactionPill = ({ children, className = "", testId }) => (
-  <span className={`inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[12px] font-semibold text-brand-dark ${className}`} data-testid={testId}>
-    <Heart className="h-3 w-3 fill-brand-dark" strokeWidth={2.5} /> {children}
+  <span className={`inline-flex items-center gap-1.5 rounded-full bg-surface2 px-3 py-1 text-[12px] font-semibold text-ink ${className}`} data-testid={testId}>
+    <Heart className="h-3 w-3 fill-ink" strokeWidth={2.5} /> {children}
   </span>
 );
 

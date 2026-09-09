@@ -3,8 +3,9 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 import { MapPin, Users } from "lucide-react";
 import { showMeLabel } from "@/lib/format";
 
+/* iOS slider: white knob with soft shadow, navy filled range */
 const SliderThumb = () => (
-  <SliderPrimitive.Thumb className="block h-7 w-7 rounded-full border-[3px] border-brand bg-white shadow-[0_4px_14px_rgba(11,18,32,0.18)] transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-soft active:scale-110" />
+  <SliderPrimitive.Thumb className="block h-7 w-7 rounded-full border border-black/[0.06] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition-transform duration-150 ease-ios focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 active:scale-110" />
 );
 
 export const RangeSlider = ({ value, onValueChange, min, max, step = 1, testId, thumbs = 2 }) => (
@@ -18,8 +19,8 @@ export const RangeSlider = ({ value, onValueChange, min, max, step = 1, testId, 
     className="relative flex h-8 w-full touch-none select-none items-center"
     data-testid={testId}
   >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-surface2">
-      <SliderPrimitive.Range className="absolute h-full bg-brand" />
+    <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-surface3">
+      <SliderPrimitive.Range className="absolute h-full bg-tint" />
     </SliderPrimitive.Track>
     {Array.from({ length: thumbs }).map((_, i) => (
       <SliderThumb key={i} />
@@ -27,8 +28,9 @@ export const RangeSlider = ({ value, onValueChange, min, max, step = 1, testId, 
   </SliderPrimitive.Root>
 );
 
+/* iOS segmented control */
 export const Segmented = ({ options, value, onChange, testIdPrefix = "segment", render }) => (
-  <div className="grid rounded-[16px] bg-surface2 p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+  <div className="grid rounded-[10px] bg-surface2 p-[3px]" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
     {options.map((o) => {
       const active = o === value;
       return (
@@ -38,8 +40,8 @@ export const Segmented = ({ options, value, onChange, testIdPrefix = "segment", 
           data-testid={`${testIdPrefix}-${o}`}
           onClick={() => onChange(o)}
           aria-pressed={active}
-          className={`h-11 rounded-[12px] text-[14px] font-semibold transition-colors duration-150 ${
-            active ? "bg-white text-ink shadow-[0_4px_14px_rgba(11,18,32,0.08)]" : "text-mute hover:text-ink"
+          className={`h-10 rounded-[8px] text-[14px] font-medium transition-colors duration-150 ease-ios focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 ${
+            active ? "bg-white text-ink shadow-[0_1px_3px_rgba(0,0,0,0.10),0_3px_8px_rgba(0,0,0,0.06)]" : "text-mute hover:text-ink"
           }`}
         >
           {render ? render(o) : o}
@@ -67,7 +69,7 @@ export const PreferencesForm = ({ value, onChange, anywhereKm = 250 }) => {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[15px] font-semibold text-ink">Age range</span>
-          <span className="font-display text-[15px] font-semibold text-brand-dark" data-testid="prefs-age-label">
+          <span className="font-display text-[15px] font-semibold tabular-nums text-tint" data-testid="prefs-age-label">
             {value.age_min} - {value.age_max}
           </span>
         </div>
@@ -90,7 +92,7 @@ export const PreferencesForm = ({ value, onChange, anywhereKm = 250 }) => {
             <MapPin className="h-4 w-4 text-mute" />
             <span className="text-[15px] font-semibold text-ink">Max distance</span>
           </div>
-          <span className="font-display text-[15px] font-semibold text-brand-dark" data-testid="prefs-distance-label">
+          <span className="font-display text-[15px] font-semibold tabular-nums text-tint" data-testid="prefs-distance-label">
             {distanceLabel}
           </span>
         </div>

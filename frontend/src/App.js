@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
-import { Logo } from "@/components/Logo";
+import { LogoMark } from "@/components/Logo";
 import Welcome from "@/pages/Welcome";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
@@ -20,9 +20,7 @@ import Preferences from "@/pages/Preferences";
 const Splash = () => (
   <div className="vo-backdrop">
     <div className="vo-shell items-center justify-center" data-testid="splash-screen">
-      <div className="animate-pulse">
-        <Logo size={56} />
-      </div>
+      <LogoMark size={64} />
     </div>
   </div>
 );
@@ -87,7 +85,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
-          <Toaster position="top-center" richColors closeButton={false} offset={16} />
+          <Toaster position="top-center" closeButton={false} offset={12} duration={2600} visibleToasts={3} />
         </SocketProvider>
       </AuthProvider>
     </div>

@@ -15,16 +15,17 @@ import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Tag } from "@/components/Chip";
+import { tween } from "@/lib/motion";
 
 const ReactionNote = ({ like, me }) => {
   const r = like?.reaction;
   if (!r) return null;
   return (
-    <div className="flex items-center gap-3 rounded-[20px] border border-brand-soft bg-brand-soft/60 p-3" data-testid="likes-reaction-note">
+    <div className="flex items-center gap-3 rounded-card bg-surface2 p-3" data-testid="likes-reaction-note">
       {r.type === "photo" ? (
-        <UserPhoto src={r.photo} name={me?.name} className="h-14 w-12 shrink-0 rounded-[12px] text-base" />
+        <UserPhoto src={r.photo} name={me?.name} className="h-14 w-12 shrink-0 rounded-[10px] text-base" />
       ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white text-brand">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-ink">
           <Quote className="h-5 w-5" />
         </span>
       )}
@@ -62,8 +63,6 @@ export default function Likes() {
       if (res.matched) {
         setMatch(res.match);
         qc.invalidateQueries({ queryKey: ["matches"] });
-      } else if (action === "pass") {
-        toast("Passed");
       }
     } catch (e) {
       toast.error(errMsg(e));
@@ -79,7 +78,7 @@ export default function Likes() {
       await api.post(`/users/${blockTarget.id}/block`);
       removeFromList(blockTarget.id);
       qc.invalidateQueries({ queryKey: ["matches"] });
-      toast(`${blockTarget.name} is blocked. They won't see you again.`);
+      toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
     } catch (e) {
       toast.error(errMsg(e));
@@ -93,7 +92,7 @@ export default function Likes() {
     setActing(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast.success("Thanks. We've received your report and will review it.");
+      toast("Report received. Thank you.");
       setReportTarget(null);
     } catch (e) {
       toast.error(errMsg(e));
@@ -105,13 +104,13 @@ export default function Likes() {
   const sheetProfile = sheet?.user || null;
 
   return (
-    <div className="min-h-full pb-28" data-testid="likes-page">
+    <div className="min-h-full pb-24" data-testid="likes-page">
       <PageHeader title="Likes" subtitle={likes.length ? `${likes.length} ${likes.length === 1 ? "person likes" : "people like"} you. No pressure.` : "People who liked you show up here."} />
 
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3 px-4 pt-2">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="aspect-[3/4] rounded-[22px]" />
+            <Skeleton key={i} className="aspect-[3/4]" />
           ))}
         </div>
       ) : isError ? (
@@ -144,10 +143,10 @@ export default function Likes() {
             return (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04, type: "spring", stiffness: 300, damping: 26 }}
-                className="relative overflow-hidden rounded-[22px] border border-line bg-white shadow-[var(--vo-shadow-soft)]"
+                transition={tween(0.25, Math.min(idx, 6) * 0.03)}
+                className="relative overflow-hidden rounded-card border border-line bg-white"
                 data-testid="likes-grid-tile"
               >
                 <button type="button" className="block w-full text-left" onClick={() => setSheet(l)} data-testid="likes-tile-open">
@@ -156,12 +155,12 @@ export default function Likes() {
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
                     <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
                       {l.superlike && (
-                        <Tag tone="voila" className="h-7 px-2.5 text-[12px]">
-                          <Zap className="h-3.5 w-3.5 fill-voila" /> Voila'd you
+                        <Tag tone="white" className="h-7 px-2.5 text-[12px] text-tint">
+                          <Zap className="h-3.5 w-3.5 fill-tint" /> Voila'd you
                         </Tag>
                       )}
                       {l.reaction && (
-                        <ReactionPill className="bg-white/95 backdrop-blur" testId="likes-reaction-tag">
+                        <ReactionPill className="bg-white/95" testId="likes-reaction-tag">
                           {l.reaction.type === "photo" ? "Liked your photo" : "Liked your answer"}
                         </ReactionPill>
                       )}
@@ -176,12 +175,12 @@ export default function Likes() {
                   </div>
                 </button>
                 <div className="flex gap-2 p-2.5">
-                  <button type="button" className="vo-icon-btn h-10 flex-1 rounded-[12px] text-pass" onClick={() => respond(p, "pass")} disabled={busy === p.id} aria-label="Pass" data-testid="likes-pass-button">
-                    <X className="h-5 w-5" strokeWidth={2.5} />
+                  <button type="button" className="vo-icon-btn h-10 flex-1 rounded-[10px] text-mute" onClick={() => respond(p, "pass")} disabled={busy === p.id} aria-label="Pass" data-testid="likes-pass-button">
+                    <X className="h-5 w-5" strokeWidth={2.2} />
                   </button>
                   <button
                     type="button"
-                    className="flex h-10 flex-[1.6] items-center justify-center gap-1.5 rounded-[12px] bg-brand text-[13px] font-semibold text-white transition-colors hover:bg-brand-dark active:scale-95 disabled:opacity-50"
+                    className="flex h-10 flex-[1.6] items-center justify-center gap-1.5 rounded-[10px] bg-ink text-[13px] font-semibold text-white transition-colors duration-150 ease-ios hover:bg-ink2 active:opacity-80 disabled:opacity-50"
                     onClick={() => respond(p, "like")}
                     disabled={busy === p.id}
                     data-testid="likes-like-back-button"
@@ -212,7 +211,7 @@ export default function Likes() {
         actions={
           sheetProfile && (
             <div className="flex gap-3">
-              <button type="button" className="vo-btn-outline flex-1 text-pass" onClick={() => respond(sheetProfile, "pass")} disabled={busy === sheetProfile.id} data-testid="sheet-pass-button">
+              <button type="button" className="vo-btn-outline flex-1 text-mute" onClick={() => respond(sheetProfile, "pass")} disabled={busy === sheetProfile.id} data-testid="sheet-pass-button">
                 <X className="h-5 w-5" /> Pass
               </button>
               <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => respond(sheetProfile, "like")} disabled={busy === sheetProfile.id} data-testid="sheet-like-button">

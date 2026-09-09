@@ -8,6 +8,7 @@ import { useMeta } from "@/hooks/useMeta";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { BirthdayInput, OptionList, InterestPicker, PromptEditor, LocationPicker, parseBirthday, ageFromIso } from "@/components/ProfileFields";
 import { genderLabel, showMeLabel } from "@/lib/format";
+import { EASE, slideX } from "@/lib/motion";
 
 const STEPS = ["name", "birthday", "gender", "looking", "photos", "interests", "prompts", "about"];
 
@@ -99,7 +100,6 @@ export default function Onboarding() {
         setUser(data);
         if (step === "about") {
           if (data.profile_complete && data.onboarded) {
-            toast.success(`You're in, ${data.name}. Let's find your people.`);
             await refresh();
             return;
           }
@@ -138,31 +138,24 @@ export default function Onboarding() {
 
   return (
     <div className="flex min-h-full flex-col" data-testid="onboarding-wizard">
-      <div className="sticky top-0 z-20 border-b border-line bg-[rgba(251,251,252,0.95)] px-5 pb-3 pt-4 backdrop-blur-md">
+      <div className="vo-bar sticky top-0 z-20 border-b border-line px-5 pb-3 pt-4">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={back} disabled={i === 0} className="vo-icon-btn disabled:opacity-30" aria-label="Back" data-testid="onboarding-back-button">
+          <button type="button" onClick={back} disabled={i === 0} className="vo-icon-btn" aria-label="Back" data-testid="onboarding-back-button">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <span className="text-[13px] font-semibold text-mute" data-testid="onboarding-step-label">
+          <span className="text-[13px] font-medium text-mute" data-testid="onboarding-step-label">
             {i + 1} of {STEPS.length}
           </span>
-          <span className="w-11" />
+          <span className="w-10" />
         </div>
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
-          <motion.div className="h-full rounded-full bg-brand" animate={{ width: `${progress}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-surface3">
+          <motion.div className="h-full rounded-full bg-tint" animate={{ width: `${progress}%` }} transition={{ duration: 0.3, ease: EASE }} />
         </div>
       </div>
 
       <div className="flex-1 px-5 pb-32 pt-7">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 40 * dir }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 * dir }}
-            transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            data-testid={`onboarding-step-${step}`}
-          >
+          <motion.div key={step} {...slideX(dir)} data-testid={`onboarding-step-${step}`}>
             <p className="vo-eyebrow mb-2">{eyebrow}</p>
             <h1 className="vo-h1">{title}</h1>
             <p className="mb-7 mt-2 text-[15px] text-mute">{sub}</p>
@@ -209,7 +202,7 @@ export default function Onboarding() {
         </AnimatePresence>
       </div>
 
-      <div className="sticky bottom-0 z-20 border-t border-line bg-[rgba(251,251,252,0.95)] px-5 pb-6 pt-3 backdrop-blur-md" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+      <div className="vo-bar sticky bottom-0 z-20 border-t border-line px-5 pt-3" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
         <button type="button" className="vo-btn-primary w-full" disabled={!valid || saving} onClick={next} data-testid="onboarding-next-button">
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : step === "about" ? "Finish and start swiping" : <>Continue <ArrowRight className="h-5 w-5" /></>}
         </button>

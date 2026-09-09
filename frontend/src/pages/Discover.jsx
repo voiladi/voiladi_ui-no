@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { X, Heart, Zap, SlidersHorizontal, RefreshCw, Compass } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +13,8 @@ import { FiltersDrawer } from "@/components/FiltersDrawer";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { EmptyState, Skeleton } from "@/components/EmptyState";
+
+const DOCK_BTN = "flex items-center justify-center rounded-full transition-transform duration-150 ease-ios active:scale-90 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40";
 
 export default function Discover() {
   const navigate = useNavigate();
@@ -72,9 +73,7 @@ export default function Discover() {
           qc.invalidateQueries({ queryKey: ["matches"] });
           qc.invalidateQueries({ queryKey: ["likes"] });
         } else if (action === "superlike") {
-          toast(`Voila sent to ${profile.name}. They'll see you first.`);
-        } else if (reaction) {
-          toast(`You liked ${profile.name}'s ${reaction.type === "photo" ? "photo" : "answer"}`);
+          toast(`Voila sent to ${profile.name}`);
         }
       } catch (e) {
         toast.error(errMsg(e));
@@ -109,7 +108,6 @@ export default function Discover() {
       swiped.current = new Set();
       setQueue([]);
       await load();
-      toast.success("Feed updated");
     } catch (e) {
       toast.error(errMsg(e));
     } finally {
@@ -135,7 +133,7 @@ export default function Discover() {
       setQueue((q) => q.filter((p) => p.id !== blockTarget.id));
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
-      toast(`${blockTarget.name} is blocked. They won't see you again.`);
+      toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
     } catch (e) {
       toast.error(errMsg(e));
@@ -149,7 +147,7 @@ export default function Discover() {
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast.success("Thanks. We've received your report and will review it.");
+      toast("Report received. Thank you.");
       setReportTarget(null);
     } catch (e) {
       toast.error(errMsg(e));
@@ -163,7 +161,7 @@ export default function Discover() {
   return (
     <div className="flex h-full flex-col" data-testid="discover-page">
       <header className="flex items-center justify-between px-5 pb-2 pt-4">
-        <Logo size={32} textClass="text-[21px]" />
+        <Logo size={30} textClass="text-[20px]" />
         <button type="button" className="vo-icon-btn" onClick={() => setFiltersOpen(true)} aria-label="Filters" data-testid="filters-open-button">
           <SlidersHorizontal className="h-5 w-5" />
         </button>
@@ -172,7 +170,7 @@ export default function Discover() {
       <div className="relative min-h-0 flex-1 px-4 pb-2 pt-1">
         {loading && queue.length === 0 ? (
           <div className="absolute inset-x-4 inset-y-1">
-            <Skeleton className="h-full w-full rounded-[30px]" />
+            <Skeleton className="h-full w-full rounded-sheet" />
           </div>
         ) : error ? (
           <div className="flex h-full items-center">
@@ -216,40 +214,16 @@ export default function Discover() {
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-5 pb-[92px] pt-3" data-testid="discover-action-dock">
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          type="button"
-          disabled={empty || loading}
-          onClick={() => trigger("pass")}
-          className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-white text-pass shadow-[var(--vo-shadow-soft)] disabled:opacity-40"
-          aria-label="Pass"
-          data-testid="discover-pass-button"
-        >
-          <X className="h-7 w-7" strokeWidth={2.6} />
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          type="button"
-          disabled={empty || loading}
-          onClick={() => trigger("superlike")}
-          className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-ink text-white shadow-[0_14px_34px_rgba(11,18,32,0.28)] disabled:opacity-40"
-          aria-label="Voila"
-          data-testid="discover-voila-button"
-        >
-          <Zap className="h-7 w-7 fill-[#5AC8FA] text-[#5AC8FA]" strokeWidth={2.2} />
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          type="button"
-          disabled={empty || loading}
-          onClick={() => trigger("like")}
-          className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-white text-brand shadow-[var(--vo-shadow-soft)] disabled:opacity-40"
-          aria-label="Like"
-          data-testid="discover-like-button"
-        >
-          <Heart className="h-7 w-7 fill-brand" strokeWidth={2.4} />
-        </motion.button>
+      <div className="flex items-center justify-center gap-5 pt-3" style={{ paddingBottom: "calc(70px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
+        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className={`${DOCK_BTN} h-14 w-14 border border-line bg-white text-mute shadow-soft`} aria-label="Pass" data-testid="discover-pass-button">
+          <X className="h-7 w-7" strokeWidth={2.2} />
+        </button>
+        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className={`${DOCK_BTN} h-[64px] w-[64px] bg-tint text-white shadow-card`} aria-label="Voila" data-testid="discover-voila-button">
+          <Zap className="h-7 w-7 fill-white" strokeWidth={2} />
+        </button>
+        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className={`${DOCK_BTN} h-14 w-14 border border-line bg-white text-ink shadow-soft`} aria-label="Like" data-testid="discover-like-button">
+          <Heart className="h-7 w-7 fill-ink" strokeWidth={2.2} />
+        </button>
       </div>
 
       <MatchModal match={match} me={user} onClose={() => setMatch(null)} onSayHi={() => navigate(`/chats/${match.id}`)} />
@@ -269,7 +243,7 @@ export default function Discover() {
         }}
         actions={
           <div className="flex gap-3">
-            <button type="button" className="vo-btn-outline flex-1 text-pass" onClick={() => fromSheet("pass")} data-testid="sheet-pass-button">
+            <button type="button" className="vo-btn-outline flex-1 text-mute" onClick={() => fromSheet("pass")} data-testid="sheet-pass-button">
               <X className="h-5 w-5" /> Pass
             </button>
             <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => fromSheet("like")} data-testid="sheet-like-button">

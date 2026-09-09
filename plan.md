@@ -246,3 +246,133 @@
 - **Phase 5 (Twilio real SMS)**: COMPLETED (pending user real-phone test) — Twilio Verify service 'Voiladi' (VA0bb827f7...) created on user's account; OTP_PROVIDER auto-detect (dev|twilio_verify|twilio_sms); OTP_TEST_PREFIXES=+1999,+1555,+1777,+91555 keep dev codes for seeded/test accounts; Twilio error codes mapped to friendly messages; codes never logged.
 - **Phase 6 (Railway deployment)**: COMPLETED — project 'Voiladi' created (token's account had no existing project), MongoDB + voiladi-api (Dockerfile, volume /data/uploads) + voiladi-web (Dockerfile nginx). Live: https://voiladi-web-production.up.railway.app / https://voiladi-api-production.up.railway.app. WS, uploads, OTP, CORS verified on prod; 24 demo profiles seeded via POST /api/admin/seed. Runbook: /app/deploy/README.md. — Railway token received and stored at `/app/deploy/.env.railway` (gitignored). Need Railway project name/access confirmation during execution.
 - **Handover**: App live at preview URL, 32 seeded profiles, DEV OTP mode (code shown on screen) until Twilio is enabled.
+
+---
+
+## Phase 7 — Apple/iOS restyle + swipe performance (Status: COMPLETED — iteration_4 frontend 100%; redeployed to Railway)
+> **Important:** Keep all existing functionality. This phase is a **UI/UX + performance** overhaul only. **STRICTLY NO AI-related features.**
+
+### Why this phase exists
+User rejected the current frontend look as “AI generated” due to:
+- Neon pink/orange accents
+- Oversized radii everywhere
+- Bouncy/spring-heavy motion and popups
+- Confetti in match modal
+- Rich/verbose toasts
+- Lag/stutter while swiping (core interaction)
+
+### Confirmed decisions (user said “Go”)
+**Design system**
+- Accent: **one deep muted tone** = **deep navy `#2B4C7E`**
+  - Use only for links, progress, selected states, compat ring, sent bubbles tint, Voila bolt, active tab tint.
+- Hearts/likes active: **black `#1D1D1F`**
+- Primary buttons: **black**
+- Secondary surfaces: **`#F5F5F7`** fill
+- Destructive: **text only** `#D70015` (no loud red fills)
+- Neutrals:
+  - ink `#1D1D1F`
+  - mute `#6E6E73`
+  - surface2 `#F5F5F7`
+  - line `#E5E5EA`
+  - paper `#FFFFFF`
+
+**Typography**
+- Fonts: system **SF Pro stack** (`-apple-system`, `BlinkMacSystemFont`, `Inter` fallback)
+
+**Radii (hard constraints)**
+- Buttons/inputs: **12px**
+- Cards: **16px**
+- Sheets/modals/swipe card: **20px**
+- Desktop phone frame: **40px**
+
+**Motion (hard constraints)**
+- Tween ease-out only, **150–300ms**
+- Drag return can be stiff/damped spring **without bounce**
+- Remove:
+  - confetti
+  - spring pop-ins
+  - `layoutId` sliding pill indicator (bottom nav)
+
+**Toasts**
+- iOS-style: small white blurred banner (top-center)
+- No `richColors`
+- Remove trivial toasts:
+  - “Code sent”
+  - “Feed updated”
+  - “Passed”
+  - “You liked X’s photo/answer”
+  - “Welcome back”
+  - “Cover photo updated”
+
+**Landing**
+- Monochrome line-art SVG illustration (no photos, no gradients)
+
+**Bottom nav**
+- Replace black pill with **flat iOS tab bar**:
+  - hairline top border
+  - icon + label always visible
+  - navy active tint
+
+### Swipe lag fixes (P1)
+- Remove expensive effects during drag:
+  - no `backdrop-blur` inside swipe card layers
+- Ensure GPU-friendly transforms:
+  - `will-change: transform` on draggable layer
+  - tween for stack transitions
+- Improve image performance:
+  - `decoding="async"` (and optionally `loading="lazy"` where safe)
+  - server-side resize/compress on upload:
+    - Pillow: max 1280px
+    - JPEG quality ~85
+    - EXIF transpose
+  - so 3–8MB phone photos don’t hit the GPU uncompressed.
+
+### Build fix (P0)
+**Current status:** frontend build is **broken** due to Tailwind opacity modifiers applied to CSS-variable colors (e.g. `ring-ink/30`).
+
+**Fix approach:**
+- Move palette colors to **hex tokens in `tailwind.config.js`** (or define as `rgb(r g b / <alpha-value>)` compatible tokens) so `.../30` opacity utilities work.
+- Avoid `@apply` of `ring-ink/30` when `ink` is a raw `var(--vo-ink)` string.
+
+### Files impacted
+- Frontend:
+  - `frontend/tailwind.config.js`
+  - `frontend/src/index.css`
+  - `frontend/src/App.js`
+  - `frontend/src/components/ui/sonner.jsx`
+  - all `frontend/src/components/*.jsx`
+  - all `frontend/src/pages/*.jsx`
+- Backend (image resize/compress):
+  - `backend/routes_profile.py`
+  - `backend/requirements.deploy.txt` (+ Pillow already present)
+
+### Execution order
+1) **Unbreak build** (Tailwind token/opacity fix)
+2) Apply Apple/iOS tokens across all components and pages
+   - remove neon/pink/orange remnants
+   - normalize radii
+   - adjust typography
+3) Replace match modal
+   - remove confetti
+   - use subtle fade/slide
+4) Replace toast system styling + remove trivial toasts
+5) Rebuild bottom nav as iOS tab bar (no pill indicator)
+6) Swipe performance
+   - framer-motion drag tuning + `will-change`
+   - reduce expensive overlays
+7) Backend image resize/compress on upload
+8) **MANDATORY**: run `testing_agent` (frontend) to verify:
+   - core UI flows still work
+   - swipe lag improved
+   - no regressions
+9) Redeploy to Railway (web + api)
+10) Explain root-domain safety warning options
+   - Cloudflare DNS (CNAME flattening) vs GoDaddy forwarding behavior
+
+### Deliverables / acceptance
+- UI reads as “Apple/iOS”: clean monochrome, deep navy accent, minimal motion.
+- No confetti, no bouncy popups, no neon.
+- Toasts are subtle iOS-like banners; fewer notifications.
+- Swipe feels smooth on mid-range devices.
+- Build passes; deployment stable.
+- Testing agent report attached after changes.

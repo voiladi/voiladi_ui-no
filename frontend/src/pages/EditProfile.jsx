@@ -71,12 +71,12 @@ export default function EditProfile() {
 
   return (
     <div className="flex min-h-full flex-col" data-testid="edit-profile-page">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-[rgba(251,251,252,0.95)] px-3 py-2.5 backdrop-blur-md">
-        <button type="button" className="vo-icon-btn h-10 w-10 border-0 bg-transparent" onClick={() => navigate("/profile")} aria-label="Back" data-testid="edit-back-button">
+      <header className="vo-bar sticky top-0 z-20 flex items-center justify-between border-b border-line px-3 py-2.5">
+        <button type="button" className="vo-icon-btn bg-transparent" onClick={() => navigate("/profile")} aria-label="Back" data-testid="edit-back-button">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="font-display text-[18px] font-semibold text-ink">Edit profile</h1>
-        <button type="button" className="h-10 rounded-full px-4 text-[15px] font-semibold text-brand-dark disabled:opacity-40" disabled={!valid || saving} onClick={save} data-testid="edit-save-button">
+        <button type="button" className="vo-btn-text h-10 text-[16px]" disabled={!valid || saving} onClick={save} data-testid="edit-save-button">
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save"}
         </button>
       </header>
@@ -115,7 +115,7 @@ export default function EditProfile() {
         </Section>
       </div>
 
-      <div className="sticky bottom-0 z-20 border-t border-line bg-[rgba(251,251,252,0.95)] px-5 pt-3 backdrop-blur-md" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+      <div className="vo-bar sticky bottom-0 z-20 border-t border-line px-5 pt-3" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
         <button type="button" className="vo-btn-primary w-full" disabled={!valid || saving} onClick={save} data-testid="edit-save-bottom-button">
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save changes"}
         </button>

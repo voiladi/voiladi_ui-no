@@ -1,4 +1,23 @@
 /** @type {import('tailwindcss').Config} */
+
+// Voiladi design tokens (Apple/iOS system). Hex values live here so Tailwind opacity modifiers (e.g. ring-ink/30) work.
+const palette = {
+  ink: '#1D1D1F',
+  ink2: '#3A3A3C',
+  paper: '#FFFFFF',
+  surface: '#FFFFFF',
+  surface2: '#F5F5F7',
+  surface3: '#E8E8ED',
+  line: '#E5E5EA',
+  mute: '#6E6E73',
+  mute2: '#8E8E93',
+  tint: '#2B4C7E',
+  'tint-dark': '#1F3A63',
+  'tint-soft': '#EDF1F7',
+  danger: '#D70015',
+  online: '#34C759',
+};
+
 module.exports = {
     // `overline` is a Tailwind utility; without this an app's own eyebrow-label class draws a line above the text.
     blocklist: ["overline"],
@@ -16,29 +35,22 @@ module.exports = {
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: 'calc(var(--radius) - 4px)',
+        btn: '12px',
+        card: '16px',
+        sheet: '20px',
+        frame: '40px',
+      },
+      boxShadow: {
+        soft: '0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 10px rgba(0, 0, 0, 0.06)',
+        card: '0 2px 6px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.08)',
+        float: '0 12px 40px rgba(0, 0, 0, 0.14)',
+      },
+      transitionTimingFunction: {
+        ios: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
       },
       colors: {
-        ink: 'var(--vo-ink)',
-        ink2: 'var(--vo-ink-2)',
-        paper: 'var(--vo-paper)',
-        surface: 'var(--vo-surface)',
-        surface2: 'var(--vo-surface-2)',
-        line: 'var(--vo-border)',
-        mute: 'var(--vo-muted)',
-        brand: 'var(--vo-brand)',
-        'brand-dark': 'var(--vo-brand-dark)',
-        'brand-soft': '#FFE8F0',
-        peach: 'var(--vo-peach)',
-        'peach-soft': '#FFF4DC',
-        lime: 'var(--vo-lime)',
-        'lime-soft': '#FFF8D1',
-        like: 'var(--vo-like)',
-        'like-soft': '#E6F7EA',
-        pass: 'var(--vo-pass)',
-        'pass-soft': '#FFE9E7',
-        voila: 'var(--vo-voila)',
-        'voila-soft': '#E5F1FF',
+        ...palette,
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

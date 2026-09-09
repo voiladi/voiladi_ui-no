@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2, ShieldCheck, ClipboardCopy } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { slideX } from "@/lib/motion";
 
 const COUNTRIES = [
   ["+91", "IN", "India"], ["+1", "US", "United States / Canada"], ["+44", "GB", "United Kingdom"], ["+61", "AU", "Australia"],
@@ -24,13 +24,6 @@ const guessCountry = () => {
   const region = lang.split("-")[1];
   const hit = COUNTRIES.find((c) => c[1] === region);
   return hit ? hit[0] : "+91";
-};
-
-const slide = {
-  initial: { opacity: 0, x: 40 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
-  transition: { type: "spring", stiffness: 380, damping: 34 },
 };
 
 export default function Auth() {
@@ -66,7 +59,6 @@ export default function Auth() {
       setResendIn(data.resend_in || 30);
       setCode("");
       setStep("otp");
-      if (data.sms_sent) toast.success("Code sent by SMS");
       setTimeout(() => otpRef.current?.focus(), 250);
     } catch (e) {
       const msg = errMsg(e);
@@ -87,7 +79,6 @@ export default function Auth() {
     try {
       const { data } = await api.post("/auth/verify-otp", { phone: fullPhone, code: c });
       login(data.token, data.user);
-      if (!data.is_new && data.user?.name) toast.success(`Welcome back, ${data.user.name}`);
       navigate(data.user?.profile_complete && data.user?.onboarded ? "/discover" : "/onboarding", { replace: true });
     } catch (e) {
       setError(errMsg(e));
@@ -110,19 +101,19 @@ export default function Auth() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <Logo size={30} textClass="text-[19px]" />
-        <span className="w-11" />
+        <Logo size={28} textClass="text-[18px]" />
+        <span className="w-10" />
       </div>
 
       <AnimatePresence mode="wait">
         {step === "phone" ? (
-          <motion.div key="phone" {...slide} className="mt-10 flex flex-1 flex-col">
+          <motion.div key="phone" {...slideX(1)} className="mt-10 flex flex-1 flex-col">
             <p className="vo-eyebrow mb-3">Step 1 of 2</p>
             <h1 className="vo-h1">What's your number?</h1>
             <p className="mt-2 text-[15px] text-mute">We'll text you a code. Your number stays private and never shows on your profile.</p>
 
             <form
-              className="mt-8"
+              className="mt-8 flex flex-1 flex-col"
               onSubmit={(e) => {
                 e.preventDefault();
                 requestOtp();
@@ -130,12 +121,12 @@ export default function Auth() {
             >
               <div className="flex gap-2.5">
                 <Select value={cc} onValueChange={setCc}>
-                  <SelectTrigger className="h-[52px] w-[112px] rounded-[16px] border-line bg-white px-3 text-[16px] font-semibold focus:ring-4 focus:ring-brand-soft" data-testid="auth-country-select">
-                    <SelectValue />
+                  <SelectTrigger className="h-12 w-[96px] shrink-0 rounded-btn border-transparent bg-surface2 px-3 text-[17px] font-semibold focus:ring-0 focus:border-line focus:bg-white" data-testid="auth-country-select">
+                    <SelectValue>{cc}</SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="max-h-[320px] rounded-[18px] border-line">
+                  <SelectContent className="max-h-[320px] rounded-card border-line shadow-float">
                     {COUNTRIES.map(([code, iso, name]) => (
-                      <SelectItem key={code + iso} value={code} className="rounded-[12px] py-2.5">
+                      <SelectItem key={code + iso} value={code} className="rounded-[10px] py-2.5">
                         <span className="font-semibold">{code}</span> <span className="ml-1.5 text-mute">{name}</span>
                       </SelectItem>
                     ))}
@@ -153,7 +144,7 @@ export default function Auth() {
                 />
               </div>
               {error && (
-                <p className="mt-3 text-[14px] text-pass" data-testid="auth-error">
+                <p className="mt-3 text-[14px] text-danger" data-testid="auth-error">
                   {error}
                 </p>
               )}
@@ -168,12 +159,12 @@ export default function Auth() {
             </form>
           </motion.div>
         ) : (
-          <motion.div key="otp" {...slide} className="mt-10 flex flex-1 flex-col">
+          <motion.div key="otp" {...slideX(1)} className="mt-10 flex flex-1 flex-col">
             <p className="vo-eyebrow mb-3">Step 2 of 2</p>
             <h1 className="vo-h1">Enter your code</h1>
             <p className="mt-2 text-[15px] text-mute">
               Sent to <span className="font-semibold text-ink">{fullPhone}</span>.{" "}
-              <button type="button" className="font-semibold text-brand-dark underline-offset-2 hover:underline" onClick={() => setStep("phone")} data-testid="auth-change-number-button">
+              <button type="button" className="font-semibold text-tint hover:text-tint-dark" onClick={() => setStep("phone")} data-testid="auth-change-number-button">
                 Change
               </button>
             </p>
@@ -197,7 +188,7 @@ export default function Auth() {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="h-[60px] w-[48px] rounded-[16px] border border-line bg-white font-display text-[24px] font-semibold shadow-none first:rounded-[16px] last:rounded-[16px] data-[active=true]:border-brand"
+                      className="h-[56px] w-[46px] rounded-btn border border-transparent bg-surface2 font-display text-[24px] font-semibold shadow-none first:rounded-btn last:rounded-btn data-[active=true]:border-tint data-[active=true]:bg-white data-[active=true]:ring-0"
                     />
                   ))}
                 </InputOTPGroup>
@@ -205,27 +196,28 @@ export default function Auth() {
             </div>
 
             {error && (
-              <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-[14px] text-pass" data-testid="auth-error">
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-[14px] text-danger" data-testid="auth-error">
                 {error}
               </motion.p>
             )}
 
             {devCode && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-6 rounded-[20px] border border-dashed border-peach bg-peach-soft p-4" data-testid="auth-dev-code-card">
-                <div className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#B45309]">Test mode</div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="mt-6 rounded-card bg-surface2 p-4" data-testid="auth-dev-code-card">
+                <div className="text-[12px] font-semibold text-mute">Test mode</div>
                 <p className="mt-1 text-[14px] leading-snug text-ink">
-                  SMS delivery isn't connected yet, so here's your code: <span className="font-display text-[18px] font-bold tracking-widest" data-testid="auth-dev-code">{devCode}</span>
+                  SMS isn't connected for this number, so here's your code:{" "}
+                  <span className="font-display text-[18px] font-semibold tracking-widest" data-testid="auth-dev-code">{devCode}</span>
                 </p>
                 <button
                   type="button"
-                  className="vo-btn-dark mt-3 h-10 w-full text-[14px]"
+                  className="vo-btn-primary mt-3 h-10 w-full text-[14px]"
                   onClick={() => {
                     setCode(devCode);
                     verify(devCode);
                   }}
                   data-testid="auth-use-dev-code-button"
                 >
-                  <ClipboardCopy className="h-4 w-4" /> Use this code
+                  Use this code
                 </button>
               </motion.div>
             )}

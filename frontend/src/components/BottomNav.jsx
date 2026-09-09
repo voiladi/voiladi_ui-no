@@ -1,6 +1,5 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Compass, Heart, MessageCircle, UserRound } from "lucide-react";
 import { useBadges } from "@/hooks/useBadges";
 
@@ -11,51 +10,41 @@ const TABS = [
   { to: "/profile", label: "You", icon: UserRound, id: "profile" },
 ];
 
+/* Flat iOS tab bar: translucent, hairline on top, icon + label, tinted active state. */
 export const BottomNav = () => {
   const { pathname } = useLocation();
   const { likes, unread } = useBadges();
   return (
     <nav
       data-testid="bottom-nav"
-      className="absolute bottom-3 left-1/2 z-30 w-[calc(100%-24px)] -translate-x-1/2 rounded-full border border-line bg-white/95 p-1.5 shadow-[0_12px_34px_rgba(11,18,32,0.12)] backdrop-blur-md"
-      style={{ paddingBottom: "max(6px, env(safe-area-inset-bottom))" }}
+      className="vo-bar absolute inset-x-0 bottom-0 z-30 border-t border-line"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="relative flex items-center">
+      <ul className="flex h-[58px] items-stretch">
         {TABS.map((t) => {
           const active = pathname.startsWith(t.to);
           const Icon = t.icon;
           const badge = t.id === "likes" ? likes : t.id === "chats" ? unread : 0;
           return (
-            <li key={t.to} className="relative flex-1">
+            <li key={t.to} className="flex-1">
               <NavLink
                 to={t.to}
                 data-testid={`bottom-nav-${t.id}`}
-                className="relative flex h-12 items-center justify-center gap-2 rounded-full text-[13px] font-semibold"
                 aria-label={t.label}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex h-full flex-col items-center justify-center gap-[3px] text-[10px] font-medium transition-colors duration-150 ease-ios focus-visible:outline-none active:opacity-60 ${
+                  active ? "text-tint" : "text-mute2 hover:text-mute"
+                }`}
               >
-                {active && (
-                  <motion.span
-                    layoutId="bottom-nav-indicator"
-                    className="absolute inset-0 rounded-full bg-ink"
-                    transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.9 }}
-                  />
-                )}
-                <span className={`relative z-10 flex items-center gap-1.5 ${active ? "text-white" : "text-mute"}`}>
-                  <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.4 : 2} />
-                  {active && (
-                    <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} className="pr-1">
-                      {t.label}
-                    </motion.span>
+                <span className="relative">
+                  <Icon className="h-[24px] w-[24px]" strokeWidth={active ? 2.2 : 1.8} fill={active && t.id === "likes" ? "currentColor" : "none"} />
+                  {badge > 0 && (
+                    <span data-testid={`bottom-nav-${t.id}-badge`} className="vo-badge absolute -right-2.5 -top-1.5">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
                   )}
                 </span>
-                {badge > 0 && (
-                  <span
-                    data-testid={`bottom-nav-${t.id}-badge`}
-                    className={`absolute right-2.5 top-1.5 z-20 vo-badge ${active ? "bg-peach text-ink" : ""}`}
-                  >
-                    {badge > 99 ? "99+" : badge}
-                  </span>
-                )}
+                {t.label}
               </NavLink>
             </li>
           );

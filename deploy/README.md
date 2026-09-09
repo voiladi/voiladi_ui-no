@@ -65,3 +65,14 @@ After DNS resolves: set voiladi-web REACT_APP_BACKEND_URL=https://api.voiladi.co
 - http://voiladi.com       -> GoDaddy forwarding 301 -> https://www.voiladi.com (works)
 - https://voiladi.com      -> GoDaddy forwarding has no TLS cert yet (TLS alert). GoDaddy usually issues one within 24-48h;
                               if it never does, move DNS to Cloudflare and add CNAME @ -> kt4522tf.up.railway.app.
+
+## Root domain status (checked 2026-09-09 11:55 UTC)
+`voiladi.com` resolves to GoDaddy forwarding (A 15.197.225.128 / 3.33.251.168). GoDaddy's DV certificate for voiladi.com is now issued,
+so BOTH http://voiladi.com and https://voiladi.com return 301 -> https://www.voiladi.com with no browser warning.
+The earlier "not secure" warning was GoDaddy's TLS-pending window (typically up to 24h after enabling forwarding).
+If you ever want voiladi.com to be served directly by Railway (no redirect hop), move DNS to Cloudflare (free) and add the CNAME
+`@ -> kt4522tf.up.railway.app` (Cloudflare flattens root CNAMEs); the root domain is already attached to voiladi-web in Railway.
+
+## Photo uploads (2026-09-09)
+Uploads are optimised server-side (backend/routes_profile.py optimize_image): EXIF orientation fixed, downscaled to max 1280px,
+re-encoded JPEG q84 (WEBP when transparent), HEIC decoded via pillow-heif. Existing files on the volume are untouched.

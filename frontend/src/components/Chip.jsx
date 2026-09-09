@@ -9,22 +9,21 @@ export const Chip = ({ active, children, onClick, className = "", icon = true, .
     className={`vo-chip ${active ? "vo-chip-on" : ""} ${className}`}
     {...rest}
   >
-    {active && icon && <Check className="mr-1.5 h-4 w-4" strokeWidth={3} />}
+    {active && icon && <Check className="mr-1.5 h-4 w-4" strokeWidth={2.5} />}
     {children}
   </button>
 );
 
+/* Small informational tag. Tones are neutral + one tint; "white" is opaque (no backdrop blur: it is used on moving cards). */
 export const Tag = ({ children, tone = "default", className = "" }) => {
   const tones = {
     default: "bg-surface2 text-ink",
-    brand: "bg-brand-soft text-brand-dark",
-    peach: "bg-peach-soft text-[#B45309]",
-    lime: "bg-lime-soft text-[#3F6212]",
-    voila: "bg-voila-soft text-voila",
-    white: "bg-white/90 text-ink backdrop-blur",
+    tint: "bg-tint-soft text-tint-dark",
+    white: "bg-white/95 text-ink",
+    dark: "bg-ink/75 text-white",
   };
   return (
-    <span className={`inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] font-semibold ${tones[tone]} ${className}`}>
+    <span className={`inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] font-semibold ${tones[tone] || tones.default} ${className}`}>
       {children}
     </span>
   );

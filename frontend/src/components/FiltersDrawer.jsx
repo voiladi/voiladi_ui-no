@@ -12,7 +12,7 @@ export const FiltersDrawer = ({ open, onOpenChange, prefs, onApply, saving, anyw
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-[430px] rounded-t-[28px] border-line bg-white px-5 pb-6" data-testid="filters-drawer">
+      <DrawerContent className="mx-auto max-w-[430px] rounded-t-sheet border-0 bg-white px-5 pb-6" data-testid="filters-drawer">
         <DrawerTitle className="vo-h2 mt-3">Who do you want to see?</DrawerTitle>
         <DrawerDescription className="mb-6 mt-1 text-[14px] text-mute">Fine-tune your feed. You can change this anytime.</DrawerDescription>
         <PreferencesForm value={draft} onChange={setDraft} anywhereKm={anywhereKm} />

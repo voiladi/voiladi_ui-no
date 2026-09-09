@@ -4,43 +4,47 @@
 
 @layer base {
     :root {
-        --background: 220 20% 99%;
-        --foreground: 222 47% 8%;
+        --background: 0 0% 100%;
+        --foreground: 240 3% 12%;
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 8%;
+        --card-foreground: 240 3% 12%;
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 8%;
-        --primary: 338 100% 59%;
+        --popover-foreground: 240 3% 12%;
+        --primary: 240 3% 12%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 220 25% 96%;
-        --secondary-foreground: 222 47% 10%;
-        --muted: 220 25% 96%;
-        --muted-foreground: 222 12% 42%;
-        --accent: 220 25% 96%;
-        --accent-foreground: 222 47% 10%;
-        --destructive: 3 100% 59%;
+        --secondary: 240 9% 96%;
+        --secondary-foreground: 240 3% 12%;
+        --muted: 240 9% 96%;
+        --muted-foreground: 240 2% 44%;
+        --accent: 240 9% 96%;
+        --accent-foreground: 240 3% 12%;
+        --destructive: 354 100% 42%;
         --destructive-foreground: 0 0% 100%;
-        --border: 225 25% 91%;
-        --input: 225 25% 91%;
-        --ring: 338 100% 59%;
-        --radius: 1rem;
+        --border: 240 11% 91%;
+        --input: 240 11% 91%;
+        --ring: 216 49% 33%;
+        --radius: 0.75rem;
 
-        --vo-ink: #0A0A0F;
-        --vo-ink-2: #1C1C22;
-        --vo-muted: #6E6E76;
-        --vo-paper: #FAFAFC;
-        --vo-surface: #FFFFFF;
-        --vo-surface-2: #F2F2F7;
+        /* Voiladi tokens (mirrors tailwind.config.js palette). Apple/iOS: near-monochrome + one deep navy tint. */
+        --vo-ink: #1D1D1F;
+        --vo-ink-2: #3A3A3C;
+        --vo-muted: #6E6E73;
+        --vo-muted-2: #8E8E93;
+        --vo-paper: #FFFFFF;
+        --vo-surface-2: #F5F5F7;
+        --vo-surface-3: #E8E8ED;
         --vo-border: #E5E5EA;
-        --vo-brand: #FF2D75;
-        --vo-brand-dark: #E01459;
-        --vo-peach: #FFB020;
-        --vo-lime: #FFD60A;
-        --vo-like: #22A447;
-        --vo-pass: #FF3B30;
-        --vo-voila: #0A84FF;
-        --vo-shadow: 0 18px 50px rgba(11, 18, 32, 0.10);
-        --vo-shadow-soft: 0 10px 30px rgba(11, 18, 32, 0.08);
+        --vo-tint: #2B4C7E;
+        --vo-tint-dark: #1F3A63;
+        --vo-tint-soft: #EDF1F7;
+        --vo-danger: #D70015;
+        --vo-online: #34C759;
+        --vo-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.08);
+        --vo-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 10px rgba(0, 0, 0, 0.06);
+        --vo-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+        --vo-z-nav: 30;
+        --vo-z-sheet: 50;
+        --vo-z-toast: 100;
     }
 
     * {
@@ -56,16 +60,17 @@
         pointer-events: auto !important;
         margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.005em;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
         color: var(--vo-ink);
         background: var(--vo-paper);
         overscroll-behavior-y: none;
     }
 
     ::selection {
-        background: rgba(255, 45, 117, 0.2);
+        background: rgba(43, 76, 126, 0.18);
     }
 
     button, input, textarea {
@@ -75,14 +80,22 @@
     input, textarea {
         font-size: 16px;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
 }
 
 @layer components {
     .font-display {
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.02em;
     }
 
+    /* ---------- shell ---------- */
     .vo-backdrop {
         position: relative;
         height: 100dvh;
@@ -91,24 +104,9 @@
     }
 
     @media (min-width: 1024px) {
-        .vo-backdrop::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background:
-                radial-gradient(900px circle at 18% 8%, rgba(255, 45, 117, 0.10), transparent 55%),
-                radial-gradient(700px circle at 85% 30%, rgba(10, 132, 255, 0.10), transparent 60%);
+        .vo-backdrop {
+            background: var(--vo-surface-2);
         }
-    }
-
-    .vo-noise {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        opacity: 0.05;
-        mix-blend-mode: multiply;
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.5'/></svg>");
     }
 
     .vo-shell {
@@ -129,7 +127,7 @@
             margin: 24px auto;
             border-radius: 40px;
             border: 1px solid var(--vo-border);
-            box-shadow: 0 40px 110px rgba(11, 18, 32, 0.16), 0 0 0 10px rgba(255, 255, 255, 0.6);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.10);
         }
     }
 
@@ -153,25 +151,36 @@
         display: none;
     }
 
+    /* iOS translucent bar (headers, footers) */
+    .vo-bar {
+        background: rgba(255, 255, 255, 0.86);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    /* ---------- buttons ---------- */
     .vo-btn {
-        @apply inline-flex h-12 items-center justify-center gap-2 rounded-[14px] px-5 text-[15px] font-semibold transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2;
-        transition-property: color, background-color, border-color, box-shadow, transform;
+        @apply inline-flex h-12 items-center justify-center gap-2 rounded-btn px-5 text-[17px] font-semibold select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 focus-visible:ring-offset-2;
+        transition-property: color, background-color, border-color, opacity, transform;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
+    }
+
+    .vo-btn:active {
+        transform: scale(0.98);
+        opacity: 0.85;
     }
 
     .vo-btn-primary {
-        @apply vo-btn bg-ink text-white hover:bg-ink2 shadow-[0_10px_24px_rgba(10,10,15,0.18)];
-    }
-
-    .vo-btn-brand {
-        @apply vo-btn bg-brand text-white hover:bg-brand-dark shadow-[0_10px_24px_rgba(255,45,117,0.28)];
-    }
-
-    .vo-btn-dark {
         @apply vo-btn bg-ink text-white hover:bg-ink2;
     }
 
     .vo-btn-secondary {
-        @apply vo-btn bg-surface2 text-ink hover:bg-[#ECEFF5];
+        @apply vo-btn bg-surface2 text-ink hover:bg-surface3;
+    }
+
+    .vo-btn-tint {
+        @apply vo-btn bg-tint text-white hover:bg-tint-dark;
     }
 
     .vo-btn-outline {
@@ -182,84 +191,173 @@
         @apply vo-btn bg-transparent text-mute hover:text-ink hover:bg-surface2;
     }
 
+    .vo-btn-text {
+        @apply vo-btn bg-transparent text-tint hover:text-tint-dark px-2;
+    }
+
     .vo-btn-danger {
-        @apply vo-btn bg-pass-soft text-pass hover:bg-[#FBD5DF];
+        @apply vo-btn bg-surface2 text-danger hover:bg-surface3;
     }
 
     .vo-icon-btn {
-        @apply inline-flex h-11 w-11 items-center justify-center rounded-full bg-white border border-line text-ink transition-colors duration-150 active:scale-95 hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand;
-        transition-property: color, background-color, border-color, transform;
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface2 text-ink hover:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 disabled:opacity-40 disabled:pointer-events-none;
+        transition-property: color, background-color, opacity, transform;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
     }
 
+    .vo-icon-btn:active {
+        transform: scale(0.94);
+    }
+
+    /* ---------- inputs ---------- */
     .vo-input {
-        @apply w-full rounded-[16px] border border-line bg-white px-4 text-[16px] text-ink placeholder:text-[#9AA3B5] transition-colors duration-150 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand-soft;
-        height: 52px;
+        @apply w-full rounded-btn border border-transparent bg-surface2 px-4 text-[17px] text-ink placeholder:text-mute2 focus:outline-none focus:border-line focus:bg-white;
+        height: 48px;
+        transition-property: background-color, border-color;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
     }
 
     .vo-textarea {
-        @apply w-full rounded-[16px] border border-line bg-white px-4 py-3 text-[16px] text-ink placeholder:text-[#9AA3B5] transition-colors duration-150 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand-soft resize-none;
+        @apply w-full rounded-btn border border-transparent bg-surface2 px-4 py-3 text-[17px] text-ink placeholder:text-mute2 focus:outline-none focus:border-line focus:bg-white resize-none;
+        transition-property: background-color, border-color;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
     }
 
+    /* ---------- chips / tags ---------- */
     .vo-chip {
-        @apply inline-flex items-center h-10 px-4 rounded-full border border-line bg-white text-[14px] font-medium text-ink transition-colors duration-150 active:scale-95 select-none;
-        transition-property: color, background-color, border-color, transform;
+        @apply inline-flex items-center h-9 px-3.5 rounded-[10px] bg-surface2 text-[15px] font-medium text-ink select-none hover:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40;
+        transition-property: color, background-color, transform;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
+    }
+
+    .vo-chip:active {
+        transform: scale(0.97);
     }
 
     .vo-chip-on {
-        @apply border-brand bg-brand-soft text-brand-dark;
+        @apply bg-ink text-white hover:bg-ink2;
     }
 
+    /* ---------- surfaces ---------- */
     .vo-card {
-        @apply rounded-[24px] border border-line bg-white shadow-[var(--vo-shadow-soft)];
+        @apply rounded-card border border-line bg-white;
+    }
+
+    .vo-group {
+        @apply rounded-card bg-surface2 overflow-hidden;
     }
 
     .vo-row {
-        @apply flex items-center gap-3 w-full px-4 py-3.5 text-left rounded-[18px] transition-colors duration-150 active:bg-surface2 hover:bg-surface2;
+        @apply flex items-center gap-3 w-full px-4 py-3 text-left bg-white hover:bg-surface2 active:bg-surface3 focus-visible:outline-none focus-visible:bg-surface2;
+        transition-property: background-color;
+        transition-duration: 120ms;
+    }
+
+    .vo-row + .vo-row {
+        @apply border-t border-line;
     }
 
     .vo-option {
-        @apply w-full flex items-center justify-between rounded-[20px] border border-line bg-white px-5 py-4 text-left text-[16px] font-medium text-ink transition-colors duration-150 active:scale-[0.99] hover:bg-surface2;
-        transition-property: color, background-color, border-color, transform;
+        @apply w-full flex items-center justify-between rounded-btn border border-line bg-white px-4 py-3.5 text-left text-[17px] font-medium text-ink hover:bg-surface2 active:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40;
+        transition-property: color, background-color, border-color;
+        transition-duration: 150ms;
+        transition-timing-function: var(--vo-ease);
     }
 
     .vo-option-on {
-        @apply border-brand bg-brand-soft;
+        @apply border-ink;
     }
 
+    /* ---------- type ---------- */
     .vo-label {
-        @apply text-[13px] font-semibold text-mute uppercase tracking-[0.08em];
+        @apply text-[13px] font-medium text-mute;
     }
 
     .vo-eyebrow {
-        @apply text-[13px] font-semibold text-brand-dark uppercase tracking-[0.12em];
+        @apply text-[15px] font-medium text-mute;
     }
 
     .vo-h1 {
-        @apply font-display text-[32px] leading-[1.08] font-extrabold text-ink;
+        @apply font-display text-[28px] leading-[1.15] font-bold text-ink;
     }
 
     .vo-h2 {
-        @apply font-display text-[24px] leading-[1.15] font-bold text-ink;
+        @apply font-display text-[20px] leading-[1.25] font-semibold text-ink;
     }
 
     .vo-stamp {
-        @apply absolute rounded-[16px] border-[3px] px-3 py-1.5 font-display text-[22px] font-extrabold uppercase pointer-events-none select-none;
-        letter-spacing: 0.08em;
-        backdrop-filter: blur(4px);
+        @apply absolute rounded-[8px] border-2 px-2.5 py-1 font-display text-[16px] font-bold uppercase pointer-events-none select-none;
+        letter-spacing: 0.06em;
     }
 
     .vo-badge {
-        @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-brand text-white text-[11px] font-bold leading-none;
+        @apply inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-ink text-white text-[11px] font-semibold leading-none;
     }
 
     .vo-dot-online {
-        @apply absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-like ring-2 ring-white;
+        @apply absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-online ring-2 ring-white;
     }
 
     .vo-divider {
         @apply h-px w-full bg-line;
     }
 
+    /* ---------- toasts (iOS banner) ---------- */
+    [data-sonner-toaster] {
+        --width: 340px;
+        --border-radius: 14px;
+        font-family: inherit;
+        z-index: var(--vo-z-toast);
+    }
+
+    [data-sonner-toast][data-styled="true"] {
+        background: rgba(255, 255, 255, 0.9);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        padding: 12px 14px;
+        gap: 10px;
+        color: var(--vo-ink);
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+    }
+
+    [data-sonner-toast] [data-icon] {
+        color: var(--vo-ink);
+        margin-left: 0;
+    }
+
+    [data-sonner-toast][data-type="error"] [data-icon] {
+        color: var(--vo-danger);
+    }
+
+    [data-sonner-toast] [data-title] {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    [data-sonner-toast] [data-description] {
+        color: var(--vo-muted);
+        font-weight: 400;
+        font-size: 13px;
+    }
+
+    .vo-banner {
+        @apply flex w-[340px] items-center gap-3 rounded-[14px] border border-black/[0.06] p-3 text-left;
+        background: rgba(255, 255, 255, 0.92);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    /* ---------- misc ---------- */
     .animate-caret-blink {
         animation: caret-blink 1.2s ease-out infinite;
     }
@@ -278,11 +376,11 @@
 
     @keyframes typing {
         0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-        30% { transform: translateY(-4px); opacity: 1; }
+        30% { transform: translateY(-3px); opacity: 1; }
     }
 
     .vo-shimmer {
-        background: linear-gradient(90deg, #F4F6FA 25%, #EDF0F6 37%, #F4F6FA 63%);
+        background: linear-gradient(90deg, #F5F5F7 25%, #ECECF0 37%, #F5F5F7 63%);
         background-size: 400% 100%;
         animation: shimmer 1.4s ease infinite;
     }
@@ -290,6 +388,13 @@
     @keyframes shimmer {
         0% { background-position: 100% 50%; }
         100% { background-position: 0 50%; }
+    }
+
+    /* GPU layer for the draggable swipe card: avoids repaint while dragging */
+    .vo-gpu {
+        will-change: transform;
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
 }
 

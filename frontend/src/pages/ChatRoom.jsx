@@ -16,6 +16,7 @@ import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Skeleton } from "@/components/EmptyState";
 import { clockTime, dayLabel, timeAgo } from "@/lib/format";
+import { tween } from "@/lib/motion";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
@@ -25,15 +26,15 @@ const ReactionBubble = ({ m, mine, otherName }) => {
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} data-testid="chat-reaction-message">
       {r.type === "photo" ? (
-        <div className="relative overflow-hidden rounded-[22px] border border-line bg-surface2 shadow-[var(--vo-shadow-soft)]">
+        <div className="relative overflow-hidden rounded-card bg-surface2">
           <UserPhoto src={r.photo} name={mine ? otherName : ""} className="h-48 w-40 text-3xl" />
-          <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand shadow">
-            <Heart className="h-4 w-4 fill-brand" strokeWidth={2.5} />
+          <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink shadow-soft">
+            <Heart className="h-4 w-4 fill-ink" strokeWidth={2.5} />
           </span>
         </div>
       ) : (
-        <div className="max-w-[82%] rounded-[22px] border border-line bg-white px-4 py-3 shadow-[var(--vo-shadow-soft)]">
-          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mute">
+        <div className="max-w-[82%] rounded-card bg-surface2 px-4 py-3">
+          <div className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-mute">
             <Quote className="h-3 w-3" /> {r.question}
           </div>
           <div className="font-display text-[16px] leading-snug text-ink">{r.answer}</div>
@@ -212,7 +213,7 @@ export default function ChatRoom() {
       await api.post(`/users/${match.user.id}/block`);
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
-      toast(`${match.user.name} is blocked. They won't see you again.`);
+      toast(`${match.user.name} is blocked`);
       navigate("/chats", { replace: true });
     } catch (e) {
       toast.error(errMsg(e));
@@ -226,7 +227,7 @@ export default function ChatRoom() {
     setBusy(true);
     try {
       await api.post(`/users/${match.user.id}/report`, { reason, details });
-      toast.success("Thanks. We've received your report.");
+      toast("Report received. Thank you.");
       setReport(false);
     } catch (e) {
       toast.error(errMsg(e));
@@ -258,12 +259,12 @@ export default function ChatRoom() {
 
   return (
     <div className="flex h-full flex-col" data-testid="chat-room">
-      <header className="flex items-center gap-2 border-b border-line bg-[rgba(251,251,252,0.95)] px-3 py-2.5 backdrop-blur-md">
-        <button type="button" className="vo-icon-btn h-10 w-10 border-0 bg-transparent" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
+      <header className="vo-bar flex items-center gap-2 border-b border-line px-3 py-2.5">
+        <button type="button" className="vo-icon-btn bg-transparent" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
           <ArrowLeft className="h-5 w-5" />
         </button>
         {other ? (
-          <button type="button" className="flex min-w-0 flex-1 items-center gap-3 rounded-[14px] px-1 py-1 text-left active:bg-surface2" onClick={() => setSheet(true)} data-testid="chat-header-profile">
+          <button type="button" className="flex min-w-0 flex-1 items-center gap-3 rounded-btn px-1 py-1 text-left active:bg-surface2" onClick={() => setSheet(true)} data-testid="chat-header-profile">
             <span className="relative">
               <UserPhoto src={other.photos?.[0]} name={other.name} className="h-10 w-10 rounded-full" />
               {match.online && <span className="vo-dot-online h-3 w-3" />}
@@ -281,22 +282,22 @@ export default function ChatRoom() {
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="vo-icon-btn h-10 w-10 border-0 bg-transparent" aria-label="More" data-testid="chat-menu-button">
+            <button type="button" className="vo-icon-btn bg-transparent" aria-label="More" data-testid="chat-menu-button">
               <MoreHorizontal className="h-5 w-5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 rounded-[18px] border-line p-1.5">
-            <DropdownMenuItem className="rounded-[12px] py-2.5" onClick={() => setSheet(true)} data-testid="chat-menu-view-profile">
+          <DropdownMenuContent align="end" className="w-52 rounded-card border-line p-1.5 shadow-float">
+            <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setSheet(true)} data-testid="chat-menu-view-profile">
               <UserRound className="mr-2 h-4 w-4" /> View profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-[12px] py-2.5" onClick={() => setConfirm("unmatch")} data-testid="chat-menu-unmatch">
+            <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setConfirm("unmatch")} data-testid="chat-menu-unmatch">
               <HeartOff className="mr-2 h-4 w-4" /> Unmatch
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-[12px] py-2.5" onClick={() => setReport(true)} data-testid="chat-menu-report">
+            <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setReport(true)} data-testid="chat-menu-report">
               <ShieldAlert className="mr-2 h-4 w-4" /> Report
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-[12px] py-2.5 text-pass focus:text-pass" onClick={() => setConfirm("block")} data-testid="chat-menu-block">
+            <DropdownMenuItem className="rounded-[10px] py-2.5 text-danger focus:text-danger" onClick={() => setConfirm("block")} data-testid="chat-menu-block">
               <Ban className="mr-2 h-4 w-4" /> Block
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -304,7 +305,7 @@ export default function ChatRoom() {
       </header>
 
       {!connected && !loading && (
-        <div className="bg-peach-soft px-4 py-1.5 text-center text-[12px] font-semibold text-[#B45309]" data-testid="chat-offline-banner">
+        <div className="bg-surface2 px-4 py-1.5 text-center text-[12px] font-medium text-mute" data-testid="chat-offline-banner">
           Reconnecting... messages will still arrive.
         </div>
       )}
@@ -321,8 +322,8 @@ export default function ChatRoom() {
             {other && (
               <div className="mb-6 flex flex-col items-center text-center" data-testid="chat-intro">
                 <div className="flex items-center">
-                  <UserPhoto src={user?.photos?.[0]} name={user?.name} className="h-16 w-16 rounded-full border-[3px] border-white text-lg shadow" />
-                  <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-4 h-16 w-16 rounded-full border-[3px] border-white text-lg shadow" />
+                  <UserPhoto src={user?.photos?.[0]} name={user?.name} className="h-16 w-16 rounded-full border-[3px] border-white text-lg shadow-soft" />
+                  <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-4 h-16 w-16 rounded-full border-[3px] border-white text-lg shadow-soft" />
                 </div>
                 <p className="mt-3 text-[14px] text-mute">
                   You matched with <span className="font-semibold text-ink">{other.name}</span> {timeAgo(match.created_at) === "now" ? "just now" : `${timeAgo(match.created_at)} ago`}
@@ -348,15 +349,14 @@ export default function ChatRoom() {
               {rendered.map((r) =>
                 r.type === "day" ? (
                   <div key={r.key} className="my-4 flex items-center justify-center">
-                    <span className="rounded-full bg-surface2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-mute">{r.label}</span>
+                    <span className="text-[11px] font-medium text-mute">{r.label}</span>
                   </div>
                 ) : (
                   <motion.div
                     key={r.key}
-                    layout="position"
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 36 }}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={tween(0.2)}
                     className={`flex ${r.m.sender_id === user?.id ? "justify-end" : "justify-start"} ${r.endOfGroup ? "mb-3" : "mb-1"}`}
                   >
                     <div className={`max-w-[78%] ${r.m.sender_id === user?.id ? "items-end" : "items-start"} flex flex-col`}>
@@ -366,8 +366,8 @@ export default function ChatRoom() {
                         <div
                           className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-snug ${
                             r.m.sender_id === user?.id
-                              ? "rounded-[20px] rounded-br-[8px] bg-ink text-white"
-                              : "rounded-[20px] rounded-bl-[8px] border border-line bg-white text-ink"
+                              ? "rounded-[18px] rounded-br-[6px] bg-tint text-white"
+                              : "rounded-[18px] rounded-bl-[6px] bg-surface2 text-ink"
                           } ${r.m.pending ? "opacity-60" : ""}`}
                           data-testid="chat-message-bubble"
                         >
@@ -379,7 +379,7 @@ export default function ChatRoom() {
                           {clockTime(r.m.created_at)}
                           {r.m.sender_id === user?.id && r.m.id === lastMine?.id && (
                             r.m.read_at ? (
-                              <span className="inline-flex items-center gap-0.5 text-brand-dark" data-testid="chat-seen">
+                              <span className="inline-flex items-center gap-0.5 text-tint" data-testid="chat-seen">
                                 <CheckCheck className="h-3.5 w-3.5" /> Seen
                               </span>
                             ) : (
@@ -394,8 +394,8 @@ export default function ChatRoom() {
               )}
             </AnimatePresence>
             {typing && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mb-2 flex justify-start" data-testid="chat-typing-indicator">
-                <div className="flex items-center gap-1 rounded-[20px] rounded-bl-[8px] border border-line bg-white px-4 py-3">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(0.15)} className="mb-2 flex justify-start" data-testid="chat-typing-indicator">
+                <div className="flex items-center gap-1 rounded-[18px] rounded-bl-[6px] bg-surface2 px-4 py-3">
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
@@ -408,7 +408,7 @@ export default function ChatRoom() {
       </div>
 
       <form
-        className="border-t border-line bg-paper px-3 pt-2.5"
+        className="vo-bar border-t border-line px-3 pt-2.5"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
         onSubmit={(e) => {
           e.preventDefault();
@@ -416,8 +416,8 @@ export default function ChatRoom() {
         }}
       >
         <div className="flex items-end gap-2">
-          <button type="button" className="vo-icon-btn h-11 w-11 shrink-0 text-voila" onClick={() => setIcebreakers(true)} aria-label="Icebreakers" data-testid="chat-icebreakers-open-button">
-            <Zap className="h-5 w-5 fill-voila" />
+          <button type="button" className="vo-icon-btn h-11 w-11 shrink-0 text-tint" onClick={() => setIcebreakers(true)} aria-label="Icebreakers" data-testid="chat-icebreakers-open-button">
+            <Zap className="h-5 w-5 fill-tint" />
           </button>
           <textarea
             ref={inputRef}
@@ -431,18 +431,18 @@ export default function ChatRoom() {
               }
             }}
             placeholder={other ? `Message ${other.name}` : "Message"}
-            className="vo-textarea max-h-[120px] min-h-[44px] flex-1 rounded-[22px] px-4 py-2.5 text-[15px]"
+            className="vo-textarea max-h-[120px] min-h-[44px] flex-1 rounded-[22px] border-line bg-white px-4 py-2.5 text-[15px] focus:border-mute2"
             style={{ height: Math.min(120, 24 + 20 * Math.max(1, text.split("\n").length)) }}
             data-testid="chat-message-input"
           />
-          <button type="submit" disabled={!text.trim() || sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
+          <button type="submit" disabled={!text.trim() || sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-tint text-white transition-[background-color,transform] duration-150 ease-ios hover:bg-tint-dark active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
             <Send className="h-5 w-5" />
           </button>
         </div>
       </form>
 
       <Drawer open={icebreakers} onOpenChange={setIcebreakers}>
-        <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-[28px] border-line bg-white" data-testid="icebreakers-drawer">
+        <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-sheet border-0 bg-white" data-testid="icebreakers-drawer">
           <DrawerTitle className="vo-h2 mt-3 px-5">Vibe check</DrawerTitle>
           <DrawerDescription className="mb-3 mt-1 px-5 text-[14px] text-mute">Tap one to drop it into the chat. Edit it or send as is.</DrawerDescription>
           <div className="vo-scroll flex flex-wrap gap-2 px-5 pb-8">

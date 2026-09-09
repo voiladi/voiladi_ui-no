@@ -1,8 +1,19 @@
 """Profile, photos, preferences, meta content and safety."""
+import asyncio
 import uuid
+from io import BytesIO
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import date
+
+from PIL import Image, ImageOps
+
+try:  # iPhone HEIC/HEIF uploads -> decodable by Pillow
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+except Exception:  # pragma: no cover - optional dependency
+    pass
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import FileResponse
@@ -18,6 +29,30 @@ router = APIRouter(prefix="/api", tags=["profile"])
 ALLOWED_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic", "image/heif": "heif", "image/gif": "gif"}
 MAX_UPLOAD = 8 * 1024 * 1024
 MAX_PHOTOS = 6
+# Photos are shown on a 430px-wide card at up to 3x DPR; anything larger only costs bandwidth and GPU time while swiping.
+PHOTO_MAX_EDGE = 1280
+PHOTO_QUALITY = 84
+
+
+def optimize_image(data: bytes, ctype: str) -> Tuple[bytes, str]:
+    """Fix EXIF orientation, downscale to PHOTO_MAX_EDGE, strip metadata and re-encode (JPEG, or WEBP if transparent).
+    Animated GIFs are kept as-is. On any decode error the original bytes are stored unchanged."""
+    ext = ALLOWED_TYPES[ctype]
+    try:
+        img = Image.open(BytesIO(data))
+        if getattr(img, "is_animated", False):
+            return data, ext
+        img = ImageOps.exif_transpose(img)
+        img.thumbnail((PHOTO_MAX_EDGE, PHOTO_MAX_EDGE), Image.LANCZOS)
+        has_alpha = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+        out = BytesIO()
+        if has_alpha:
+            img.convert("RGBA").save(out, format="WEBP", quality=PHOTO_QUALITY, method=4)
+            return out.getvalue(), "webp"
+        img.convert("RGB").save(out, format="JPEG", quality=PHOTO_QUALITY, optimize=True, progressive=True)
+        return out.getvalue(), "jpg"
+    except Exception:
+        return data, ext
 
 
 class PromptIn(BaseModel):
@@ -148,7 +183,8 @@ async def upload_photo(file: UploadFile = File(...), user=Depends(get_current_us
     photos = list(user.get("photos") or [])
     if len(photos) >= MAX_PHOTOS:
         raise HTTPException(status_code=400, detail=f"You can add up to {MAX_PHOTOS} photos")
-    fname = f"{user['id']}_{uuid.uuid4().hex}.{ALLOWED_TYPES[ctype]}"
+    data, ext = await asyncio.to_thread(optimize_image, data, ctype)
+    fname = f"{user['id']}_{uuid.uuid4().hex}.{ext}"
     (UPLOAD_DIR / fname).write_bytes(data)
     url = f"/api/uploads/{fname}"
     photos.append(url)

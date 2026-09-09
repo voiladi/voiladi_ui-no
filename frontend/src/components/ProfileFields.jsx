@@ -73,11 +73,11 @@ export const BirthdayInput = ({ value, onChange }) => {
         />
       </div>
       <div className="mt-3 min-h-[22px] text-[14px]" data-testid="onboarding-birthday-feedback">
-        {filled && !iso && <span className="text-pass">That date doesn't exist. Double-check it.</span>}
-        {iso && age !== null && age < 18 && <span className="text-pass">You need to be 18 or older to join Voiladi.</span>}
-        {iso && age !== null && age > 100 && <span className="text-pass">Hmm, that doesn't look right.</span>}
+        {filled && !iso && <span className="text-danger">That date doesn't exist. Double-check it.</span>}
+        {iso && age !== null && age < 18 && <span className="text-danger">You need to be 18 or older to join Voiladi.</span>}
+        {iso && age !== null && age > 100 && <span className="text-danger">Hmm, that doesn't look right.</span>}
         {iso && age !== null && age >= 18 && age <= 100 && (
-          <span className="text-brand-dark">
+          <span className="text-tint">
             You're <span className="font-semibold">{age}</span>. This is shown on your profile, your birthday isn't.
           </span>
         )}
@@ -94,7 +94,7 @@ export const OptionList = ({ options, value, onChange, render, testIdPrefix }) =
       return (
         <button key={o} type="button" onClick={() => onChange(o)} className={`vo-option ${on ? "vo-option-on" : ""}`} data-testid={`${testIdPrefix}-${o}`} aria-pressed={on}>
           {render ? render(o) : o}
-          <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${on ? "border-brand bg-brand text-white" : "border-line"}`}>
+          <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${on ? "border-tint bg-tint text-white" : "border-line"}`}>
             {on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
           </span>
         </button>
@@ -126,7 +126,7 @@ export const InterestPicker = ({ all = [], value = [], onChange, min = 3, max = 
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" />
           <input className="vo-input h-11 pl-11 text-[15px]" style={{ height: 44 }} placeholder="Search interests" value={q} onChange={(e) => setQ(e.target.value)} data-testid="interests-search-input" />
         </div>
-        <span className={`ml-3 font-display text-[15px] font-semibold ${value.length >= min ? "text-brand-dark" : "text-mute"}`} data-testid="interests-count">
+        <span className={`ml-3 font-display text-[15px] font-semibold ${value.length >= min ? "text-tint" : "text-mute"}`} data-testid="interests-count">
           {value.length}/{max}
         </span>
       </div>
@@ -157,9 +157,9 @@ export const PromptEditor = ({ questions = [], value = [], onChange, max = 3 }) 
   return (
     <div className="space-y-3" data-testid="prompt-editor">
       {value.map((p, i) => (
-        <div key={p.question} className="rounded-[20px] border border-line bg-white p-4" data-testid={`prompt-card-${i}`}>
+        <div key={p.question} className="rounded-card border border-line bg-white p-4" data-testid={`prompt-card-${i}`}>
           <div className="mb-2 flex items-start justify-between gap-3">
-            <button type="button" onClick={() => setPicking(picking === i ? false : i)} className="text-left text-[13px] font-semibold uppercase tracking-[0.08em] text-brand-dark" data-testid={`prompt-change-${i}`}>
+            <button type="button" onClick={() => setPicking(picking === i ? false : i)} className="text-left text-[13px] font-medium text-tint" data-testid={`prompt-change-${i}`}>
               {p.question}
             </button>
             <button type="button" onClick={() => remove(i)} className="vo-icon-btn h-8 w-8 border-0 bg-surface2" aria-label="Remove prompt" data-testid={`prompt-remove-${i}`}>
@@ -167,7 +167,7 @@ export const PromptEditor = ({ questions = [], value = [], onChange, max = 3 }) 
             </button>
           </div>
           <textarea
-            className="vo-textarea min-h-[84px] border-0 bg-surface2 px-3 py-2.5 font-display text-[17px] focus:ring-0"
+            className="vo-textarea min-h-[84px] px-3 py-2.5 font-display text-[17px]"
             placeholder="Your answer..."
             maxLength={200}
             value={p.answer}
@@ -178,7 +178,7 @@ export const PromptEditor = ({ questions = [], value = [], onChange, max = 3 }) 
         </div>
       ))}
       {picking !== false ? (
-        <div className="rounded-[20px] border border-brand bg-white p-3" data-testid="prompt-picker">
+        <div className="rounded-card border border-line bg-white p-3" data-testid="prompt-picker">
           <div className="mb-2 flex items-center justify-between px-1">
             <span className="text-[13px] font-semibold text-ink">{typeof picking === "number" ? "Swap the question" : "Pick a prompt"}</span>
             <button type="button" className="text-[13px] font-semibold text-mute hover:text-ink" onClick={() => setPicking(false)} data-testid="prompt-picker-cancel">
@@ -245,7 +245,6 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
         const city = best && bestD < 80 ? best.name : best ? `Near ${best.name}` : "My location";
         onChange({ city, lat: latitude, lng: longitude });
         setLocating(false);
-        toast.success(`Location set to ${city}`);
       },
       () => {
         setLocating(false);
@@ -257,7 +256,7 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
 
   return (
     <div data-testid="location-picker">
-      <button type="button" onClick={useMyLocation} disabled={locating} className="vo-option mb-4 border-brand bg-brand-soft text-brand-dark" data-testid="location-use-current-button">
+      <button type="button" onClick={useMyLocation} disabled={locating} className="vo-option mb-4 text-tint" data-testid="location-use-current-button">
         <span className="flex items-center gap-2.5">
           {locating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
           {locating ? "Finding you..." : "Use my current location"}
@@ -268,11 +267,11 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
         <input className="vo-input pl-11" style={{ height: 48 }} placeholder="Or search your city" value={q} onChange={(e) => setQ(e.target.value)} data-testid="location-search-input" />
       </div>
       {value?.city && (
-        <div className="mb-3 flex items-center justify-between rounded-[16px] bg-surface2 px-4 py-3 text-[14px]" data-testid="location-selected">
+        <div className="mb-3 flex items-center justify-between rounded-btn bg-surface2 px-4 py-3 text-[14px]" data-testid="location-selected">
           <span>
             Showing you in <span className="font-semibold text-ink">{value.city}</span>
           </span>
-          <button type="button" className="text-[13px] font-semibold text-mute hover:text-pass" onClick={() => onChange({ city: "", lat: null, lng: null })} data-testid="location-clear-button">
+          <button type="button" className="text-[13px] font-semibold text-mute hover:text-danger" onClick={() => onChange({ city: "", lat: null, lng: null })} data-testid="location-clear-button">
             Clear
           </button>
         </div>
@@ -285,7 +284,7 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
               <span>
                 {c.name} <span className="ml-1 text-[13px] font-normal text-mute">{c.country}</span>
               </span>
-              {on && <Check className="h-5 w-5 text-brand" strokeWidth={3} />}
+              {on && <Check className="h-5 w-5 text-tint" strokeWidth={2.5} />}
             </button>
           );
         })}
