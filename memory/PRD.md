@@ -16,7 +16,8 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   User has NOT yet confirmed receipt on a real phone.
 - Phase 6 Railway: LIVE. Project "Voiladi" (id 8174208d-2760-45ad-b6f2-3eb5a645ce42) in workspace "My Projects" (tyleralexisbrown@gmail.com).
   Services: MongoDB, voiladi-api (Dockerfile, volume /data/uploads), voiladi-web (Dockerfile: CRA build -> nginx).
-  Web: https://voiladi-web-production.up.railway.app   API: https://voiladi-api-production.up.railway.app
+  Custom domain (GoDaddy DNS): https://www.voiladi.com (app), https://api.voiladi.com (API), voiladi.com -> 301 www via GoDaddy forwarding
+  (https://voiladi.com TLS pending on GoDaddy side). Railway defaults still work: voiladi-web-production / voiladi-api-production .up.railway.app
   Deployed via `railway up ./backend|./frontend --path-as-root` (see /app/deploy/README.md). 24 demo profiles seeded in prod.
   NOTE: user said "existing project" but the token's account had none, so a new project was created.
 

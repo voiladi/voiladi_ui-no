@@ -58,3 +58,10 @@ GoDaddy cannot CNAME the root (@). Recommended: move DNS to Cloudflare (free, CN
 forward voiladi.com -> https://www.voiladi.com (301) with CNAMEs for www + api only.
 After DNS resolves: set voiladi-web REACT_APP_BACKEND_URL=https://api.voiladi.com (triggers rebuild) and keep CORS_ORIGINS
 (already includes https://voiladi.com and https://www.voiladi.com).
+
+### Domain status (2026-09-09 10:50 UTC)
+- https://www.voiladi.com  -> voiladi-web  (cert VALID, live)          <- canonical app URL
+- https://api.voiladi.com  -> voiladi-api  (cert VALID, live; web built with REACT_APP_BACKEND_URL=https://api.voiladi.com)
+- http://voiladi.com       -> GoDaddy forwarding 301 -> https://www.voiladi.com (works)
+- https://voiladi.com      -> GoDaddy forwarding has no TLS cert yet (TLS alert). GoDaddy usually issues one within 24-48h;
+                              if it never does, move DNS to Cloudflare and add CNAME @ -> kt4522tf.up.railway.app.
