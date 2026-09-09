@@ -1,68 +1,69 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, X, Zap, Quote } from "lucide-react";
+import { Heart, X, ChevronRight, MoreHorizontal, UserRound, ShieldAlert, Ban, MessageCircle, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
-import { useLikesQuery } from "@/hooks/useBadges";
+import { useLikesQuery, useLikesSentQuery } from "@/hooks/useBadges";
+import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
-import { PageHeader, EmptyState, Skeleton } from "@/components/EmptyState";
+import { Segmented } from "@/components/Chip";
+import { EmptyState, Skeleton } from "@/components/EmptyState";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
-import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
-import { Tag } from "@/components/Chip";
-import { tween } from "@/lib/motion";
+import { agoLabel } from "@/lib/format";
+import { tween, D } from "@/lib/motion";
 
-const ReactionNote = ({ like, me }) => {
-  const r = like?.reaction;
-  if (!r) return null;
-  return (
-    <div className="flex items-center gap-3 rounded-card bg-surface2 p-3" data-testid="likes-reaction-note">
-      {r.type === "photo" ? (
-        <UserPhoto src={r.photo} name={me?.name} className="h-14 w-12 shrink-0 rounded-[10px] text-base" />
-      ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-ink">
-          <Quote className="h-5 w-5" />
-        </span>
-      )}
-      <div className="min-w-0">
-        <div className="text-[14px] font-semibold text-ink">{reactionLabel(r, { name: like.user.name })}</div>
-        {r.type === "prompt" && <div className="truncate text-[13px] text-mute">"{r.answer}"</div>}
-      </div>
-    </div>
-  );
-};
+const TABS = [
+  { value: "all", label: "All" },
+  { value: "received", label: "Likes you" },
+  { value: "sent", label: "You liked" },
+];
 
 export default function Likes() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
   const { meta } = useMeta();
-  const { data, isLoading, isError, refetch } = useLikesQuery();
-  const [sheet, setSheet] = useState(null); // like entry {user, reaction, superlike}
+  const received = useLikesQuery();
+  const sent = useLikesSentQuery();
+  const [tab, setTab] = useState("all");
+  const [sheet, setSheet] = useState(null);
   const [match, setMatch] = useState(null);
   const [busy, setBusy] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [acting, setActing] = useState(false);
-  const likes = data?.likes || [];
 
-  const removeFromList = (id) =>
-    qc.setQueryData(["likes"], (old) => (old ? { ...old, likes: old.likes.filter((l) => l.user.id !== id), count: Math.max(0, old.count - 1) } : old));
+  const rows = useMemo(() => {
+    const r = received.data?.likes || [];
+    const s = (sent.data?.likes || []).filter((l) => !l.match_id);
+    const list = tab === "received" ? r : tab === "sent" ? s : [...r, ...s];
+    return list.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  }, [received.data, sent.data, tab]);
+
+  const loading = received.isLoading || sent.isLoading;
+  const total = (received.data?.count || 0) + (sent.data?.likes || []).filter((l) => !l.match_id).length;
+
+  const dropReceived = (id) => qc.setQueryData(["likes"], (old) => (old ? { ...old, likes: old.likes.filter((l) => l.user.id !== id), count: Math.max(0, old.count - 1) } : old));
+  const dropSent = (id) => qc.setQueryData(["likes-sent"], (old) => (old ? { ...old, likes: old.likes.filter((l) => l.user.id !== id), count: Math.max(0, old.count - 1) } : old));
 
   const respond = async (profile, action, reaction = null) => {
     setBusy(profile.id);
     try {
       const { data: res } = await api.post("/swipe", { target_id: profile.id, action, reaction: reaction || undefined });
-      removeFromList(profile.id);
+      dropReceived(profile.id);
       setSheet(null);
+      qc.invalidateQueries({ queryKey: ["likes-sent"] });
       if (res.matched) {
         setMatch(res.match);
         qc.invalidateQueries({ queryKey: ["matches"] });
+        qc.invalidateQueries({ queryKey: ["stats"] });
       }
     } catch (e) {
       toast.error(errMsg(e));
@@ -76,7 +77,8 @@ export default function Likes() {
     setActing(true);
     try {
       await api.post(`/users/${blockTarget.id}/block`);
-      removeFromList(blockTarget.id);
+      dropReceived(blockTarget.id);
+      dropSent(blockTarget.id);
       qc.invalidateQueries({ queryKey: ["matches"] });
       toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
@@ -102,104 +104,125 @@ export default function Likes() {
   };
 
   const sheetProfile = sheet?.user || null;
+  const isReceived = sheet?.direction === "received";
 
   return (
     <div className="min-h-full pb-24" data-testid="likes-page">
-      <PageHeader title="Likes" subtitle={likes.length ? `${likes.length} ${likes.length === 1 ? "person likes" : "people like"} you. No pressure.` : "People who liked you show up here."} />
+      <header className="px-5 pt-2">
+        <div className="flex h-12 items-center">
+          <Brand />
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <h1 className="vo-title">Likes</h1>
+          <span className="text-[20px] font-semibold text-ink" data-testid="likes-count">
+            {total}
+          </span>
+        </div>
+        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-4" />
+      </header>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 px-4 pt-2">
+      {loading ? (
+        <div className="space-y-2 px-5 pt-4">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="aspect-[3/4]" />
+            <Skeleton key={i} className="h-[68px]" />
           ))}
         </div>
-      ) : isError ? (
+      ) : received.isError || sent.isError ? (
         <EmptyState
           icon={Heart}
           title="Couldn't load likes"
           description="Check your connection and try again."
           testId="error-alert"
           action={
-            <button type="button" className="vo-btn-primary" onClick={() => refetch()}>
+            <button
+              type="button"
+              className="vo-btn-primary w-full"
+              onClick={() => {
+                received.refetch();
+                sent.refetch();
+              }}
+            >
               Try again
             </button>
           }
         />
-      ) : likes.length === 0 ? (
+      ) : rows.length === 0 ? (
         <EmptyState
           icon={Heart}
-          title="No likes yet"
-          description="Keep swiping. When someone likes you, they'll show up here and you can like them back."
+          title={tab === "sent" ? "You haven't liked anyone yet" : "No likes yet"}
+          description={tab === "sent" ? "People you like show up here until they like you back." : "When someone likes you, they'll show up here and you can like them back."}
           action={
-            <button type="button" className="vo-btn-primary" onClick={() => navigate("/discover")} data-testid="likes-go-discover-button">
+            <button type="button" className="vo-btn-primary w-full" onClick={() => navigate("/discover")} data-testid="likes-go-discover-button">
               Go to Discover
             </button>
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 px-4 pt-2" data-testid="likes-grid">
-          {likes.map((l, idx) => {
+        <ul className="mt-2 px-5" data-testid="likes-list">
+          {rows.map((l, i) => {
             const p = l.user;
+            const mine = l.direction === "sent";
             return (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={tween(0.25, Math.min(idx, 6) * 0.03)}
-                className="relative overflow-hidden rounded-card border border-line bg-white"
-                data-testid="likes-grid-tile"
-              >
-                <button type="button" className="block w-full text-left" onClick={() => setSheet(l)} data-testid="likes-tile-open">
-                  <div className="relative aspect-[3/4]">
-                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-full w-full text-5xl" />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
-                    <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
-                      {l.superlike && (
-                        <Tag tone="white" className="h-7 px-2.5 text-[12px] text-tint">
-                          <Zap className="h-3.5 w-3.5 fill-tint" /> Voila'd you
-                        </Tag>
-                      )}
-                      {l.reaction && (
-                        <ReactionPill className="bg-white/95" testId="likes-reaction-tag">
-                          {l.reaction.type === "photo" ? "Liked your photo" : "Liked your answer"}
-                        </ReactionPill>
-                      )}
-                    </div>
-                    <div className="absolute inset-x-3 bottom-3 text-white">
-                      <div className="font-display text-[19px] font-semibold leading-tight">
-                        {p.name}
-                        {p.age ? <span className="ml-1.5 font-medium opacity-80">{p.age}</span> : null}
-                      </div>
-                      <div className="text-[12px] opacity-90">{p.compatibility}% match</div>
-                    </div>
-                  </div>
+              <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="flex items-center gap-3 border-b border-line py-3" data-testid="likes-row">
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setSheet(l)} data-testid="likes-row-open">
+                  <span className="relative shrink-0">
+                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-12 w-12 rounded-full text-base" />
+                    <span className={`absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-bg ${l.superlike ? "bg-blue" : "bg-red"} text-white`}>
+                      {l.superlike ? <Star className="h-2.5 w-2.5" fill="currentColor" /> : <Heart className="h-2.5 w-2.5" fill="currentColor" />}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[16px] font-semibold text-ink">
+                      {p.name} <span className="font-normal">{p.age}</span>
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-mute" data-testid="likes-row-sub">
+                      <span className={`h-1.5 w-1.5 rounded-full ${mine ? "bg-mute" : "bg-red"}`} />
+                      {mine ? "You liked" : l.superlike ? "Super Liked you" : "Liked you"} {agoLabel(l.created_at)}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-mute" />
                 </button>
-                <div className="flex gap-2 p-2.5">
-                  <button type="button" className="vo-icon-btn h-10 flex-1 rounded-[10px] text-mute" onClick={() => respond(p, "pass")} disabled={busy === p.id} aria-label="Pass" data-testid="likes-pass-button">
-                    <X className="h-5 w-5" strokeWidth={2.2} />
-                  </button>
-                  <button
-                    type="button"
-                    className="flex h-10 flex-[1.6] items-center justify-center gap-1.5 rounded-[10px] bg-ink text-[13px] font-semibold text-white transition-colors duration-150 ease-ios hover:bg-ink2 active:opacity-80 disabled:opacity-50"
-                    onClick={() => respond(p, "like")}
-                    disabled={busy === p.id}
-                    data-testid="likes-like-back-button"
-                  >
-                    <Heart className="h-4 w-4 fill-white" /> Like back
-                  </button>
-                </div>
-              </motion.div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className="vo-icon-plain h-9 w-9 text-mute" aria-label="More" data-testid="likes-row-menu">
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">
+                    <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setSheet(l)}>
+                      <UserRound className="mr-2 h-4 w-4" /> View profile
+                    </DropdownMenuItem>
+                    {!mine && (
+                      <>
+                        <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => respond(p, "like")} data-testid="likes-like-back-button">
+                          <Heart className="mr-2 h-4 w-4" /> Like back
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => respond(p, "pass")} data-testid="likes-pass-button">
+                          <X className="mr-2 h-4 w-4" /> Pass
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setReportTarget(p)}>
+                      <ShieldAlert className="mr-2 h-4 w-4" /> Report
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="rounded-[10px] py-2.5 text-red focus:text-red" onClick={() => setBlockTarget(p)}>
+                      <Ban className="mr-2 h-4 w-4" /> Block
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </motion.li>
             );
           })}
-        </div>
+        </ul>
       )}
 
       <ProfileSheet
         profile={sheetProfile}
         open={!!sheetProfile}
         onOpenChange={(o) => !o && setSheet(null)}
-        note={<ReactionNote like={sheet} me={user} />}
-        onReact={(reaction) => sheetProfile && respond(sheetProfile, "like", reaction)}
+        note={isReceived ? `${sheetProfile?.name} ${sheet?.superlike ? "Super Liked" : "liked"} you ${agoLabel(sheet?.created_at)}` : `You liked ${sheetProfile?.name} ${agoLabel(sheet?.created_at)}`}
+        onReact={isReceived ? (reaction) => sheetProfile && respond(sheetProfile, "like", reaction) : undefined}
         onBlock={() => {
           setBlockTarget(sheetProfile);
           setSheet(null);
@@ -209,16 +232,25 @@ export default function Likes() {
           setSheet(null);
         }}
         actions={
-          sheetProfile && (
-            <div className="flex gap-3">
-              <button type="button" className="vo-btn-outline flex-1 text-mute" onClick={() => respond(sheetProfile, "pass")} disabled={busy === sheetProfile.id} data-testid="sheet-pass-button">
-                <X className="h-5 w-5" /> Pass
+          sheetProfile &&
+          (isReceived ? (
+            <div className="flex items-center justify-center gap-6">
+              <button type="button" className="vo-action h-14 w-14" onClick={() => respond(sheetProfile, "pass")} disabled={busy === sheetProfile.id} aria-label="Pass" data-testid="sheet-pass-button">
+                <X className="h-6 w-6" strokeWidth={2.5} />
               </button>
-              <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => respond(sheetProfile, "like")} disabled={busy === sheetProfile.id} data-testid="sheet-like-button">
-                <Heart className="h-5 w-5 fill-white" /> Like back
+              <button type="button" className="vo-action h-16 w-16" onClick={() => respond(sheetProfile, "like")} disabled={busy === sheetProfile.id} aria-label="Like back" data-testid="sheet-like-button">
+                <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
               </button>
             </div>
-          )
+          ) : sheet?.match_id ? (
+            <button type="button" className="vo-btn-primary w-full" onClick={() => navigate(`/chats/${sheet.match_id}`)} data-testid="sheet-open-chat-button">
+              <MessageCircle className="h-4 w-4" /> Open chat
+            </button>
+          ) : (
+            <p className="text-center text-[14px] text-mute" data-testid="sheet-waiting">
+              Waiting for {sheetProfile.name} to like you back.
+            </p>
+          ))
         }
       />
       <MatchModal match={match} me={user} onClose={() => setMatch(null)} onSayHi={() => navigate(`/chats/${match.id}`)} />

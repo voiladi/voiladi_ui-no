@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@/index.css";
 import App from "@/App";
 import { startUpdateCheck } from "@/lib/updateCheck";
+import { initTheme } from "@/hooks/useTheme";
+
+initTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {

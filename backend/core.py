@@ -1,6 +1,9 @@
 """Shared config, database, auth helpers and serializers for Voiladi."""
 import os
 import math
+import hmac
+import hashlib
+import secrets
 import logging
 from pathlib import Path
 from datetime import datetime, timezone, timedelta, date
@@ -55,10 +58,13 @@ def is_test_phone(phone: str) -> bool:
     return any(phone.startswith(p) for p in OTP_TEST_PREFIXES)
 
 ANYWHERE_KM = 250  # slider max => no distance filter
-DEFAULT_PREFS = {"age_min": 18, "age_max": 30, "max_distance_km": ANYWHERE_KM, "show_me": "everyone"}
+DEFAULT_PREFS = {"age_min": 18, "age_max": 30, "max_distance_km": ANYWHERE_KM, "show_me": "everyone", "interests": [], "goals": []}
 GENDERS = ["woman", "man", "nonbinary"]
 SHOW_ME = ["women", "men", "everyone"]
 SHOW_ME_TO_GENDER = {"women": "woman", "men": "man"}
+
+# Fields that must never leave the server.
+PRIVATE_FIELDS = ("_id", "password_hash", "password_salt")
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -98,6 +104,23 @@ def distance_between(a: dict, b: dict) -> Optional[float]:
     return haversine_km(a["lat"], a["lng"], b["lat"], b["lng"])
 
 
+# ---------- passwords (stdlib PBKDF2, no extra dependency) ----------
+PBKDF2_ROUNDS = 200_000
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt), PBKDF2_ROUNDS)
+    return digest.hex(), salt
+
+
+def verify_password(password: str, password_hash: Optional[str], salt: Optional[str]) -> bool:
+    if not password_hash or not salt:
+        return False
+    digest, _ = hash_password(password, salt)
+    return hmac.compare_digest(digest, password_hash)
+
+
 # ---------- auth ----------
 def make_token(user_id: str) -> str:
     payload = {"sub": user_id, "exp": now() + timedelta(days=30), "iat": now()}
@@ -129,13 +152,17 @@ def get_prefs(user: dict) -> dict:
     return {**DEFAULT_PREFS, **(user.get("preferences") or {})}
 
 
-def is_profile_complete(user: dict) -> bool:
+def has_basics(user: dict) -> bool:
+    """Name, adult age and gender: the minimum needed to enter the app."""
     age = calc_age(user.get("birthday"))
+    return bool((user.get("name") or "").strip() and age is not None and age >= 18 and user.get("gender") in GENDERS)
+
+
+def is_profile_complete(user: dict) -> bool:
+    """A complete profile is discoverable by others: basics + who to show + a photo + 3 interests."""
     return bool(
-        (user.get("name") or "").strip()
-        and age is not None and age >= 18
-        and user.get("gender") in GENDERS
-        and user.get("looking_for") in SHOW_ME
+        has_basics(user)
+        and (user.get("looking_for") or "everyone") in SHOW_ME
         and len(user.get("photos") or []) >= 1
         and len(user.get("interests") or []) >= 3
     )
@@ -166,15 +193,28 @@ def compatibility(a: dict, b: dict) -> Tuple[int, List[str]]:
     return int(max(5, min(99, round(score)))), [label_map[s] for s in shared]
 
 
+def is_verified(user: dict) -> bool:
+    """The blue badge: the account has a verified phone number attached."""
+    return bool(user.get("phone"))
+
+
 def own_profile(user: dict) -> dict:
-    u = {k: v for k, v in user.items() if k != "_id"}
+    u = {k: v for k, v in user.items() if k not in PRIVATE_FIELDS}
     u["age"] = calc_age(u.get("birthday"))
     u["preferences"] = get_prefs(u)
     u["profile_complete"] = is_profile_complete(u)
+    u["has_basics"] = has_basics(u)
     u["onboarded"] = bool(u.get("onboarded"))
+    u["verified"] = is_verified(u)
+    u["has_password"] = bool(user.get("password_hash"))
     u.setdefault("photos", [])
     u.setdefault("interests", [])
     u.setdefault("prompts", [])
+    u.setdefault("email", None)
+    u.setdefault("phone", None)
+    u.setdefault("job", "")
+    u.setdefault("relationship_goal", "")
+    u.setdefault("profile_views", 0)
     return u
 
 
@@ -185,11 +225,15 @@ def public_profile(user: dict, viewer: Optional[dict] = None) -> dict:
         "age": calc_age(user.get("birthday")),
         "gender": user.get("gender"),
         "bio": user.get("bio") or "",
+        "job": user.get("job") or "",
+        "relationship_goal": user.get("relationship_goal") or "",
         "interests": user.get("interests") or [],
         "prompts": user.get("prompts") or [],
         "photos": user.get("photos") or [],
         "city": user.get("city") or "",
         "last_active": user.get("last_active"),
+        "created_at": user.get("created_at"),
+        "verified": is_verified(user),
         "is_seed": bool(user.get("is_seed")),
     }
     if viewer:

@@ -7,20 +7,25 @@ import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
 import { LogoMark } from "@/components/Logo";
 import Welcome from "@/pages/Welcome";
-import Auth from "@/pages/Auth";
+import Signup from "@/pages/Signup";
+import Login from "@/pages/Login";
+import PhoneLogin from "@/pages/PhoneLogin";
 import Onboarding from "@/pages/Onboarding";
 import Discover from "@/pages/Discover";
+import Explore from "@/pages/Explore";
 import Likes from "@/pages/Likes";
 import Chats from "@/pages/Chats";
 import ChatRoom from "@/pages/ChatRoom";
 import Profile from "@/pages/Profile";
 import EditProfile from "@/pages/EditProfile";
-import Preferences from "@/pages/Preferences";
+import Filters from "@/pages/Filters";
+import Settings from "@/pages/Settings";
+import Legal from "@/pages/Legal";
 
 const Splash = () => (
   <div className="vo-backdrop">
     <div className="vo-shell items-center justify-center" data-testid="splash-screen">
-      <LogoMark size={64} />
+      <LogoMark size={72} />
     </div>
   </div>
 );
@@ -29,7 +34,7 @@ const Gate = ({ need }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <Splash />;
-  const complete = !!user?.profile_complete && !!user?.onboarded;
+  const complete = !!user?.onboarded;
   if (need === "guest") {
     if (user) return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
     return <Outlet />;
@@ -47,7 +52,7 @@ const Home = () => {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
   if (!user) return <Navigate to="/welcome" replace />;
-  return <Navigate to={user.profile_complete && user.onboarded ? "/discover" : "/onboarding"} replace />;
+  return <Navigate to={user.onboarded ? "/discover" : "/onboarding"} replace />;
 };
 
 function App() {
@@ -61,8 +66,14 @@ function App() {
               <Route element={<Gate need="guest" />}>
                 <Route element={<AppShell nav={false} />}>
                   <Route path="/welcome" element={<Welcome />} />
-                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/login/phone" element={<PhoneLogin />} />
+                  <Route path="/auth" element={<Navigate to="/login" replace />} />
                 </Route>
+              </Route>
+              <Route element={<AppShell nav={false} />}>
+                <Route path="/legal/:page" element={<Legal />} />
               </Route>
               <Route element={<Gate need="onboarding" />}>
                 <Route element={<AppShell nav={false} />}>
@@ -72,6 +83,7 @@ function App() {
               <Route element={<Gate need="app" />}>
                 <Route element={<AppShell nav />}>
                   <Route path="/discover" element={<Discover />} />
+                  <Route path="/explore" element={<Explore />} />
                   <Route path="/likes" element={<Likes />} />
                   <Route path="/chats" element={<Chats />} />
                   <Route path="/profile" element={<Profile />} />
@@ -79,7 +91,9 @@ function App() {
                 <Route element={<AppShell nav={false} />}>
                   <Route path="/chats/:matchId" element={<ChatRoom />} />
                   <Route path="/profile/edit" element={<EditProfile />} />
-                  <Route path="/profile/preferences" element={<Preferences />} />
+                  <Route path="/filters" element={<Filters />} />
+                  <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

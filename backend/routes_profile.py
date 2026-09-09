@@ -19,9 +19,9 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from core import (db, now_iso, get_current_user, own_profile, public_profile, is_profile_complete,
+from core import (db, now_iso, get_current_user, own_profile, public_profile, is_profile_complete, has_basics,
                   calc_age, UPLOAD_DIR, GENDERS, SHOW_ME, ANYWHERE_KM, SMS_ENABLED)
-from content import INTERESTS, PROMPTS, ICEBREAKERS, CITIES, REPORT_REASONS
+from content import INTERESTS, GOALS, PROMPTS, ICEBREAKERS, CITIES, REPORT_REASONS
 from ws_manager import manager
 
 router = APIRouter(prefix="/api", tags=["profile"])
@@ -66,6 +66,8 @@ class ProfileIn(BaseModel):
     gender: Optional[str] = None
     looking_for: Optional[str] = None
     bio: Optional[str] = None
+    job: Optional[str] = None
+    relationship_goal: Optional[str] = None
     interests: Optional[List[str]] = None
     prompts: Optional[List[PromptIn]] = None
     city: Optional[str] = None
@@ -80,6 +82,8 @@ class PreferencesIn(BaseModel):
     age_max: int = Field(ge=18, le=80)
     max_distance_km: int = Field(ge=5, le=ANYWHERE_KM)
     show_me: str
+    interests: List[str] = []
+    goals: List[str] = []
 
 
 class PhotoOrderIn(BaseModel):
@@ -94,7 +98,7 @@ class ReportIn(BaseModel):
 @router.get("/meta")
 async def meta():
     return {
-        "interests": INTERESTS, "prompts": PROMPTS, "icebreakers": ICEBREAKERS, "cities": CITIES,
+        "interests": INTERESTS, "goals": GOALS, "prompts": PROMPTS, "icebreakers": ICEBREAKERS, "cities": CITIES,
         "genders": GENDERS, "show_me": SHOW_ME, "report_reasons": REPORT_REASONS,
         "anywhere_km": ANYWHERE_KM, "max_photos": MAX_PHOTOS, "sms_enabled": SMS_ENABLED,
     }
@@ -115,7 +119,7 @@ async def update_profile(body: ProfileIn, user=Depends(get_current_user)):
             raise HTTPException(status_code=400, detail="Enter a valid birthday")
         age = calc_age(b.isoformat())
         if age is None or age < 18:
-            raise HTTPException(status_code=400, detail="You need to be 18 or older to use Voiladi")
+            raise HTTPException(status_code=400, detail="You must be 18 or older to use Voiladi")
         if age > 100:
             raise HTTPException(status_code=400, detail="Enter a valid birthday")
         update["birthday"] = b.isoformat()
@@ -134,6 +138,12 @@ async def update_profile(body: ProfileIn, user=Depends(get_current_user)):
         if len(body.bio) > 300:
             raise HTTPException(status_code=400, detail="Bio should be under 300 characters")
         update["bio"] = body.bio.strip()
+    if body.job is not None:
+        update["job"] = body.job.strip()[:40]
+    if body.relationship_goal is not None:
+        if body.relationship_goal and body.relationship_goal not in GOALS:
+            raise HTTPException(status_code=400, detail="Invalid option")
+        update["relationship_goal"] = body.relationship_goal
     if body.interests is not None:
         cleaned = []
         for i in body.interests:
@@ -162,7 +172,10 @@ async def update_profile(body: ProfileIn, user=Depends(get_current_user)):
             update["lng"] = body.lng
     merged = {**user, **update}
     update["profile_complete"] = is_profile_complete(merged)
-    if body.onboarded and update["profile_complete"]:
+    if body.onboarded:
+        # Entering the app needs the basics only; the photo step is skippable (you're just not shown to others yet).
+        if not has_basics(merged):
+            raise HTTPException(status_code=400, detail="Add your name, date of birth and gender first")
         update["onboarded"] = True
     update["updated_at"] = now_iso()
     await db.users.update_one({"id": user["id"]}, {"$set": update})
@@ -238,6 +251,8 @@ async def set_preferences(body: PreferencesIn, user=Depends(get_current_user)):
     if body.show_me not in SHOW_ME:
         raise HTTPException(status_code=400, detail="Invalid option")
     prefs = body.model_dump()
+    prefs["interests"] = [i.strip()[:30] for i in body.interests if i.strip()][:10]
+    prefs["goals"] = [g for g in body.goals if g in GOALS]
     await db.users.update_one({"id": user["id"]}, {"$set": {"preferences": prefs, "looking_for": body.show_me}})
     return prefs
 
@@ -247,6 +262,8 @@ async def get_user(user_id: str, user=Depends(get_current_user)):
     target = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not target:
         raise HTTPException(status_code=404, detail="Profile not found")
+    if user_id != user["id"]:
+        await db.users.update_one({"id": user_id}, {"$inc": {"profile_views": 1}})
     return public_profile(target, user)
 
 

@@ -1,23 +1,37 @@
 import React from "react";
 
-/* App-icon style mark: ink tile, two rounded strokes that almost meet ("near-connection"). Monochrome. */
-export const LogoMark = ({ size = 40, className = "" }) => (
-  <svg viewBox="0 0 64 64" width={size} height={size} className={className} aria-hidden="true">
-    <rect width="64" height="64" rx="15" fill="#1D1D1F" />
-    <path d="M18 20 L30 44" stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" />
-    <path d="M46 20 L36 40" stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" opacity="0.55" />
-  </svg>
+/* Black rounded tile with a white bold V (as in the photos). */
+export const LogoMark = ({ size = 28, className = "", testId = "logo-mark" }) => (
+  <span
+    className={`inline-flex shrink-0 items-center justify-center bg-ink text-onink ${className}`}
+    style={{ width: size, height: size, borderRadius: Math.round(size * 0.24) }}
+    data-testid={testId}
+    aria-hidden="true"
+  >
+    <svg viewBox="0 0 24 24" width={size * 0.62} height={size * 0.62} fill="currentColor">
+      <path d="M3.2 4.5h4.4L12 15.1 16.4 4.5h4.4L14.1 19.5H9.9L3.2 4.5z" />
+    </svg>
+  </span>
 );
 
-export const Wordmark = ({ className = "" }) => (
-  <span className={`font-display font-semibold text-ink ${className}`} style={{ letterSpacing: "-0.03em" }}>
+/* Lowercase wordmark. */
+export const Wordmark = ({ size = 20, light = false, className = "", testId = "logo-wordmark" }) => (
+  <span
+    className={`font-bold leading-none ${light ? "text-white" : "text-ink"} ${className}`}
+    style={{ fontSize: size, letterSpacing: "-0.01em" }}
+    data-testid={testId}
+  >
     voiladi
   </span>
 );
 
-export const Logo = ({ size = 36, wordmark = true, textClass = "text-[22px]" }) => (
-  <div className="inline-flex items-center gap-2.5" data-testid="logo">
+/* Header lockup: tile + wordmark. */
+export const Brand = ({ size = 28, className = "", testId = "logo" }) => (
+  <span className={`inline-flex items-center gap-2 ${className}`} data-testid={testId}>
     <LogoMark size={size} />
-    {wordmark && <Wordmark className={textClass} />}
-  </div>
+    <Wordmark size={Math.round(size * 0.7)} />
+  </span>
 );
+
+/* Backwards-compatible alias. */
+export const Logo = Brand;

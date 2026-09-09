@@ -1,10 +1,18 @@
 # Voiladi — PRD / status
 
-Gen-Z dating app (18-30). Phone+OTP auth, onboarding wizard, swipe discovery with compatibility score, likes, mutual matching,
-real-time chat (WebSocket + polling fallback), vibe-check prompts & icebreakers (curated, non-AI), filters (age/distance/show me),
-Hinge-style reactions (heart a specific photo/prompt -> opens the chat on match), block/report/unmatch, profile edit, preferences,
-delete account, admin reports review. Light theme, Apple/iOS design system v3 (monochrome ink/greys, ONE deep-navy accent #2B4C7E, black hearts + black primary buttons, flat iOS tab bar,
-iOS banner toasts, tween-only motion, line-art landing illustration). Pink/neon/confetti/springs were REJECTED by the user ("AI vibe"). NO AI features (user rule).
+Gen-Z dating app (18-30). REAL email+password accounts (register/login) + mandatory phone OTP verification inside onboarding,
+onboarding wizard (name/DOB/gender -> phone -> OTP -> photo (skippable) -> interests -> notifications -> done), swipe discovery
+(pass / like / blue-star Voila superlike quota), Explore grid (All / Near you / New / Popular), Likes (All / Likes you / You liked),
+real-time chat (WebSocket + polling fallback), curated non-AI icebreakers, Filters (show me / age / distance / interests / goals),
+Profile (Followers=likes received, Following=likes sent, Profile views; completion card; Boost + VOILADI+ = STATIC PLACEHOLDERS,
+Super Likes = real Voila quota), Edit Profile, Settings (dark mode toggle, red Log Out), block/report/unmatch, delete account, admin reports.
+NO AI features (user rule).
+
+## Design (Phase 9, CURRENT, user-approved direction): 1:1 replica of the user's interface photos — see /app/design_guidelines.md
+Inter font, white #FFFFFF page, #F2F2F4 surfaces, ink #111111, blue #3478F6 (verified badge / Voila star), red #FF3B30,
+black pill buttons, 12px inputs, 16px list cards, 24px discover card, black "V" tile logo + lowercase "voiladi" wordmark,
+5-tab bottom nav Discover / Explore / Likes / Chat / Profile. Reference boards are job assets (2 PNGs: 10 onboarding + 8 app screens).
+REJECTED by user (do not reintroduce): neon v2, iOS-clone v3, editorial/magazine v4 (Playfair/oxblood), anything "AI generated"-looking.
 
 ## Stack
 FastAPI + MongoDB (motor) backend at /api (server.py, core.py, content.py, routes_auth/profile/discover/chat/admin.py, ws_manager.py, seed.py)
@@ -27,6 +35,9 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   Swipe lag fix: no backdrop-blur inside cards, .vo-gpu drag layer (will-change), tween stack, decoding=async, server-side resize on upload
   (Pillow: EXIF transpose, max 1280px, JPEG q84 / WEBP if alpha, HEIC via pillow-heif). Trivial toasts removed. Redeployed to Railway.
 
+- Phase 8 editorial redesign: DONE (iteration_5 backend 32/32, frontend 100%). New: weekly Voila quota (5, enforced in /swipe), GET /api/me/stats,
+  Profile cover + real stats strip, self-updating SPA (lib/updateCheck.js) + no-store index.html. Deployed to Railway.
+
 ## Key decisions
 - `profile_complete` (validation) + `onboarded` (explicit finish flag) both required to enter the app / appear in discovery.
 - Photos stored on disk at UPLOAD_DIR, served at /api/uploads/{file}. Prod: Railway volume mounted at /data/uploads.
@@ -37,3 +48,10 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Report = flag only (db.reports, status open/resolved, admin reviews via GET /api/admin/reports with x-admin-key). Block = hide + end match.
 - Admin endpoints (x-admin-key header = ADMIN_API_KEY env): /api/admin/reports, /resolve, GET/POST/DELETE /api/admin/seed (demo profiles).
 - Deployment uses backend/requirements.deploy.txt (lean, pinned) — requirements.txt still holds the dev environment (emergentintegrations etc).
+
+- Phase 9 exact-photo UI + email/password auth: DONE (2026-09-09). Backend: /api/auth/register, /api/auth/login (PBKDF2), /api/auth/verify-phone,
+  /api/explore?tab=, /api/likes/sent, /api/likes/received, /api/me/stats (followers/following/profile_views). Frontend fully rewritten
+  (pages: Welcome, Signup, Login, PhoneLogin, Onboarding, Discover, Explore, Likes, Chats, ChatRoom, Profile, EditProfile, Filters, Settings, Legal).
+  Fixes: Filters.jsx babel recursion (local `Thumb` vs SliderPrimitive.Thumb -> SliderKnob), native date-input icon hidden, country picker is a
+  transparent native <select> (data-testid auth-country-select). Testing iteration_6: backend 45/45, frontend all flows pass.
+- Phase 10 redeploy of Phase 9 build to Railway: DONE 2026-09-09 17:43 UTC (voiladi-api + voiladi-web SUCCESS). Live: https://www.voiladi.com, https://api.voiladi.com/api/health.

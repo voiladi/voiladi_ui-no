@@ -1,62 +1,60 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Heart, Zap, SlidersHorizontal, RefreshCw, Compass } from "lucide-react";
+import { X, Heart, Star, SlidersHorizontal, RefreshCw, SquareStack } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
-import { Logo } from "@/components/Logo";
-import { CardStack } from "@/components/SwipeCard";
+import { useStats } from "@/hooks/useStats";
+import { Brand } from "@/components/Logo";
+import { SwipeCard } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
-import { FiltersDrawer } from "@/components/FiltersDrawer";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { EmptyState, Skeleton } from "@/components/EmptyState";
 
-const DOCK_BTN = "flex items-center justify-center rounded-full transition-transform duration-150 ease-ios active:scale-90 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40";
-
 export default function Discover() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const { meta } = useMeta();
+  const { data: stats } = useStats();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [match, setMatch] = useState(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [savingPrefs, setSavingPrefs] = useState(false);
   const [sheet, setSheet] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [busy, setBusy] = useState(false);
   const topRef = useRef(null);
   const swiped = useRef(new Set());
+  const prefsKey = JSON.stringify(user?.preferences || {});
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!silent) setLoading(true);
-      setError("");
-      try {
-        const { data } = await api.get("/discover", { params: { limit: 20 } });
-        setQueue((q) => {
-          const ids = new Set(q.map((p) => p.id));
-          const fresh = data.profiles.filter((p) => !ids.has(p.id) && !swiped.current.has(p.id));
-          return [...q, ...fresh];
-        });
-      } catch (e) {
-        setError(errMsg(e, "Couldn't load people right now."));
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError("");
+    try {
+      const { data } = await api.get("/discover", { params: { limit: 20 } });
+      setQueue((q) => {
+        const ids = new Set(q.map((p) => p.id));
+        const fresh = data.profiles.filter((p) => !ids.has(p.id) && !swiped.current.has(p.id));
+        return [...q, ...fresh];
+      });
+    } catch (e) {
+      setError(errMsg(e, "Couldn't load people right now."));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  // Reload the deck whenever filters change.
   useEffect(() => {
+    swiped.current = new Set();
+    setQueue([]);
     load();
-  }, [load]);
+  }, [load, prefsKey]);
 
   useEffect(() => {
     if (!loading && queue.length === 1) load(true);
@@ -68,12 +66,15 @@ export default function Discover() {
       setQueue((q) => q.filter((p) => p.id !== profile.id));
       try {
         const { data } = await api.post("/swipe", { target_id: profile.id, action, reaction: reaction || undefined });
+        if (action !== "pass") qc.invalidateQueries({ queryKey: ["likes-sent"] });
+        if (action === "superlike") qc.invalidateQueries({ queryKey: ["stats"] });
         if (data.matched) {
           setMatch(data.match);
           qc.invalidateQueries({ queryKey: ["matches"] });
           qc.invalidateQueries({ queryKey: ["likes"] });
+          qc.invalidateQueries({ queryKey: ["stats"] });
         } else if (action === "superlike") {
-          toast(`Voila sent to ${profile.name}`);
+          toast(`Super Like sent to ${profile.name}`);
         }
       } catch (e) {
         toast.error(errMsg(e));
@@ -82,14 +83,20 @@ export default function Discover() {
     [qc]
   );
 
+  const voilasLeft = stats?.voilas_left;
+
   const trigger = (action, reaction = null) => {
     if (!queue.length) return;
+    if (action === "superlike" && voilasLeft === 0) {
+      toast.error(`You've used all ${stats?.voila_weekly_limit || 5} Super Likes this week.`);
+      return;
+    }
     topRef.current?.swipe(action, reaction);
   };
 
   useEffect(() => {
     const onKey = (e) => {
-      if (sheet || match || filtersOpen || blockTarget || reportTarget) return;
+      if (sheet || match || blockTarget || reportTarget) return;
       if (e.key === "ArrowRight") trigger("like");
       if (e.key === "ArrowLeft") trigger("pass");
       if (e.key === "ArrowUp") trigger("superlike");
@@ -97,27 +104,7 @@ export default function Discover() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue.length, sheet, match, filtersOpen, blockTarget, reportTarget]);
-
-  const applyPrefs = async (prefs) => {
-    setSavingPrefs(true);
-    try {
-      const { data } = await api.put("/preferences", prefs);
-      setUser((u) => ({ ...u, preferences: data, looking_for: data.show_me }));
-      setFiltersOpen(false);
-      swiped.current = new Set();
-      setQueue([]);
-      await load();
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setSavingPrefs(false);
-    }
-  };
-
-  const anywhere = async () => {
-    await applyPrefs({ ...(user?.preferences || {}), max_distance_km: meta.anywhere_km || 250 });
-  };
+  }, [queue.length, sheet, match, blockTarget, reportTarget, voilasLeft]);
 
   const fromSheet = (action, reaction = null) => {
     setSheet(null);
@@ -157,77 +144,79 @@ export default function Discover() {
   };
 
   const empty = !loading && queue.length === 0;
+  const current = queue[0];
+  const next = queue[1];
 
   return (
     <div className="flex h-full flex-col" data-testid="discover-page">
-      <header className="flex items-center justify-between px-5 pb-2 pt-4">
-        <Logo size={30} textClass="text-[20px]" />
-        <button type="button" className="vo-icon-btn" onClick={() => setFiltersOpen(true)} aria-label="Filters" data-testid="filters-open-button">
-          <SlidersHorizontal className="h-5 w-5" />
+      <header className="flex h-14 items-center justify-between px-5 pt-2">
+        <Brand />
+        <button type="button" className="vo-icon-btn" onClick={() => navigate("/filters")} aria-label="Filters" data-testid="filters-open-button">
+          <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={2} />
         </button>
       </header>
 
-      <div className="relative min-h-0 flex-1 px-4 pb-2 pt-1">
+      <div className="relative mx-5 mt-2 min-h-0 flex-1" data-testid="discover-card-stack">
         {loading && queue.length === 0 ? (
-          <div className="absolute inset-x-4 inset-y-1">
-            <Skeleton className="h-full w-full rounded-sheet" />
-          </div>
+          <Skeleton className="absolute inset-0 rounded-[28px]" />
         ) : error ? (
-          <div className="flex h-full items-center">
-            <EmptyState
-              icon={RefreshCw}
-              title="Couldn't load people"
-              description={error}
-              testId="error-alert"
-              action={
-                <button type="button" className="vo-btn-primary" onClick={() => load()} data-testid="discover-retry-button">
-                  Try again
-                </button>
-              }
-            />
-          </div>
+          <EmptyState
+            icon={RefreshCw}
+            title="Couldn't load people"
+            description={error}
+            testId="error-alert"
+            action={
+              <button type="button" className="vo-btn-primary w-full" onClick={() => load()} data-testid="discover-retry-button">
+                Try again
+              </button>
+            }
+          />
         ) : empty ? (
-          <div className="flex h-full items-center">
-            <EmptyState
-              icon={Compass}
-              title="You've seen everyone nearby"
-              description="New people join every day. Widen your distance or age range to see more right now."
-              action={
-                <div className="flex flex-col gap-2">
-                  {(user?.preferences?.max_distance_km || 250) < (meta.anywhere_km || 250) && (
-                    <button type="button" className="vo-btn-primary" onClick={anywhere} disabled={savingPrefs} data-testid="discover-anywhere-button">
-                      Show people anywhere
-                    </button>
-                  )}
-                  <button type="button" className="vo-btn-secondary" onClick={() => setFiltersOpen(true)} data-testid="discover-adjust-filters-button">
-                    Adjust filters
-                  </button>
-                  <button type="button" className="vo-btn-ghost" onClick={() => load()} data-testid="discover-refresh-button">
-                    <RefreshCw className="h-4 w-4" /> Refresh
-                  </button>
-                </div>
-              }
-            />
-          </div>
+          <EmptyState
+            icon={SquareStack}
+            title="You've seen everyone nearby"
+            description="New people join every day. Widen your distance or age range to see more."
+            action={
+              <button type="button" className="vo-btn-primary w-full" onClick={() => navigate("/filters")} data-testid="discover-adjust-filters-button">
+                Adjust filters
+              </button>
+            }
+            secondary={
+              <button type="button" className="vo-btn-ghost w-full" onClick={() => load()} data-testid="discover-refresh-button">
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </button>
+            }
+          />
         ) : (
-          <CardStack profiles={queue} onSwipe={onSwipe} onOpen={(p) => setSheet(p)} topRef={topRef} />
+          <>
+            {next && <div className="absolute inset-0 scale-[0.96] translate-y-2 overflow-hidden rounded-[28px] bg-surface2" aria-hidden="true" />}
+            <SwipeCard
+              key={current.id}
+              ref={topRef}
+              profile={current}
+              onSwipe={onSwipe}
+              onOpen={(p) => setSheet(p)}
+              onReport={(p) => setReportTarget(p)}
+              onBlock={(p) => setBlockTarget(p)}
+            />
+          </>
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-5 pt-3" style={{ paddingBottom: "calc(70px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
-        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className={`${DOCK_BTN} h-14 w-14 border border-line bg-white text-mute shadow-soft`} aria-label="Pass" data-testid="discover-pass-button">
-          <X className="h-7 w-7" strokeWidth={2.2} />
+      {/* Three round actions */}
+      <div className="flex items-center justify-center gap-6 pt-5" style={{ paddingBottom: "calc(74px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
+        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-action h-14 w-14" aria-label="Pass" data-testid="discover-pass-button">
+          <X className="h-6 w-6" strokeWidth={2.5} />
         </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className={`${DOCK_BTN} h-[64px] w-[64px] bg-tint text-white shadow-card`} aria-label="Voila" data-testid="discover-voila-button">
-          <Zap className="h-7 w-7 fill-white" strokeWidth={2} />
+        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-action h-16 w-16" aria-label="Like" data-testid="discover-like-button">
+          <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
         </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className={`${DOCK_BTN} h-14 w-14 border border-line bg-white text-ink shadow-soft`} aria-label="Like" data-testid="discover-like-button">
-          <Heart className="h-7 w-7 fill-ink" strokeWidth={2.2} />
+        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-action h-14 w-14 text-blue" aria-label="Super Like" data-testid="discover-voila-button">
+          <Star className="h-6 w-6" fill="currentColor" strokeWidth={2} />
         </button>
       </div>
 
       <MatchModal match={match} me={user} onClose={() => setMatch(null)} onSayHi={() => navigate(`/chats/${match.id}`)} />
-      <FiltersDrawer open={filtersOpen} onOpenChange={setFiltersOpen} prefs={user?.preferences} onApply={applyPrefs} saving={savingPrefs} anywhereKm={meta.anywhere_km} />
       <ProfileSheet
         profile={sheet}
         open={!!sheet}
@@ -242,12 +231,15 @@ export default function Discover() {
           setSheet(null);
         }}
         actions={
-          <div className="flex gap-3">
-            <button type="button" className="vo-btn-outline flex-1 text-mute" onClick={() => fromSheet("pass")} data-testid="sheet-pass-button">
-              <X className="h-5 w-5" /> Pass
+          <div className="flex items-center justify-center gap-6">
+            <button type="button" className="vo-action h-14 w-14" onClick={() => fromSheet("pass")} aria-label="Pass" data-testid="sheet-pass-button">
+              <X className="h-6 w-6" strokeWidth={2.5} />
             </button>
-            <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => fromSheet("like")} data-testid="sheet-like-button">
-              <Heart className="h-5 w-5 fill-white" /> Like
+            <button type="button" className="vo-action h-16 w-16" onClick={() => fromSheet("like")} aria-label="Like" data-testid="sheet-like-button">
+              <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
+            </button>
+            <button type="button" className="vo-action h-14 w-14 text-blue" onClick={() => fromSheet("superlike")} aria-label="Super Like" data-testid="sheet-superlike-button">
+              <Star className="h-6 w-6" fill="currentColor" strokeWidth={2} />
             </button>
           </div>
         }

@@ -1,13 +1,17 @@
-"""Curated (non-AI) content for Voiladi: interests, prompts, icebreakers, cities."""
+"""Curated (non-AI) content for Voiladi: interests, goals, prompts, icebreakers, cities."""
 
+# The first 14 match the interface photos exactly (onboarding grid); the rest add variety.
 INTERESTS = [
-    "Music", "Live gigs", "Hip-hop", "Indie", "K-pop", "Podcasts", "Photography", "Film", "Horror films",
-    "Sitcoms", "Anime", "Gaming", "Board games", "Memes", "Reading", "Poetry", "Writing", "Art", "Museums",
-    "Design", "Fashion", "Thrifting", "Sneakers", "Tattoos", "Gym", "Running", "Yoga", "Hiking", "Football",
+    "Travel", "Music", "Food", "Fitness", "Movies", "Gaming", "Art", "Photography", "Nature", "Festivals", "Cars", "Books",
+    "Anime", "Pets",
+    "Live gigs", "Hip-hop", "Indie", "K-pop", "Podcasts", "Film", "Sitcoms", "Board games", "Memes", "Poetry", "Writing",
+    "Museums", "Design", "Fashion", "Thrifting", "Sneakers", "Tattoos", "Gym", "Running", "Yoga", "Hiking", "Football",
     "Basketball", "Cricket", "Tennis", "Skateboarding", "Cycling", "Swimming", "Dancing", "Clubbing", "Cooking",
-    "Baking", "Coffee", "Matcha", "Street food", "Vegan", "Travel", "Road trips", "Beach days", "Sunsets",
-    "Camping", "Dogs", "Cats", "Plants", "Astrology", "Startups", "Coding", "Tech", "Volunteering", "Cars", "Bikes",
+    "Baking", "Coffee", "Matcha", "Street food", "Vegan", "Road trips", "Beach days", "Sunsets", "Camping", "Dogs", "Cats",
+    "Plants", "Astrology", "Startups", "Coding", "Tech", "Volunteering", "Bikes",
 ]
+
+GOALS = ["Friends", "Something casual", "Long-term", "Not sure yet"]
 
 PROMPTS = [
     "My most irrational fear is",
@@ -84,6 +88,8 @@ CITIES = [
     {"name": "Ahmedabad", "country": "India", "lat": 23.0225, "lng": 72.5714},
     {"name": "Jaipur", "country": "India", "lat": 26.9124, "lng": 75.7873},
     {"name": "Chandigarh", "country": "India", "lat": 30.7333, "lng": 76.7794},
+    {"name": "Guwahati", "country": "India", "lat": 26.1445, "lng": 91.7362},
+    {"name": "Silchar", "country": "India", "lat": 24.8333, "lng": 92.7789},
     {"name": "Singapore", "country": "Singapore", "lat": 1.3521, "lng": 103.8198},
     {"name": "Tokyo", "country": "Japan", "lat": 35.6762, "lng": 139.6503},
     {"name": "Seoul", "country": "South Korea", "lat": 37.5665, "lng": 126.9780},

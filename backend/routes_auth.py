@@ -1,4 +1,5 @@
-"""Phone + OTP authentication (providers: dev | twilio_verify | twilio_sms)."""
+"""Authentication: email + password accounts, phone OTP verification (providers: dev | twilio_verify | twilio_sms)."""
+import re
 import secrets
 import uuid
 import logging
@@ -9,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from core import (db, now, now_iso, make_token, get_current_user, own_profile, OTP_PROVIDER, is_test_phone,
+                  hash_password, verify_password,
                   TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, TWILIO_MESSAGING_SID, TWILIO_VERIFY_SID, UPLOAD_DIR)
 from ws_manager import manager
 
@@ -18,6 +20,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 OTP_TTL_MIN = 10
 RESEND_COOLDOWN_SEC = 30
 MAX_ATTEMPTS = 5
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MIN_PASSWORD = 6
 
 # Twilio error code -> (http status, user-facing message). Codes are never logged or returned.
 TWILIO_ERRORS = {
@@ -44,12 +48,33 @@ class VerifyIn(BaseModel):
     code: str
 
 
+class EmailPasswordIn(BaseModel):
+    email: str
+    password: str
+
+
 def normalize_phone(p: str) -> str:
     p = p.strip()
     digits = "".join(ch for ch in p if ch.isdigit())
     if len(digits) < 7 or len(digits) > 15:
         raise HTTPException(status_code=400, detail="Enter a valid phone number")
     return "+" + digits
+
+
+def normalize_email(e: str) -> str:
+    e = (e or "").strip().lower()
+    if not EMAIL_RE.match(e) or len(e) > 120:
+        raise HTTPException(status_code=400, detail="Enter a valid email address")
+    return e
+
+
+def _new_user_doc(**extra) -> dict:
+    return {
+        "id": str(uuid.uuid4()), "created_at": now_iso(), "last_active": now_iso(),
+        "profile_complete": False, "onboarded": False, "photos": [], "interests": [], "prompts": [],
+        "looking_for": "everyone", "preferences": {"show_me": "everyone"}, "profile_views": 0,
+        **extra,
+    }
 
 
 def _twilio_http_error(r: httpx.Response, default_status: int = 502, default_msg: str = SMS_FAIL_MSG) -> HTTPException:
@@ -105,6 +130,33 @@ async def twilio_send_sms(phone: str, code: str) -> None:
         raise _twilio_http_error(r)
 
 
+# ---------- email + password ----------
+@router.post("/register")
+async def register(body: EmailPasswordIn):
+    email = normalize_email(body.email)
+    if len(body.password) < MIN_PASSWORD:
+        raise HTTPException(status_code=400, detail=f"Password should be at least {MIN_PASSWORD} characters")
+    if len(body.password) > 128:
+        raise HTTPException(status_code=400, detail="Password is too long")
+    if await db.users.find_one({"email": email}, {"_id": 0, "id": 1}):
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Log in instead")
+    pw_hash, salt = hash_password(body.password)
+    user = _new_user_doc(email=email, password_hash=pw_hash, password_salt=salt)
+    await db.users.insert_one(dict(user))
+    return {"token": make_token(user["id"]), "user": own_profile(user), "is_new": True}
+
+
+@router.post("/login")
+async def login(body: EmailPasswordIn):
+    email = normalize_email(body.email)
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user or not verify_password(body.password, user.get("password_hash"), user.get("password_salt")):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
+    return {"token": make_token(user["id"]), "user": own_profile(user), "is_new": False}
+
+
+# ---------- phone OTP ----------
 @router.post("/request-otp")
 async def request_otp(body: PhoneIn):
     phone = normalize_phone(body.phone)
@@ -136,10 +188,9 @@ async def request_otp(body: PhoneIn):
     return resp
 
 
-@router.post("/verify-otp")
-async def verify_otp(body: VerifyIn):
-    phone = normalize_phone(body.phone)
-    code = body.code.strip()
+async def _check_otp(phone: str, code: str) -> None:
+    """Validate a code against the pending session for `phone`; raises on failure, consumes the session on success."""
+    code = code.strip()
     if not (code.isdigit() and len(code) == 6):
         raise HTTPException(status_code=400, detail="Enter the 6-digit code")
     sess = await db.otp_sessions.find_one({"phone": phone})
@@ -157,20 +208,36 @@ async def verify_otp(body: VerifyIn):
     if not ok:
         await db.otp_sessions.update_one({"phone": phone}, {"$inc": {"attempts": 1}})
         raise HTTPException(status_code=400, detail="That code doesn't look right")
-
     await db.otp_sessions.delete_one({"phone": phone})
+
+
+@router.post("/verify-otp")
+async def verify_otp(body: VerifyIn):
+    """Log in (or create an account) with a phone number alone."""
+    phone = normalize_phone(body.phone)
+    await _check_otp(phone, body.code)
     user = await db.users.find_one({"phone": phone}, {"_id": 0})
     is_new = False
     if not user:
         is_new = True
-        user = {
-            "id": str(uuid.uuid4()), "phone": phone, "created_at": now_iso(), "last_active": now_iso(),
-            "profile_complete": False, "onboarded": False, "photos": [], "interests": [], "prompts": [], "preferences": {},
-        }
+        user = _new_user_doc(phone=phone, phone_verified_at=now_iso())
         await db.users.insert_one(dict(user))
     else:
         await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
     return {"token": make_token(user["id"]), "user": own_profile(user), "is_new": is_new}
+
+
+@router.post("/verify-phone")
+async def verify_phone(body: VerifyIn, user=Depends(get_current_user)):
+    """Attach a verified phone number to the signed-in (email) account."""
+    phone = normalize_phone(body.phone)
+    other = await db.users.find_one({"phone": phone, "id": {"$ne": user["id"]}}, {"_id": 0, "id": 1})
+    if other:
+        raise HTTPException(status_code=400, detail="This number is already linked to another account")
+    await _check_otp(phone, body.code)
+    await db.users.update_one({"id": user["id"]}, {"$set": {"phone": phone, "phone_verified_at": now_iso(), "last_active": now_iso()}})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    return own_profile(fresh)
 
 
 @router.get("/me")

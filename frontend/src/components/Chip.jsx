@@ -1,30 +1,38 @@
 import React from "react";
-import { Check } from "lucide-react";
 
-export const Chip = ({ active, children, onClick, className = "", icon = true, ...rest }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-pressed={!!active}
-    className={`vo-chip ${active ? "vo-chip-on" : ""} ${className}`}
-    {...rest}
-  >
-    {active && icon && <Check className="mr-1.5 h-4 w-4" strokeWidth={2.5} />}
+/* Pill chip. Off: grey surface. On: ink with white text. */
+export const Chip = ({ active, children, onClick, className = "", ...rest }) => (
+  <button type="button" onClick={onClick} aria-pressed={!!active} className={`vo-chip ${active ? "vo-chip-on" : ""} ${className}`} {...rest}>
     {children}
   </button>
 );
 
-/* Small informational tag. Tones are neutral + one tint; "white" is opaque (no backdrop blur: it is used on moving cards). */
-export const Tag = ({ children, tone = "default", className = "" }) => {
-  const tones = {
-    default: "bg-surface2 text-ink",
-    tint: "bg-tint-soft text-tint-dark",
-    white: "bg-white/95 text-ink",
-    dark: "bg-ink/75 text-white",
-  };
-  return (
-    <span className={`inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] font-semibold ${tones[tone] || tones.default} ${className}`}>
-      {children}
-    </span>
-  );
+/* Small tag. `glass` sits on photos; `surface` on white. */
+export const Tag = ({ children, tone = "surface", className = "" }) => {
+  if (tone === "glass") return <span className={`vo-chip-glass ${className}`}>{children}</span>;
+  return <span className={`inline-flex h-[30px] items-center rounded-full bg-surface px-3 text-[13px] font-medium text-ink ${className}`}>{children}</span>;
 };
+
+/* Segmented control. `dark` = active segment is ink (Filters "Show me"); default = white pill with shadow (Likes tabs). */
+export const Segmented = ({ options, value, onChange, render, testIdPrefix = "segment", dark = false, className = "" }) => (
+  <div className={`vo-seg ${className}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} role="tablist">
+    {options.map((o) => {
+      const key = typeof o === "string" ? o : o.value;
+      const label = render ? render(o) : typeof o === "string" ? o : o.label;
+      const active = key === value;
+      return (
+        <button
+          key={key}
+          type="button"
+          role="tab"
+          aria-selected={active}
+          data-testid={`${testIdPrefix}-${String(key).toLowerCase().replace(/\s+/g, "-")}`}
+          onClick={() => onChange(key)}
+          className={`vo-seg-item ${active ? (dark ? "vo-seg-on-dark" : "vo-seg-on") : ""}`}
+        >
+          {label}
+        </button>
+      );
+    })}
+  </div>
+);

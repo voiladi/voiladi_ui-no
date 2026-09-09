@@ -1,9 +1,10 @@
 import React, { useRef, useState } from "react";
-import { Plus, X, Star, Loader2 } from "lucide-react";
+import { Plus, Minus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { UserPhoto } from "@/components/UserPhoto";
 
+/* Edit Profile photos as photographed: big main photo + "Add Photo" tile, then small tiles with a minus badge. */
 export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -56,12 +57,13 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
     }
   };
 
-  const makeCover = async (url) => {
+  const makeMain = async (url) => {
     const next = [url, ...photos.filter((p) => p !== url)];
     setBusy(url);
     try {
       await api.put("/profile/photos/order", { photos: next });
       onChange(next);
+      toast("Set as main photo");
     } catch (err) {
       toast.error(errMsg(err));
     } finally {
@@ -69,77 +71,64 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
     }
   };
 
-  const slots = Array.from({ length: max }, (_, i) => photos[i] || null);
+  const main = photos[0];
+  const rest = photos.slice(1);
+  const full = photos.length >= max;
+
+  const RemoveBadge = ({ url, i }) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        remove(url);
+      }}
+      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-onink ring-2 ring-bg"
+      aria-label="Remove photo"
+      data-testid={`photo-remove-${i}`}
+    >
+      {busy === url ? <Loader2 className="h-3 w-3 animate-spin" /> : <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
+    </button>
+  );
 
   return (
     <div data-testid="photo-grid">
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} data-testid="photo-file-input" />
-      <div className="grid grid-cols-3 gap-2.5">
-        {slots.map((url, i) => {
-          const big = i === 0;
-          const cls = `${big ? "col-span-2 row-span-2" : "aspect-square"} relative overflow-hidden rounded-card border ${
-            url ? "border-line bg-surface2" : "border-dashed border-line bg-white"
-          }`;
-          if (!url) {
-            const isNext = i === photos.length;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={pick}
-                disabled={uploading}
-                className={`${cls} flex items-center justify-center text-mute transition-colors hover:bg-surface2 active:scale-[0.98]`}
-                data-testid={isNext ? "onboarding-photo-add-button" : `photo-slot-${i}`}
-                aria-label="Add photo"
-              >
-                {uploading && isNext ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-tint" />
-                ) : (
-                  <span className={`flex items-center justify-center rounded-full bg-surface2 ${big ? "h-14 w-14" : "h-9 w-9"}`}>
-                    <Plus className={big ? "h-7 w-7" : "h-5 w-5"} />
-                  </span>
-                )}
-                {big && !uploading && <span className="absolute bottom-3 text-[13px] font-semibold text-mute">Add your cover photo</span>}
-              </button>
-            );
-          }
-          return (
-            <div key={url} className={cls} data-testid={`photo-tile-${i}`}>
-              <UserPhoto src={url} name="" className="h-full w-full" />
-              {busy === url && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/60">
-                  <Loader2 className="h-6 w-6 animate-spin text-tint" />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => remove(url)}
-                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-ink shadow-soft transition-colors hover:bg-ink hover:text-white"
-                aria-label="Remove photo"
-                data-testid={`photo-remove-${i}`}
-              >
-                <X className="h-4 w-4" strokeWidth={2.5} />
-              </button>
-              {big ? (
-                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[12px] font-semibold text-ink shadow-soft">
-                  <Star className="h-3.5 w-3.5 fill-ink text-ink" /> Cover
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => makeCover(url)}
-                  className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-ink shadow-soft transition-colors hover:bg-ink hover:text-white"
-                  data-testid={`photo-make-cover-${i}`}
-                >
-                  Make cover
-                </button>
-              )}
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3">
+        {main ? (
+          <div className="relative aspect-square overflow-hidden rounded-[20px] bg-surface2" data-testid="photo-tile-0">
+            <UserPhoto src={main} name="" className="h-full w-full" />
+            <RemoveBadge url={main} i={0} />
+          </div>
+        ) : (
+          <button type="button" onClick={pick} disabled={uploading} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[20px] bg-surface text-ink" data-testid="onboarding-photo-add-button" aria-label="Add photo">
+            {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
+            <span className="text-[13px] font-medium text-mute">Add Photo</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={pick}
+          disabled={uploading || full}
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[20px] bg-surface text-ink disabled:opacity-50"
+          data-testid={main ? "onboarding-photo-add-button" : "photo-add-button-secondary"}
+          aria-label="Add photo"
+        >
+          {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
+          <span className="text-[13px] font-medium text-mute">{full ? "Max photos" : "Add Photo"}</span>
+        </button>
       </div>
-      <p className="mt-3 text-[13px] text-mute">
-        {photos.length}/{max} photos. Your first photo is what people see first.
+      {rest.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {rest.map((url, i) => (
+            <button key={url} type="button" onClick={() => makeMain(url)} className="relative aspect-square overflow-hidden rounded-[16px] bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" title="Set as main photo" data-testid={`photo-tile-${i + 1}`}>
+              <UserPhoto src={url} name="" className="h-full w-full" />
+              <RemoveBadge url={url} i={i + 1} />
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="mt-2.5 text-[12px] text-mute">
+        {photos.length}/{max} photos. Tap a small photo to make it your main one.
       </p>
     </div>
   );

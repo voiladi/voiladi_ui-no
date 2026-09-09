@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 const FALLBACK = {
-  interests: [], prompts: [], icebreakers: [], cities: [], genders: ["woman", "man", "nonbinary"],
+  interests: ["Travel", "Music", "Food", "Fitness", "Movies", "Gaming", "Art", "Photography", "Nature", "Festivals", "Cars", "Books", "Anime", "Pets"],
+  goals: ["Friends", "Something casual", "Long-term", "Not sure yet"],
+  prompts: [], icebreakers: [], cities: [], genders: ["woman", "man", "nonbinary"],
   show_me: ["women", "men", "everyone"], report_reasons: ["Something else"], anywhere_km: 250, max_photos: 6,
 };
 

@@ -1,18 +1,26 @@
 [
   {
-    "content": "Run testing_agent (frontend) and fix reported issues",
+    "content": "Compile-check frontend with esbuild and fix errors",
     "status": "completed"
   },
   {
-    "content": "Redeploy to Railway (api + web) and verify prod",
+    "content": "Verify backend starts cleanly (supervisor logs)",
     "status": "completed"
   },
   {
-    "content": "Explain voiladi.com root domain warning + options",
+    "content": "Screenshot-verify all screens vs reference photos",
     "status": "completed"
   },
   {
-    "content": "Update plan.md / PRD.md with phase completion",
+    "content": "Run testing agent (backend + frontend) and fix bugs",
+    "status": "completed"
+  },
+  {
+    "content": "Deploy backend + frontend to Railway",
+    "status": "completed"
+  },
+  {
+    "content": "Post-deploy smoke test on production",
     "status": "completed"
   }
 ]

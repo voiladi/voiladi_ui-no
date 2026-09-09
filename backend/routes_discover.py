@@ -1,7 +1,7 @@
-"""Discovery feed, swipes, likes and matching."""
+"""Discovery feed, explore grid, swipes, likes and matching."""
 import uuid
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -11,6 +11,15 @@ from core import (db, now, now_iso, get_current_user, public_profile, get_prefs,
 from ws_manager import manager
 
 router = APIRouter(prefix="/api", tags=["discover"])
+
+# Voila (superlike) is scarce on purpose: a fixed weekly allowance makes it mean something.
+VOILA_WEEKLY_LIMIT = 5
+EXPLORE_TABS = ("all", "near", "new", "popular")
+
+
+async def voilas_used_this_week(user_id: str) -> int:
+    since = (now() - timedelta(days=7)).isoformat()
+    return await db.swipes.count_documents({"from_id": user_id, "action": "superlike", "created_at": {"$gte": since}})
 
 
 class ReactionIn(BaseModel):
@@ -102,9 +111,22 @@ async def _excluded_ids(uid: str):
     return ids
 
 
-@router.get("/discover")
-async def discover(limit: int = 20, user=Depends(get_current_user)):
-    await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
+def _pref_boost(viewer: dict, candidate: dict) -> int:
+    """Filters page extras (interests + relationship goals) nudge the ranking; they never empty the feed."""
+    prefs = get_prefs(viewer)
+    boost = 0
+    wanted = set(i.lower() for i in (prefs.get("interests") or []))
+    if wanted:
+        theirs = set(i.lower() for i in (candidate.get("interests") or []))
+        boost += min(12, 4 * len(wanted & theirs))
+    goals = prefs.get("goals") or []
+    if goals and candidate.get("relationship_goal") in goals:
+        boost += 8
+    return boost
+
+
+async def _candidates(user: dict) -> List[Tuple[int, dict, dict]]:
+    """Everyone the viewer may see (mutual preference match), as (rank, public_profile, raw_doc)."""
     excluded = await _excluded_ids(user["id"])
     prefs = get_prefs(user)
     query = {"id": {"$nin": list(excluded)}, "profile_complete": True, "onboarded": True}
@@ -122,10 +144,47 @@ async def discover(limit: int = 20, user=Depends(get_current_user)):
         if not _accepts(c, user, dist):
             continue
         p = public_profile(c, user)
-        rank = p["compatibility"] + (12 if c["id"] in liked_me else 0)
-        scored.append((rank, p))
+        rank = p["compatibility"] + (12 if c["id"] in liked_me else 0) + _pref_boost(user, c)
+        scored.append((rank, p, c))
     scored.sort(key=lambda t: t[0], reverse=True)
-    return {"profiles": [p for _, p in scored[:limit]], "total": len(scored)}
+    return scored
+
+
+@router.get("/discover")
+async def discover(limit: int = 20, user=Depends(get_current_user)):
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
+    scored = await _candidates(user)
+    page = [p for _, p, _ in scored[:limit]]
+    if page:
+        # Being served in someone's deck counts as a profile view (shown as "Profile views" on the profile page).
+        await db.users.update_many({"id": {"$in": [p["id"] for p in page]}}, {"$inc": {"profile_views": 1}})
+    return {"profiles": page, "total": len(scored)}
+
+
+@router.get("/explore")
+async def explore(tab: str = "all", limit: int = 40, user=Depends(get_current_user)):
+    """Grid of people for the Explore tab. all=best match, near=closest first, new=recently joined, popular=most liked."""
+    if tab not in EXPLORE_TABS:
+        raise HTTPException(status_code=400, detail="Unknown tab")
+    scored = await _candidates(user)
+    if tab == "near":
+        scored = [t for t in scored if t[1].get("distance_km") is not None]
+        scored.sort(key=lambda t: (t[1]["distance_km"], -t[0]))
+    elif tab == "new":
+        scored.sort(key=lambda t: t[2].get("created_at") or "", reverse=True)
+    elif tab == "popular":
+        ids = [c["id"] for _, _, c in scored]
+        counts = {}
+        if ids:
+            rows = await db.swipes.aggregate([
+                {"$match": {"to_id": {"$in": ids}, "action": {"$in": ["like", "superlike"]}}},
+                {"$group": {"_id": "$to_id", "n": {"$sum": 1}}},
+            ]).to_list(None)
+            counts = {r["_id"]: r["n"] for r in rows}
+        for _, p, c in scored:
+            p["likes_count"] = counts.get(c["id"], 0)
+        scored.sort(key=lambda t: (t[1]["likes_count"], t[0]), reverse=True)
+    return {"profiles": [p for _, p, _ in scored[:limit]], "total": len(scored), "tab": tab}
 
 
 @router.post("/swipe")
@@ -138,6 +197,10 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
     if not target:
         raise HTTPException(status_code=404, detail="Profile not found")
     reaction = _clean_reaction(body.reaction, target) if body.action != "pass" else None
+    if body.action == "superlike":
+        previous = await db.swipes.find_one({"from_id": user["id"], "to_id": target["id"], "action": "superlike"}, {"_id": 0})
+        if not previous and await voilas_used_this_week(user["id"]) >= VOILA_WEEKLY_LIMIT:
+            raise HTTPException(status_code=400, detail=f"You've used all {VOILA_WEEKLY_LIMIT} Super Likes this week. They reset weekly.")
     swipe_doc = {"from_id": user["id"], "to_id": target["id"], "action": body.action, "created_at": now_iso(), "reaction": reaction}
     await db.swipes.update_one(
         {"from_id": user["id"], "to_id": target["id"]},
@@ -184,14 +247,41 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
     return {"matched": matched, "match": match_out}
 
 
+@router.get("/me/stats")
+async def my_stats(user=Depends(get_current_user)):
+    """Real numbers for the profile page: matches, likes, views and the weekly Super Like allowance."""
+    matches = await db.matches.count_documents({"users": user["id"], "active": True})
+    likes_received = await db.swipes.count_documents({"to_id": user["id"], "action": {"$in": ["like", "superlike"]}})
+    likes_sent = await db.swipes.count_documents({"from_id": user["id"], "action": {"$in": ["like", "superlike"]}})
+    used = await voilas_used_this_week(user["id"])
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "profile_views": 1})
+    return {
+        "matches": matches,
+        "likes_received": likes_received,
+        "likes_sent": likes_sent,
+        "followers": likes_received,
+        "following": likes_sent,
+        "profile_views": int((fresh or {}).get("profile_views") or 0),
+        "voilas_used_week": used,
+        "voilas_left": max(0, VOILA_WEEKLY_LIMIT - used),
+        "voila_weekly_limit": VOILA_WEEKLY_LIMIT,
+    }
+
+
+async def _blocked_ids(uid: str) -> set:
+    blocks = await db.blocks.find({"$or": [{"from_id": uid}, {"to_id": uid}]}, {"_id": 0}).to_list(None)
+    out = set()
+    for b in blocks:
+        out.add(b["from_id"])
+        out.add(b["to_id"])
+    return out
+
+
 @router.get("/likes/received")
 async def likes_received(user=Depends(get_current_user)):
+    """People who liked you and are still waiting on your answer."""
     my_swipes = set(s["to_id"] for s in await db.swipes.find({"from_id": user["id"]}, {"_id": 0, "to_id": 1}).to_list(None))
-    blocks = await db.blocks.find({"$or": [{"from_id": user["id"]}, {"to_id": user["id"]}]}, {"_id": 0}).to_list(None)
-    blocked = set()
-    for b in blocks:
-        blocked.add(b["from_id"])
-        blocked.add(b["to_id"])
+    blocked = await _blocked_ids(user["id"])
     likes = await db.swipes.find({"to_id": user["id"], "action": {"$in": ["like", "superlike"]}}, {"_id": 0}) \
         .sort("created_at", -1).to_list(200)
     ids = [l["from_id"] for l in likes if l["from_id"] not in my_swipes and l["from_id"] not in blocked]
@@ -202,5 +292,29 @@ async def likes_received(user=Depends(get_current_user)):
         if not u:
             continue
         out.append({"user": public_profile(u, user), "superlike": l["action"] == "superlike", "created_at": l["created_at"],
-                    "reaction": l.get("reaction")})
+                    "reaction": l.get("reaction"), "direction": "received"})
+    return {"likes": out, "count": len(out)}
+
+
+@router.get("/likes/sent")
+async def likes_sent(user=Depends(get_current_user)):
+    """People you liked (with whether it already turned into a match)."""
+    blocked = await _blocked_ids(user["id"])
+    likes = await db.swipes.find({"from_id": user["id"], "action": {"$in": ["like", "superlike"]}}, {"_id": 0}) \
+        .sort("created_at", -1).to_list(200)
+    ids = [l["to_id"] for l in likes if l["to_id"] not in blocked]
+    users = {u["id"]: u for u in await db.users.find({"id": {"$in": ids}}, {"_id": 0}).to_list(None)}
+    matches = await db.matches.find({"users": user["id"], "active": True}, {"_id": 0, "users": 1, "id": 1}).to_list(None)
+    matched = {}
+    for m in matches:
+        for other in m["users"]:
+            if other != user["id"]:
+                matched[other] = m["id"]
+    out = []
+    for l in likes:
+        u = users.get(l["to_id"])
+        if not u:
+            continue
+        out.append({"user": public_profile(u, user), "superlike": l["action"] == "superlike", "created_at": l["created_at"],
+                    "reaction": l.get("reaction"), "direction": "sent", "match_id": matched.get(l["to_id"])})
     return {"likes": out, "count": len(out)}

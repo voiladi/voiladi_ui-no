@@ -1,152 +1,118 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronRight, PencilLine, SlidersHorizontal, LogOut, Trash2, Eye, MapPin, Camera, Quote, Check } from "lucide-react";
+import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useStats } from "@/hooks/useStats";
+import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
-import { PageHeader } from "@/components/EmptyState";
-import { ProfileSheet } from "@/components/ProfileSheet";
-import { ConfirmDialog } from "@/components/Dialogs";
-import { showMeLabel } from "@/lib/format";
-import { EASE, rise } from "@/lib/motion";
 
-/* iOS grouped-list row */
-const Row = ({ icon: Icon, title, sub, onClick, testId, tone = "default" }) => (
-  <button type="button" onClick={onClick} className="vo-row" data-testid={testId}>
-    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] ${tone === "danger" ? "bg-surface2 text-danger" : "bg-surface2 text-ink"}`}>
-      <Icon className="h-[18px] w-[18px]" />
+const Stat = ({ label, value, testId }) => (
+  <div className="flex flex-1 flex-col items-center">
+    <span className="text-[20px] font-bold leading-none text-ink" data-testid={testId}>
+      {value ?? "-"}
+    </span>
+    <span className="mt-1.5 text-[12px] text-mute">{label}</span>
+  </div>
+);
+
+const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId }) => (
+  <button type="button" onClick={onClick} className="vo-card-line flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-surface" data-testid={testId}>
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-ink">
+      <Icon className="h-5 w-5" fill="currentColor" strokeWidth={1.5} />
     </span>
     <span className="min-w-0 flex-1">
-      <span className={`block text-[16px] font-medium ${tone === "danger" ? "text-danger" : "text-ink"}`}>{title}</span>
-      {sub && <span className="block truncate text-[13px] text-mute">{sub}</span>}
+      <span className="block text-[15px] font-semibold text-ink">{title}</span>
+      <span className="block text-[13px] text-mute">{sub}</span>
     </span>
-    <ChevronRight className="h-5 w-5 text-mute2" />
+    {pill !== undefined && <span className="rounded-full bg-surface px-3 py-1 text-[13px] font-semibold text-ink">{pill}</span>}
+    <ChevronRight className="h-4 w-4 shrink-0 text-mute" />
   </button>
 );
 
+export const completion = (user) => {
+  if (!user) return { pct: 0, missing: [] };
+  const checks = [
+    [!!user.name, "name"],
+    [!!user.gender, "gender"],
+    [(user.photos?.length || 0) >= 1, "a photo"],
+    [(user.photos?.length || 0) >= 3, "3 photos"],
+    [(user.interests?.length || 0) >= 3, "3 interests"],
+    [!!user.bio, "a bio"],
+    [(user.prompts?.length || 0) >= 1, "a prompt"],
+    [!!user.city, "your location"],
+    [!!user.job, "what you do"],
+  ];
+  const done = checks.filter((c) => c[0]).length;
+  return { pct: Math.round((done / checks.length) * 100), missing: checks.filter((c) => !c[0]).map((c) => c[1]) };
+};
+
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const [preview, setPreview] = useState(false);
-  const [confirm, setConfirm] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const { user } = useAuth();
+  const { data: stats } = useStats(!!user);
   if (!user) return null;
-
-  const checks = [
-    { ok: (user.photos?.length || 0) >= 3, label: "3+ photos", icon: Camera },
-    { ok: !!user.bio, label: "A bio", icon: PencilLine },
-    { ok: (user.prompts?.length || 0) >= 2, label: "2+ prompts", icon: Quote },
-    { ok: !!user.city, label: "Location", icon: MapPin },
-  ];
-  const done = checks.filter((c) => c.ok).length;
-  const strength = Math.round(40 + (done / checks.length) * 60);
-  const prefs = user.preferences || {};
-
-  const doDelete = async () => {
-    setBusy(true);
-    try {
-      await api.delete("/auth/account");
-      logout();
-      toast("Your account has been deleted. Take care.");
-      navigate("/welcome", { replace: true });
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setBusy(false);
-      setConfirm(null);
-    }
-  };
+  const { pct, missing } = completion(user);
 
   return (
     <div className="min-h-full pb-24" data-testid="profile-page">
-      <PageHeader title="You" />
-
-      <motion.section {...rise} className="vo-card mx-4 overflow-hidden" data-testid="profile-summary-card">
-        <div className="flex items-center gap-4 p-4">
-          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[88px] w-[88px] shrink-0 rounded-card text-2xl" />
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate font-display text-[22px] font-bold leading-tight text-ink" data-testid="profile-name">
-              {user.name}
-              {user.age ? <span className="ml-2 font-medium text-mute">{user.age}</span> : null}
-            </h2>
-            <p className="mt-0.5 flex items-center gap-1 text-[14px] text-mute">
-              <MapPin className="h-3.5 w-3.5" /> {user.city || "No location set"}
-            </p>
-            <button type="button" className="vo-btn-secondary mt-3 h-9 px-3.5 text-[14px]" onClick={() => setPreview(true)} data-testid="profile-preview-button">
-              <Eye className="h-4 w-4" /> Preview profile
-            </button>
-          </div>
+      <header className="flex h-14 items-center justify-between px-5 pt-2">
+        <Brand />
+        <div className="flex items-center gap-2">
+          <button type="button" className="vo-icon-btn" onClick={() => navigate("/likes")} aria-label="Notifications" data-testid="profile-notifications-button">
+            <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
+          </button>
+          <button type="button" className="vo-icon-btn" onClick={() => navigate("/settings")} aria-label="Settings" data-testid="profile-settings-button">
+            <Settings className="h-[18px] w-[18px]" strokeWidth={2} />
+          </button>
         </div>
-        <div className="border-t border-line bg-surface2 px-4 py-3.5">
+      </header>
+
+      <section className="mt-4 flex items-center gap-4 px-5" data-testid="profile-summary-card">
+        <button type="button" className="relative shrink-0" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
+          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-20 w-20 rounded-full text-2xl" />
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink text-onink ring-2 ring-bg">
+            <Camera className="h-3.5 w-3.5" strokeWidth={2} />
+          </span>
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[22px] font-bold leading-tight text-ink" data-testid="profile-name">
+            {user.name}
+          </h1>
+          <p className="mt-0.5 truncate text-[13px] text-mute">{user.bio || "Good people. Better connections."}</p>
+          <button type="button" className="vo-btn-secondary mt-2.5 h-9 px-5 text-[13px]" onClick={() => navigate("/profile/edit")} data-testid="profile-edit-button">
+            Edit Profile
+          </button>
+        </div>
+      </section>
+
+      <section className="mx-5 mt-6 flex items-center divide-x divide-line" data-testid="profile-stats">
+        <Stat label="Followers" value={stats?.followers} testId="profile-stat-likes" />
+        <Stat label="Following" value={stats?.following} testId="profile-stat-following" />
+        <Stat label="Profile views" value={stats?.profile_views} testId="profile-stat-views" />
+      </section>
+
+      <section className="mx-5 mt-6">
+        <button type="button" className="vo-card w-full p-4 text-left" onClick={() => navigate("/profile/edit")} data-testid="profile-completion-card">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-ink">Profile strength</span>
-            <span className="font-display text-[14px] font-semibold tabular-nums text-tint" data-testid="profile-strength">
-              {strength}%
+            <span className="text-[16px] font-semibold text-ink">{pct >= 100 ? "Your profile is complete" : "You're almost there"}</span>
+            <span className="flex items-center gap-1 text-[15px] font-semibold text-ink">
+              <span data-testid="profile-strength">{pct}%</span>
+              <ChevronRight className="h-4 w-4 text-mute" />
             </span>
           </div>
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white">
-            <motion.div className="h-full rounded-full bg-tint" initial={{ width: 0 }} animate={{ width: `${strength}%` }} transition={{ duration: 0.5, ease: EASE }} />
+          <p className="mt-1 text-[13px] text-mute">{pct >= 100 ? "Nice. You're set up to get the best matches on VOILADI." : `Add ${missing.slice(0, 2).join(" and ")} to get better matches on VOILADI.`}</p>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+            <div className="h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {checks.map((c) => (
-              <span key={c.label} className={`inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[12px] font-medium ${c.ok ? "bg-ink text-white" : "bg-white text-mute"}`}>
-                {c.ok ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : <c.icon className="h-3.5 w-3.5" />} {c.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
-      <section className="mt-6 px-4">
-        <div className="vo-label px-1 pb-2">Profile</div>
-        <div className="vo-card overflow-hidden">
-          <Row icon={PencilLine} title="Edit profile" sub="Photos, bio, interests and prompts" onClick={() => navigate("/profile/edit")} testId="profile-edit-button" />
-          <Row
-            icon={SlidersHorizontal}
-            title="Discovery preferences"
-            sub={`${showMeLabel(prefs.show_me)} · ${prefs.age_min}-${prefs.age_max} · ${prefs.max_distance_km >= 250 ? "Anywhere" : `${prefs.max_distance_km} km`}`}
-            onClick={() => navigate("/profile/preferences")}
-            testId="profile-preferences-button"
-          />
-        </div>
+        </button>
       </section>
 
-      <section className="mt-6 px-4">
-        <div className="vo-label px-1 pb-2">Account</div>
-        <div className="vo-card overflow-hidden">
-          <Row icon={LogOut} title="Log out" sub={user.phone} onClick={() => setConfirm("logout")} testId="profile-logout-button" />
-          <Row icon={Trash2} title="Delete account" sub="Permanently remove your profile and chats" onClick={() => setConfirm("delete")} testId="profile-delete-button" tone="danger" />
-        </div>
+      <section className="mx-5 mt-4 space-y-2.5">
+        <FeatureRow icon={Zap} title="Boost" sub="Be seen by more people" pill="Soon" onClick={() => toast("Boost is coming soon")} testId="profile-boost-row" />
+        <FeatureRow icon={Star} title="Super Likes" sub="Show someone you're really interested" pill={stats?.voilas_left ?? "-"} onClick={() => navigate("/discover")} testId="profile-superlikes-row" />
+        <FeatureRow icon={Crown} title="VOILADI+" sub="Unlock premium features" onClick={() => toast("VOILADI+ is coming soon")} testId="profile-plus-row" />
       </section>
-
-      <p className="mt-8 text-center text-[12px] text-mute">Voiladi 1.0 · Made for people, by people</p>
-
-      <ProfileSheet profile={{ ...user, distance_km: undefined }} open={preview} onOpenChange={setPreview} isSelf />
-      <ConfirmDialog
-        open={confirm === "logout"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        title="Log out?"
-        description="You'll need your phone number to sign back in. Your matches and chats stay safe."
-        confirmText="Log out"
-        onConfirm={() => {
-          logout();
-          navigate("/welcome", { replace: true });
-        }}
-        testId="logout-dialog"
-      />
-      <ConfirmDialog
-        open={confirm === "delete"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        title="Delete your account?"
-        description="This permanently deletes your profile, photos, matches and messages. There's no undo."
-        confirmText="Delete everything"
-        danger
-        loading={busy}
-        onConfirm={doDelete}
-        testId="delete-dialog"
-      />
     </div>
   );
 }

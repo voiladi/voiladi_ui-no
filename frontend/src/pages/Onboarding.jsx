@@ -1,212 +1,480 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Camera, Bell, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
-import { PhotoGrid } from "@/components/PhotoGrid";
-import { BirthdayInput, OptionList, InterestPicker, PromptEditor, LocationPicker, parseBirthday, ageFromIso } from "@/components/ProfileFields";
-import { genderLabel, showMeLabel } from "@/lib/format";
-import { EASE, slideX } from "@/lib/motion";
+import { UserPhoto } from "@/components/UserPhoto";
+import { LogoMark } from "@/components/Logo";
+import { Chip, Segmented } from "@/components/Chip";
+import { PhoneField, OtpBoxes, DevCodeCard, guessCountry, mmss } from "@/components/PhoneOtp";
+import { genderLabel } from "@/lib/format";
+import { slideX } from "@/lib/motion";
 
-const STEPS = ["name", "birthday", "gender", "looking", "photos", "interests", "prompts", "about"];
-
-const splitBirthday = (iso) => {
-  if (!iso) return { d: "", m: "", y: "" };
-  const [y, m, d] = iso.split("-");
-  return { d, m, y };
+const ageOf = (iso) => {
+  if (!iso) return null;
+  const b = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(b.getTime())) return null;
+  const t = new Date();
+  let a = t.getFullYear() - b.getFullYear();
+  const md = t.getMonth() - b.getMonth();
+  if (md < 0 || (md === 0 && t.getDate() < b.getDate())) a -= 1;
+  return a;
 };
+
+const MIN_INTERESTS = 3;
+const SKIP_KEY = "voiladi_skip_photo";
+const ORDER = ["name", "phone", "otp", "photo", "interests", "notifications", "done"];
+
+const firstStep = (user) => {
+  if (!user?.has_basics) return "name";
+  if (!user?.phone) return "phone";
+  if (!(user?.photos || []).length && !sessionStorage.getItem(SKIP_KEY)) return "photo";
+  if ((user?.interests || []).length < MIN_INTERESTS) return "interests";
+  return "notifications";
+};
+
+const Step = ({ title, sub, children, testId }) => (
+  <motion.div {...slideX(1)} className="flex flex-1 flex-col" data-testid={testId}>
+    <h1 className="vo-h1">{title}</h1>
+    {sub && <p className="vo-sub mt-1.5">{sub}</p>}
+    {children}
+  </motion.div>
+);
 
 export default function Onboarding() {
   const { user, setUser, refresh } = useAuth();
   const { meta } = useMeta();
-  const [i, setI] = useState(0);
-  const [dir, setDir] = useState(1);
+  const [step, setStep] = useState(() => firstStep(user));
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(() => ({
-    name: user?.name || "",
-    bday: splitBirthday(user?.birthday),
-    gender: user?.gender || "",
-    looking_for: user?.looking_for || "",
-    photos: user?.photos || [],
-    interests: user?.interests || [],
-    prompts: user?.prompts || [],
-    bio: user?.bio || "",
-    location: { city: user?.city || "", lat: user?.lat ?? null, lng: user?.lng ?? null },
-  }));
-  const step = STEPS[i];
-  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const [error, setError] = useState("");
 
-  const birthdayIso = parseBirthday(form.bday);
-  const age = ageFromIso(birthdayIso);
+  // name step
+  const [name, setName] = useState(user?.name || "");
+  const [dob, setDob] = useState(user?.birthday || "");
+  const [gender, setGender] = useState(user?.gender || "");
+  // phone + otp
+  const [cc, setCc] = useState(guessCountry);
+  const [number, setNumber] = useState("");
+  const [code, setCode] = useState("");
+  const [devCode, setDevCode] = useState(null);
+  const [resendIn, setResendIn] = useState(0);
+  const otpRef = useRef(null);
+  const fileRef = useRef(null);
+  // interests
+  const [interests, setInterests] = useState(user?.interests || []);
 
-  const valid = useMemo(() => {
-    switch (step) {
-      case "name":
-        return form.name.trim().length >= 1 && form.name.trim().length <= 30;
-      case "birthday":
-        return !!birthdayIso && age >= 18 && age <= 100;
-      case "gender":
-        return !!form.gender;
-      case "looking":
-        return !!form.looking_for;
-      case "photos":
-        return form.photos.length >= 1;
-      case "interests":
-        return form.interests.length >= 3;
-      case "prompts":
-        return form.prompts.length >= 1 && form.prompts.every((p) => p.answer.trim().length > 0);
-      default:
-        return true;
-    }
-  }, [step, form, birthdayIso, age]);
+  const fullPhone = useMemo(() => `${cc}${number.replace(/\D/g, "")}`, [cc, number]);
+  const validPhone = number.replace(/\D/g, "").length >= 7;
+  const age = ageOf(dob);
+  const nameValid = name.trim().length >= 1 && name.trim().length <= 30 && age !== null && age >= 18 && age <= 100 && !!gender;
 
-  const payloadFor = (s) => {
-    switch (s) {
-      case "name":
-        return { name: form.name.trim() };
-      case "birthday":
-        return { birthday: birthdayIso };
-      case "gender":
-        return { gender: form.gender };
-      case "looking":
-        return { looking_for: form.looking_for };
-      case "interests":
-        return { interests: form.interests };
-      case "prompts":
-        return { prompts: form.prompts.filter((p) => p.answer.trim()) };
-      case "about":
-        return {
-          bio: form.bio.trim(),
-          city: form.location.city || "",
-          lat: form.location.lat,
-          lng: form.location.lng,
-          clear_location: !form.location.city,
-          onboarded: true,
-        };
-      default:
-        return null;
-    }
-  };
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
-  const next = async () => {
-    if (!valid || saving) return;
-    const payload = payloadFor(step);
-    if (payload) {
-      setSaving(true);
-      try {
-        const { data } = await api.put("/profile", payload);
-        setUser(data);
-        if (step === "about") {
-          if (data.profile_complete && data.onboarded) {
-            await refresh();
-            return;
-          }
-          toast.error("Something's missing. Add at least one photo and three interests.");
-          setSaving(false);
-          return;
-        }
-      } catch (e) {
-        toast.error(errMsg(e));
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-    }
-    setDir(1);
-    setI((x) => Math.min(STEPS.length - 1, x + 1));
+  const go = (s) => {
+    setError("");
+    setStep(s);
   };
 
   const back = () => {
-    setDir(-1);
-    setI((x) => Math.max(0, x - 1));
+    const i = ORDER.indexOf(step);
+    if (i <= 0) return;
+    let prev = ORDER[i - 1];
+    if (prev === "otp") prev = "phone";
+    if (prev === "phone" && user?.phone) prev = "name";
+    go(prev);
   };
 
-  const titles = {
-    name: ["First things first", "What should we call you?", "This is how you'll appear on Voiladi."],
-    birthday: ["Just checking", "When's your birthday?", "You have to be 18+ to be here."],
-    gender: ["About you", "How do you identify?", "You can change this later in your profile."],
-    looking: ["Your feed", "Who do you want to meet?", "We'll show you people who want to meet you too."],
-    photos: ["Show yourself", "Add your photos", "Profiles with 3+ photos get way more matches. Add at least one."],
-    interests: ["Your thing", "What are you into?", "Pick at least 3. We use these to find your people."],
-    prompts: ["Vibe check", "Answer a prompt or three", "This is what people actually read. Make it you."],
-    about: ["Last one", "A little more about you", "Optional, but it helps people say hi."],
+  const saveBasics = async () => {
+    if (!nameValid || saving) return;
+    setSaving(true);
+    try {
+      const { data } = await api.put("/profile", { name: name.trim(), birthday: dob, gender });
+      setUser(data);
+      go(data.phone ? (data.photos?.length ? "interests" : "photo") : "phone");
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setSaving(false);
+    }
   };
-  const [eyebrow, title, sub] = titles[step];
-  const progress = ((i + 1) / STEPS.length) * 100;
+
+  const requestOtp = async () => {
+    if (!validPhone || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await api.post("/auth/request-otp", { phone: fullPhone });
+      setDevCode(data.dev_code || null);
+      setResendIn(data.resend_in || 30);
+      setCode("");
+      go("otp");
+      setTimeout(() => otpRef.current?.focus(), 250);
+    } catch (e) {
+      setError(errMsg(e));
+      if (e?.response?.status === 429) go("otp");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const verifyPhone = async (value) => {
+    const c = value || code;
+    if (c.length !== 6 || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await api.post("/auth/verify-phone", { phone: fullPhone, code: c });
+      setUser(data);
+      go(data.photos?.length ? "interests" : "photo");
+    } catch (e) {
+      setError(errMsg(e));
+      setCode("");
+      setTimeout(() => otpRef.current?.focus(), 50);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only images are allowed");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Images must be under 8MB");
+      return;
+    }
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/profile/photos", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setUser((u) => ({ ...u, photos: data.photos }));
+    } catch (err) {
+      toast.error(errMsg(err, "Upload failed. Try another photo."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveInterests = async () => {
+    if (interests.length < MIN_INTERESTS || saving) return;
+    setSaving(true);
+    try {
+      const { data } = await api.put("/profile", { interests });
+      setUser(data);
+      go("notifications");
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const enableNotifications = async () => {
+    try {
+      if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission();
+    } catch (e) {
+      // ignore
+    }
+    go("done");
+  };
+
+  const finish = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { data } = await api.put("/profile", { onboarded: true });
+      sessionStorage.removeItem(SKIP_KEY);
+      setUser(data);
+      if (!data.onboarded) await refresh();
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const photo = user?.photos?.[0];
+  const showBack = step !== "done" && step !== "name";
 
   return (
-    <div className="flex min-h-full flex-col" data-testid="onboarding-wizard">
-      <div className="vo-bar sticky top-0 z-20 border-b border-line px-5 pb-3 pt-4">
-        <div className="flex items-center justify-between">
-          <button type="button" onClick={back} disabled={i === 0} className="vo-icon-btn" aria-label="Back" data-testid="onboarding-back-button">
-            <ArrowLeft className="h-5 w-5" />
+    <div className="flex min-h-full flex-col px-5 pb-6 pt-3" data-testid="onboarding-wizard">
+      <div className="h-10">
+        {showBack && (
+          <button type="button" onClick={back} className="vo-icon-plain -ml-2" aria-label="Back" data-testid="onboarding-back-button">
+            <ArrowLeft className="h-6 w-6" strokeWidth={2} />
           </button>
-          <span className="text-[13px] font-medium text-mute" data-testid="onboarding-step-label">
-            {i + 1} of {STEPS.length}
-          </span>
-          <span className="w-10" />
-        </div>
-        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-surface3">
-          <motion.div className="h-full rounded-full bg-tint" animate={{ width: `${progress}%` }} transition={{ duration: 0.3, ease: EASE }} />
-        </div>
+        )}
       </div>
 
-      <div className="flex-1 px-5 pb-32 pt-7">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={step} {...slideX(dir)} data-testid={`onboarding-step-${step}`}>
-            <p className="vo-eyebrow mb-2">{eyebrow}</p>
-            <h1 className="vo-h1">{title}</h1>
-            <p className="mb-7 mt-2 text-[15px] text-mute">{sub}</p>
+      <AnimatePresence mode="wait" initial={false}>
+        {step === "name" && (
+          <Step key="name" testId="onboarding-step-name" title="What's your name?" sub="This is how you'll appear on Voiladi.">
+            <form
+              className="mt-8 flex flex-1 flex-col"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveBasics();
+              }}
+            >
+              <label className="vo-label mb-2" htmlFor="ob-name">
+                Full name
+              </label>
+              <input id="ob-name" autoFocus className="vo-input" placeholder="Your name" maxLength={30} value={name} onChange={(e) => setName(e.target.value)} data-testid="onboarding-name-input" />
 
-            {step === "name" && (
-              <input
-                autoFocus
-                className="vo-input font-display text-[22px] font-semibold"
-                placeholder="Your first name"
-                maxLength={30}
-                value={form.name}
-                onChange={(e) => set({ name: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && next()}
-                data-testid="onboarding-name-input"
+              <label className="vo-label mb-2 mt-5" htmlFor="ob-dob">
+                Date of birth
+              </label>
+              <div className="relative">
+                <input
+                  id="ob-dob"
+                  type="date"
+                  className="vo-input appearance-none pr-12"
+                  value={dob}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setDob(e.target.value)}
+                  data-testid="onboarding-dob-input"
+                />
+                <Calendar className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink" strokeWidth={1.75} />
+              </div>
+              <p className={`mt-2 text-[12px] ${dob && age !== null && age < 18 ? "text-red" : "text-mute"}`} data-testid="onboarding-age-note">
+                You must be 18 or older to use Voiladi.
+              </p>
+
+              <span className="vo-label mb-2 mt-5">I am</span>
+              <Segmented options={meta.genders} value={gender} onChange={setGender} render={genderLabel} testIdPrefix="onboarding-gender" dark />
+
+              {error && (
+                <p className="mt-3 text-[14px] text-red" data-testid="onboarding-error">
+                  {error}
+                </p>
+              )}
+              <div className="mt-auto pt-8">
+                <button type="submit" className="vo-btn-primary w-full" disabled={!nameValid || saving} data-testid="onboarding-next-button">
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                </button>
+              </div>
+            </form>
+          </Step>
+        )}
+
+        {step === "phone" && (
+          <Step key="phone" testId="onboarding-step-phone" title="Add your phone number" sub="We'll send you a verification code.">
+            <form
+              className="mt-8 flex flex-1 flex-col"
+              onSubmit={(e) => {
+                e.preventDefault();
+                requestOtp();
+              }}
+            >
+              <PhoneField cc={cc} onCc={setCc} number={number} onNumber={setNumber} error={!!error} />
+              {error && (
+                <p className="mt-3 text-[14px] text-red" data-testid="onboarding-error">
+                  {error}
+                </p>
+              )}
+              <div className="mt-auto pt-8">
+                <button type="submit" className="vo-btn-primary w-full" disabled={!validPhone || saving} data-testid="onboarding-next-button">
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-mute">
+                  <Lock className="h-3.5 w-3.5" /> Your number is kept private.
+                </p>
+              </div>
+            </form>
+          </Step>
+        )}
+
+        {step === "otp" && (
+          <Step
+            key="otp"
+            testId="onboarding-step-otp"
+            title="Enter the code"
+            sub={
+              <>
+                We've sent a 6-digit code to
+                <br />
+                <span className="text-ink">{fullPhone}</span>
+              </>
+            }
+          >
+            <div className="mt-10">
+              <OtpBoxes
+                ref={otpRef}
+                value={code}
+                onChange={(v) => {
+                  setCode(v);
+                  setError("");
+                }}
+                onComplete={(v) => verifyPhone(v)}
+                disabled={saving}
+              />
+            </div>
+            {error && (
+              <p className="mt-4 text-center text-[14px] text-red" data-testid="onboarding-error">
+                {error}
+              </p>
+            )}
+            <p className="mt-8 text-center text-[13px] text-mute">
+              Didn't receive the code?{" "}
+              {resendIn > 0 ? (
+                <span data-testid="auth-resend-timer">Resend in {mmss(resendIn)}</span>
+              ) : (
+                <button type="button" className="vo-link text-[13px]" onClick={requestOtp} disabled={saving} data-testid="auth-resend-button">
+                  Resend
+                </button>
+              )}
+            </p>
+            {devCode && (
+              <DevCodeCard
+                code={devCode}
+                onUse={() => {
+                  setCode(devCode);
+                  verifyPhone(devCode);
+                }}
               />
             )}
-            {step === "birthday" && <BirthdayInput value={form.bday} onChange={(bday) => set({ bday })} />}
-            {step === "gender" && <OptionList options={meta.genders} value={form.gender} onChange={(gender) => set({ gender })} render={genderLabel} testIdPrefix="onboarding-gender" />}
-            {step === "looking" && <OptionList options={meta.show_me} value={form.looking_for} onChange={(looking_for) => set({ looking_for })} render={showMeLabel} testIdPrefix="onboarding-looking" />}
-            {step === "photos" && <PhotoGrid photos={form.photos} onChange={(photos) => set({ photos })} max={meta.max_photos} />}
-            {step === "interests" && <InterestPicker all={meta.interests} value={form.interests} onChange={(interests) => set({ interests })} />}
-            {step === "prompts" && <PromptEditor questions={meta.prompts} value={form.prompts} onChange={(prompts) => set({ prompts })} />}
-            {step === "about" && (
-              <div className="space-y-8">
-                <div>
-                  <div className="vo-label mb-2">Bio</div>
-                  <textarea
-                    className="vo-textarea min-h-[110px]"
-                    placeholder="Two sentences that sound like you..."
-                    maxLength={300}
-                    value={form.bio}
-                    onChange={(e) => set({ bio: e.target.value })}
-                    data-testid="onboarding-bio-input"
-                  />
-                  <div className="mt-1 text-right text-[12px] text-mute">{form.bio.length}/300</div>
-                </div>
-                <div>
-                  <div className="vo-label mb-2">Location</div>
-                  <LocationPicker cities={meta.cities} value={form.location} onChange={(location) => set({ location })} />
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            <div className="mt-auto pt-8">
+              <button type="button" className="vo-btn-primary w-full" disabled={code.length !== 6 || saving} onClick={() => verifyPhone()} data-testid="onboarding-next-button">
+                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+              </button>
+            </div>
+          </Step>
+        )}
 
-      <div className="vo-bar sticky bottom-0 z-20 border-t border-line px-5 pt-3" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
-        <button type="button" className="vo-btn-primary w-full" disabled={!valid || saving} onClick={next} data-testid="onboarding-next-button">
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : step === "about" ? "Finish and start swiping" : <>Continue <ArrowRight className="h-5 w-5" /></>}
-        </button>
-      </div>
+        {step === "photo" && (
+          <Step key="photo" testId="onboarding-step-photo" title="Add a profile photo" sub="A clear photo helps you get better matches.">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} data-testid="photo-file-input" />
+            <div className="mt-12 flex justify-center">
+              <button type="button" onClick={() => fileRef.current?.click()} className="relative block h-[160px] w-[160px] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Add photo" data-testid="onboarding-photo-add-button" disabled={saving}>
+                {photo ? (
+                  <UserPhoto src={photo} name={user?.name} className="h-full w-full rounded-full text-4xl" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-surface text-mute">
+                    <Camera className="h-10 w-10" strokeWidth={1.5} />
+                  </span>
+                )}
+                <span className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink shadow-action">
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" strokeWidth={2} />}
+                </span>
+              </button>
+            </div>
+            <div className="mt-auto pt-8">
+              <button type="button" className="vo-btn-primary w-full" disabled={!photo || saving} onClick={() => go("interests")} data-testid="onboarding-next-button">
+                Continue
+              </button>
+              <button
+                type="button"
+                className="vo-btn-secondary mt-2.5 w-full"
+                onClick={() => {
+                  sessionStorage.setItem(SKIP_KEY, "1");
+                  go("interests");
+                }}
+                data-testid="onboarding-skip-photo-button"
+              >
+                Skip for now
+              </button>
+            </div>
+          </Step>
+        )}
+
+        {step === "interests" && (
+          <Step key="interests" testId="onboarding-step-interests" title="What are you into?" sub="Select a few interests to find people with similar vibes.">
+            <div className="mt-8 grid grid-cols-3 gap-2.5" data-testid="interests-list">
+              {meta.interests.map((i) => (
+                <Chip
+                  key={i}
+                  active={interests.includes(i)}
+                  className="h-10 w-full px-2"
+                  onClick={() => {
+                    if (interests.includes(i)) setInterests(interests.filter((x) => x !== i));
+                    else if (interests.length >= 10) toast("You can pick up to 10");
+                    else setInterests([...interests, i]);
+                  }}
+                  data-testid={`interest-chip-${i.replace(/\s+/g, "-").toLowerCase()}`}
+                >
+                  {i}
+                </Chip>
+              ))}
+            </div>
+            <p className="mt-4 text-center text-[13px] text-mute" data-testid="interests-count">
+              {interests.length < MIN_INTERESTS ? `Pick at least ${MIN_INTERESTS}` : `${interests.length} selected`}
+            </p>
+            {error && (
+              <p className="mt-3 text-[14px] text-red" data-testid="onboarding-error">
+                {error}
+              </p>
+            )}
+            <div className="mt-auto pt-6">
+              <button type="button" className="vo-btn-primary w-full" disabled={interests.length < MIN_INTERESTS || saving} onClick={saveInterests} data-testid="onboarding-next-button">
+                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+              </button>
+            </div>
+          </Step>
+        )}
+
+        {step === "notifications" && (
+          <Step key="notifications" testId="onboarding-step-notifications" title="Turn on notifications?" sub="Get notified about new matches, messages and more.">
+            <div className="mt-16 flex justify-center">
+              <span className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-surface text-ink">
+                <Bell className="h-12 w-12" strokeWidth={1.5} />
+              </span>
+            </div>
+            <div className="mt-auto pt-8">
+              <button type="button" className="vo-btn-primary w-full" onClick={enableNotifications} data-testid="onboarding-enable-notifications-button">
+                Enable Notifications
+              </button>
+              <button type="button" className="vo-btn-secondary mt-2.5 w-full" onClick={() => go("done")} data-testid="onboarding-skip-notifications-button">
+                Not now
+              </button>
+            </div>
+          </Step>
+        )}
+
+        {step === "done" && (
+          <motion.div key="done" {...slideX(1)} className="relative flex flex-1 flex-col items-center text-center" data-testid="onboarding-step-done">
+            <Confetti />
+            <LogoMark size={72} className="mt-[14vh]" />
+            <h1 className="vo-h1 mt-6">You're all set!</h1>
+            <p className="vo-sub mt-2">
+              Welcome to Voiladi.
+              <br />
+              Let's make better connections.
+            </p>
+            <div className="mt-auto w-full pt-8">
+              <button type="button" className="vo-btn-primary w-full" onClick={finish} disabled={saving} data-testid="onboarding-finish-button">
+                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+/* Static scattered dots, as on the "You're all set" screen. */
+const DOTS = [
+  ["10%", "6%", "#F59E0B", 7, 0], ["50%", "3%", "#3478F6", 6, 45], ["86%", "9%", "#EF4444", 7, 30], ["22%", "17%", "#8B5CF6", 6, 0],
+  ["70%", "18%", "#10B981", 6, 45], ["92%", "26%", "#F59E0B", 5, 0], ["6%", "30%", "#EC4899", 6, 45], ["36%", "34%", "#3478F6", 5, 0],
+  ["84%", "40%", "#10B981", 7, 30], ["14%", "48%", "#EF4444", 6, 45], ["62%", "52%", "#8B5CF6", 6, 0], ["94%", "58%", "#EC4899", 5, 45],
+  ["28%", "62%", "#F59E0B", 6, 0], ["48%", "66%", "#EF4444", 5, 45], ["78%", "70%", "#3478F6", 7, 30],
+];
+
+const Confetti = () => (
+  <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+    {DOTS.map(([x, y, c, s, r], i) => (
+      <span key={i} className="absolute" style={{ left: x, top: y, width: s, height: s, background: c, borderRadius: r ? 1 : 9999, transform: `rotate(${r}deg)`, opacity: 0.9 }} />
+    ))}
+  </div>
+);

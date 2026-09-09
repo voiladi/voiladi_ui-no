@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { photoUrl } from "@/lib/api";
 import { initials } from "@/lib/format";
 
-/* Photo with a neutral initials fallback. Images decode off the main thread so card drags stay smooth. */
+/* Photo with a neutral initials fallback. The parent decides the shape (rounded-full for avatars). */
 export const UserPhoto = ({ src, name = "", className = "", alt, style, ...rest }) => {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
@@ -10,7 +10,7 @@ export const UserPhoto = ({ src, name = "", className = "", alt, style, ...rest 
   if (!url || failed) {
     return (
       <div
-        className={`flex items-center justify-center overflow-hidden bg-surface3 font-display font-semibold text-mute ${className}`}
+        className={`flex items-center justify-center overflow-hidden bg-surface2 font-semibold text-mute ${className}`}
         style={style}
         aria-label={alt || name}
         {...rest}

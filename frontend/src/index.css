@@ -4,47 +4,78 @@
 
 @layer base {
     :root {
+        /* Voiladi tokens (light) - transcribed from the interface photos */
+        --bg: #FFFFFF;
+        --surface: #F2F2F4;
+        --surface-2: #E9E9EC;
+        --ink: #111111;
+        --ink-2: #3A3A3C;
+        --muted: #8A8A8E;
+        --line: #E5E5EA;
+        --blue: #3478F6;
+        --red: #FF3B30;
+        --on-ink: #FFFFFF;
+        --backdrop: #F2F2F7;
+        --overlay: rgba(0, 0, 0, 0.45);
+
+        /* shadcn semantic tokens mapped onto the same palette */
         --background: 0 0% 100%;
-        --foreground: 240 3% 12%;
+        --foreground: 0 0% 7%;
         --card: 0 0% 100%;
-        --card-foreground: 240 3% 12%;
+        --card-foreground: 0 0% 7%;
         --popover: 0 0% 100%;
-        --popover-foreground: 240 3% 12%;
-        --primary: 240 3% 12%;
+        --popover-foreground: 0 0% 7%;
+        --primary: 0 0% 7%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 240 9% 96%;
-        --secondary-foreground: 240 3% 12%;
-        --muted: 240 9% 96%;
-        --muted-foreground: 240 2% 44%;
-        --accent: 240 9% 96%;
-        --accent-foreground: 240 3% 12%;
-        --destructive: 354 100% 42%;
+        --secondary: 240 6% 95%;
+        --secondary-foreground: 0 0% 7%;
+        --muted-hsl: 240 6% 95%;
+        --muted-foreground: 240 2% 54%;
+        --accent: 240 6% 95%;
+        --accent-foreground: 0 0% 7%;
+        --destructive: 3 100% 59%;
         --destructive-foreground: 0 0% 100%;
         --border: 240 11% 91%;
         --input: 240 11% 91%;
-        --ring: 216 49% 33%;
-        --radius: 0.75rem;
+        --ring: 0 0% 7%;
+        --radius: 12px;
 
-        /* Voiladi tokens (mirrors tailwind.config.js palette). Apple/iOS: near-monochrome + one deep navy tint. */
-        --vo-ink: #1D1D1F;
-        --vo-ink-2: #3A3A3C;
-        --vo-muted: #6E6E73;
-        --vo-muted-2: #8E8E93;
-        --vo-paper: #FFFFFF;
-        --vo-surface-2: #F5F5F7;
-        --vo-surface-3: #E8E8ED;
-        --vo-border: #E5E5EA;
-        --vo-tint: #2B4C7E;
-        --vo-tint-dark: #1F3A63;
-        --vo-tint-soft: #EDF1F7;
-        --vo-danger: #D70015;
-        --vo-online: #34C759;
-        --vo-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.08);
-        --vo-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 10px rgba(0, 0, 0, 0.06);
-        --vo-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-        --vo-z-nav: 30;
-        --vo-z-sheet: 50;
-        --vo-z-toast: 100;
+        --z-nav: 30;
+        --z-sheet: 50;
+        --z-toast: 100;
+    }
+
+    .dark {
+        --bg: #000000;
+        --surface: #1C1C1E;
+        --surface-2: #2C2C2E;
+        --ink: #F5F5F7;
+        --ink-2: #D1D1D6;
+        --muted: #8E8E93;
+        --line: #2C2C2E;
+        --blue: #4C8DFF;
+        --red: #FF453A;
+        --on-ink: #000000;
+        --backdrop: #0A0A0A;
+        --overlay: rgba(0, 0, 0, 0.6);
+
+        --background: 0 0% 0%;
+        --foreground: 240 5% 96%;
+        --card: 240 3% 11%;
+        --card-foreground: 240 5% 96%;
+        --popover: 240 3% 11%;
+        --popover-foreground: 240 5% 96%;
+        --primary: 240 5% 96%;
+        --primary-foreground: 0 0% 0%;
+        --secondary: 240 3% 11%;
+        --secondary-foreground: 240 5% 96%;
+        --muted-hsl: 240 3% 11%;
+        --muted-foreground: 240 2% 56%;
+        --accent: 240 3% 11%;
+        --accent-foreground: 240 5% 96%;
+        --border: 240 3% 17%;
+        --input: 240 3% 17%;
+        --ring: 240 5% 96%;
     }
 
     * {
@@ -53,32 +84,39 @@
 
     html {
         -webkit-tap-highlight-color: transparent;
-        background: var(--vo-paper);
+        background: var(--backdrop);
     }
 
     body {
         pointer-events: auto !important;
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.45;
         letter-spacing: -0.005em;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
-        color: var(--vo-ink);
-        background: var(--vo-paper);
+        color: var(--ink);
+        background: var(--backdrop);
         overscroll-behavior-y: none;
     }
 
     ::selection {
-        background: rgba(43, 76, 126, 0.18);
+        background: rgba(52, 120, 246, 0.25);
     }
 
     button, input, textarea {
         font-family: inherit;
+        color: inherit;
     }
 
     input, textarea {
         font-size: 16px;
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: var(--muted);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -90,9 +128,27 @@
 }
 
 @layer components {
-    .font-display {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+    /* ---------- type ---------- */
+    .vo-title {
+        @apply text-[28px] font-bold leading-[1.15] text-ink;
         letter-spacing: -0.02em;
+    }
+
+    .vo-h1 {
+        @apply text-[26px] font-bold leading-[1.2] text-ink;
+        letter-spacing: -0.02em;
+    }
+
+    .vo-sub {
+        @apply text-[15px] leading-[1.45] text-mute;
+    }
+
+    .vo-section {
+        @apply text-[15px] font-semibold text-ink;
+    }
+
+    .vo-label {
+        @apply block text-[14px] font-medium text-ink;
     }
 
     /* ---------- shell ---------- */
@@ -100,12 +156,12 @@
         position: relative;
         height: 100dvh;
         overflow: hidden;
-        background: var(--vo-paper);
+        background: var(--bg);
     }
 
     @media (min-width: 1024px) {
         .vo-backdrop {
-            background: var(--vo-surface-2);
+            background: var(--backdrop);
         }
     }
 
@@ -117,7 +173,7 @@
         height: 100dvh;
         display: flex;
         flex-direction: column;
-        background: var(--vo-paper);
+        background: var(--bg);
         overflow: hidden;
     }
 
@@ -126,8 +182,7 @@
             height: min(900px, calc(100dvh - 48px));
             margin: 24px auto;
             border-radius: 40px;
-            border: 1px solid var(--vo-border);
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.10);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.14);
         }
     }
 
@@ -151,87 +206,137 @@
         display: none;
     }
 
-    /* iOS translucent bar (headers, footers) */
     .vo-bar {
-        background: rgba(255, 255, 255, 0.86);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        backdrop-filter: blur(20px) saturate(180%);
+        background: var(--bg);
     }
 
     /* ---------- buttons ---------- */
     .vo-btn {
-        @apply inline-flex h-12 items-center justify-center gap-2 rounded-btn px-5 text-[17px] font-semibold select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 focus-visible:ring-offset-2;
+        @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2;
+        --tw-ring-offset-color: var(--bg);
         transition-property: color, background-color, border-color, opacity, transform;
         transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .vo-btn:active {
         transform: scale(0.98);
-        opacity: 0.85;
+        opacity: 0.9;
     }
 
     .vo-btn-primary {
-        @apply vo-btn bg-ink text-white hover:bg-ink2;
+        @apply vo-btn bg-ink text-onink;
     }
 
     .vo-btn-secondary {
-        @apply vo-btn bg-surface2 text-ink hover:bg-surface3;
-    }
-
-    .vo-btn-tint {
-        @apply vo-btn bg-tint text-white hover:bg-tint-dark;
-    }
-
-    .vo-btn-outline {
-        @apply vo-btn bg-white text-ink border border-line hover:bg-surface2;
+        @apply vo-btn bg-bg text-ink border border-line hover:bg-surface;
     }
 
     .vo-btn-ghost {
-        @apply vo-btn bg-transparent text-mute hover:text-ink hover:bg-surface2;
+        @apply vo-btn bg-transparent text-ink hover:bg-surface;
     }
 
-    .vo-btn-text {
-        @apply vo-btn bg-transparent text-tint hover:text-tint-dark px-2;
+    .vo-btn-surface {
+        @apply vo-btn bg-surface text-ink hover:bg-surface2;
     }
 
     .vo-btn-danger {
-        @apply vo-btn bg-surface2 text-danger hover:bg-surface3;
+        @apply vo-btn bg-surface text-red hover:bg-surface2;
+    }
+
+    .vo-link {
+        @apply text-[14px] font-medium text-blue hover:underline focus-visible:outline-none focus-visible:underline;
     }
 
     .vo-icon-btn {
-        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface2 text-ink hover:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40 disabled:opacity-40 disabled:pointer-events-none;
+        @apply inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
         transition-property: color, background-color, opacity, transform;
         transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .vo-icon-btn:active {
         transform: scale(0.94);
     }
 
+    .vo-icon-plain {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-transparent text-ink hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
+        transition-property: background-color, transform;
+        transition-duration: 150ms;
+    }
+
+    /* Discover round actions (white discs with soft shadow) */
+    .vo-action {
+        @apply inline-flex items-center justify-center rounded-full bg-white text-ink shadow-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
+        transition-property: transform, opacity;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .dark .vo-action {
+        background: var(--surface);
+    }
+
+    .vo-action:active {
+        transform: scale(0.92);
+    }
+
     /* ---------- inputs ---------- */
     .vo-input {
-        @apply w-full rounded-btn border border-transparent bg-surface2 px-4 text-[17px] text-ink placeholder:text-mute2 focus:outline-none focus:border-line focus:bg-white;
+        @apply w-full rounded-[12px] bg-surface px-4 text-[16px] text-ink focus:outline-none;
         height: 48px;
-        transition-property: background-color, border-color;
+        border: 1.5px solid transparent;
+        transition-property: border-color, background-color;
         transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
+    }
+
+    .vo-input:focus {
+        border-color: var(--ink);
+        background: var(--bg);
+    }
+
+    .vo-input-error {
+        border-color: var(--red) !important;
+    }
+
+    /* Native date input: hide the browser's own calendar glyph (we draw our own trailing icon) but keep the picker tappable over the full field */
+    .vo-input[type="date"] {
+        position: relative;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .vo-input[type="date"]::-webkit-calendar-picker-indicator {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .vo-input[type="date"]::-webkit-date-and-time-value {
+        text-align: left;
     }
 
     .vo-textarea {
-        @apply w-full rounded-btn border border-transparent bg-surface2 px-4 py-3 text-[17px] text-ink placeholder:text-mute2 focus:outline-none focus:border-line focus:bg-white resize-none;
-        transition-property: background-color, border-color;
+        @apply w-full rounded-[12px] bg-surface px-4 py-3 text-[16px] text-ink focus:outline-none resize-none;
+        border: 1.5px solid transparent;
+        transition-property: border-color, background-color;
         transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
     }
 
-    /* ---------- chips / tags ---------- */
+    .vo-textarea:focus {
+        border-color: var(--ink);
+        background: var(--bg);
+    }
+
+    /* ---------- chips ---------- */
     .vo-chip {
-        @apply inline-flex items-center h-9 px-3.5 rounded-[10px] bg-surface2 text-[15px] font-medium text-ink select-none hover:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40;
+        @apply inline-flex h-9 items-center justify-center rounded-full bg-surface px-4 text-[14px] font-medium text-ink select-none hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
         transition-property: color, background-color, transform;
         transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .vo-chip:active {
@@ -239,103 +344,102 @@
     }
 
     .vo-chip-on {
-        @apply bg-ink text-white hover:bg-ink2;
+        @apply bg-ink text-onink hover:bg-ink;
     }
 
-    /* ---------- surfaces ---------- */
+    /* translucent chip that sits on a photo */
+    .vo-chip-glass {
+        @apply inline-flex h-[30px] items-center rounded-full px-3 text-[13px] font-medium text-white;
+        background: rgba(255, 255, 255, 0.18);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+    }
+
+    /* ---------- segmented control ---------- */
+    .vo-seg {
+        @apply grid rounded-full bg-surface p-[3px];
+    }
+
+    .vo-seg-item {
+        @apply h-9 rounded-full text-[14px] font-medium text-mute focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
+        transition-property: color, background-color, box-shadow;
+        transition-duration: 150ms;
+    }
+
+    .vo-seg-on {
+        @apply bg-bg text-ink font-semibold shadow-seg;
+    }
+
+    .vo-seg-on-dark {
+        @apply bg-ink text-onink font-semibold;
+    }
+
+    /* ---------- surfaces & lists ---------- */
     .vo-card {
-        @apply rounded-card border border-line bg-white;
+        @apply rounded-[16px] bg-surface;
     }
 
-    .vo-group {
-        @apply rounded-card bg-surface2 overflow-hidden;
+    .vo-card-line {
+        @apply rounded-[16px] bg-bg border border-line;
     }
 
     .vo-row {
-        @apply flex items-center gap-3 w-full px-4 py-3 text-left bg-white hover:bg-surface2 active:bg-surface3 focus-visible:outline-none focus-visible:bg-surface2;
+        @apply flex w-full items-center gap-3 px-4 text-left text-[15px] font-medium text-ink hover:bg-surface2 active:bg-surface2 focus-visible:outline-none focus-visible:bg-surface2;
+        min-height: 52px;
         transition-property: background-color;
         transition-duration: 120ms;
     }
 
     .vo-row + .vo-row {
-        @apply border-t border-line;
+        position: relative;
     }
 
-    .vo-option {
-        @apply w-full flex items-center justify-between rounded-btn border border-line bg-white px-4 py-3.5 text-left text-[17px] font-medium text-ink hover:bg-surface2 active:bg-surface3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint/40;
-        transition-property: color, background-color, border-color;
-        transition-duration: 150ms;
-        transition-timing-function: var(--vo-ease);
-    }
-
-    .vo-option-on {
-        @apply border-ink;
-    }
-
-    /* ---------- type ---------- */
-    .vo-label {
-        @apply text-[13px] font-medium text-mute;
-    }
-
-    .vo-eyebrow {
-        @apply text-[15px] font-medium text-mute;
-    }
-
-    .vo-h1 {
-        @apply font-display text-[28px] leading-[1.15] font-bold text-ink;
-    }
-
-    .vo-h2 {
-        @apply font-display text-[20px] leading-[1.25] font-semibold text-ink;
-    }
-
-    .vo-stamp {
-        @apply absolute rounded-[8px] border-2 px-2.5 py-1 font-display text-[16px] font-bold uppercase pointer-events-none select-none;
-        letter-spacing: 0.06em;
-    }
-
-    .vo-badge {
-        @apply inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-ink text-white text-[11px] font-semibold leading-none;
-    }
-
-    .vo-dot-online {
-        @apply absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-online ring-2 ring-white;
+    .vo-row + .vo-row::before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 0;
+        top: 0;
+        height: 1px;
+        background: var(--line);
     }
 
     .vo-divider {
         @apply h-px w-full bg-line;
     }
 
-    /* ---------- toasts (iOS banner) ---------- */
+    .vo-badge {
+        @apply inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-1.5 text-[12px] font-semibold text-onink;
+    }
+
+    .vo-dot-online {
+        @apply absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#34C759] ring-2 ring-bg;
+    }
+
+    /* ---------- toasts ---------- */
     [data-sonner-toaster] {
         --width: 340px;
         --border-radius: 14px;
         font-family: inherit;
-        z-index: var(--vo-z-toast);
+        z-index: var(--z-toast);
     }
 
     [data-sonner-toast][data-styled="true"] {
-        background: rgba(255, 255, 255, 0.9);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(0, 0, 0, 0.06);
+        background: var(--ink);
+        color: var(--on-ink);
+        border: none;
         border-radius: 14px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-        padding: 12px 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        padding: 12px 16px;
         gap: 10px;
-        color: var(--vo-ink);
         font-size: 14px;
         font-weight: 500;
         letter-spacing: -0.005em;
     }
 
     [data-sonner-toast] [data-icon] {
-        color: var(--vo-ink);
+        color: var(--on-ink);
         margin-left: 0;
-    }
-
-    [data-sonner-toast][data-type="error"] [data-icon] {
-        color: var(--vo-danger);
     }
 
     [data-sonner-toast] [data-title] {
@@ -344,17 +448,14 @@
     }
 
     [data-sonner-toast] [data-description] {
-        color: var(--vo-muted);
+        color: var(--on-ink);
+        opacity: 0.75;
         font-weight: 400;
         font-size: 13px;
     }
 
     .vo-banner {
-        @apply flex w-[340px] items-center gap-3 rounded-[14px] border border-black/[0.06] p-3 text-left;
-        background: rgba(255, 255, 255, 0.92);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        backdrop-filter: blur(20px) saturate(180%);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        @apply flex w-[340px] items-center gap-3 rounded-[16px] bg-bg p-3 text-left shadow-modal border border-line;
     }
 
     /* ---------- misc ---------- */
@@ -380,9 +481,9 @@
     }
 
     .vo-shimmer {
-        background: linear-gradient(90deg, #F5F5F7 25%, #ECECF0 37%, #F5F5F7 63%);
+        background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
         background-size: 400% 100%;
-        animation: shimmer 1.4s ease infinite;
+        animation: shimmer 1.6s ease infinite;
     }
 
     @keyframes shimmer {
@@ -390,11 +491,14 @@
         100% { background-position: 0 50%; }
     }
 
-    /* GPU layer for the draggable swipe card: avoids repaint while dragging */
     .vo-gpu {
         will-change: transform;
         transform: translateZ(0);
         backface-visibility: hidden;
+    }
+
+    .vo-photo-fade {
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.68) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0) 100%);
     }
 }
 

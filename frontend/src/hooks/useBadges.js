@@ -19,6 +19,14 @@ export const useLikesQuery = (enabled = true) =>
     refetchInterval: 45000,
   });
 
+export const useLikesSentQuery = (enabled = true) =>
+  useQuery({
+    queryKey: ["likes-sent"],
+    queryFn: async () => (await api.get("/likes/sent")).data,
+    enabled,
+    staleTime: 15000,
+  });
+
 export const useBadges = () => {
   const m = useMatchesQuery();
   const l = useLikesQuery();

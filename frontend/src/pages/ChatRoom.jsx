@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MoreHorizontal, Send, Zap, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, Quote } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -15,29 +15,27 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Skeleton } from "@/components/EmptyState";
-import { clockTime, dayLabel, timeAgo } from "@/lib/format";
+import { clockTime, dayLabel, timeAgo, activeLabel } from "@/lib/format";
 import { tween } from "@/lib/motion";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-/** A like that was tied to a specific photo or prompt; opens the conversation Hinge-style. */
+/** A like that was tied to a specific photo or prompt; opens the conversation. */
 const ReactionBubble = ({ m, mine, otherName }) => {
   const r = m.reaction || {};
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} data-testid="chat-reaction-message">
       {r.type === "photo" ? (
-        <div className="relative overflow-hidden rounded-card bg-surface2">
+        <div className="relative overflow-hidden rounded-[18px] bg-surface">
           <UserPhoto src={r.photo} name={mine ? otherName : ""} className="h-48 w-40 text-3xl" />
-          <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink shadow-soft">
-            <Heart className="h-4 w-4 fill-ink" strokeWidth={2.5} />
+          <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-red shadow-action">
+            <Heart className="h-4 w-4" fill="currentColor" strokeWidth={2} />
           </span>
         </div>
       ) : (
-        <div className="max-w-[82%] rounded-card bg-surface2 px-4 py-3">
-          <div className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-mute">
-            <Quote className="h-3 w-3" /> {r.question}
-          </div>
-          <div className="font-display text-[16px] leading-snug text-ink">{r.answer}</div>
+        <div className="max-w-[82%] rounded-[18px] bg-surface px-4 py-3">
+          <div className="mb-1 text-[12px] font-medium text-mute">{r.question}</div>
+          <div className="text-[15px] leading-snug text-ink">{r.answer}</div>
         </div>
       )}
       <ReactionPill className="mt-1.5">{reactionLabel(r, { mine })}</ReactionPill>
@@ -256,37 +254,38 @@ export default function ChatRoom() {
 
   const lastMine = [...messages].reverse().find((m) => m.sender_id === user?.id);
   const noTextYet = messages.every((m) => m.kind === "reaction");
+  const status = typing ? "typing..." : match?.online ? "Online" : activeLabel(other?.last_active) || "";
 
   return (
     <div className="flex h-full flex-col" data-testid="chat-room">
-      <header className="vo-bar flex items-center gap-2 border-b border-line px-3 py-2.5">
-        <button type="button" className="vo-icon-btn bg-transparent" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
-          <ArrowLeft className="h-5 w-5" />
+      <header className="vo-bar flex h-14 items-center gap-1 border-b border-line px-2">
+        <button type="button" className="vo-icon-plain" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
+          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
         </button>
         {other ? (
-          <button type="button" className="flex min-w-0 flex-1 items-center gap-3 rounded-btn px-1 py-1 text-left active:bg-surface2" onClick={() => setSheet(true)} data-testid="chat-header-profile">
+          <button type="button" className="flex min-w-0 flex-1 items-center gap-3 rounded-full px-1 py-1 text-left active:opacity-70" onClick={() => setSheet(true)} data-testid="chat-header-profile">
             <span className="relative">
-              <UserPhoto src={other.photos?.[0]} name={other.name} className="h-10 w-10 rounded-full" />
-              {match.online && <span className="vo-dot-online h-3 w-3" />}
+              <UserPhoto src={other.photos?.[0]} name={other.name} className="h-9 w-9 rounded-full text-sm" />
+              {match.online && <span className="vo-dot-online h-2.5 w-2.5" />}
             </span>
             <span className="min-w-0">
-              <span className="block truncate font-display text-[17px] font-semibold text-ink">{other.name}</span>
-              <span className="block text-[12px] text-mute">{typing ? "typing..." : match.online ? "Online" : `${other.compatibility}% match`}</span>
+              <span className="block truncate text-[16px] font-semibold leading-tight text-ink">{other.name}</span>
+              {status && <span className="block text-[12px] leading-tight text-mute">{status}</span>}
             </span>
           </button>
         ) : (
           <div className="flex flex-1 items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-9 w-9 rounded-full" />
             <Skeleton className="h-4 w-28" />
           </div>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="vo-icon-btn bg-transparent" aria-label="More" data-testid="chat-menu-button">
+            <button type="button" className="vo-icon-plain" aria-label="More" data-testid="chat-menu-button">
               <MoreHorizontal className="h-5 w-5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 rounded-card border-line p-1.5 shadow-float">
+          <DropdownMenuContent align="end" className="w-52 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">
             <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setSheet(true)} data-testid="chat-menu-view-profile">
               <UserRound className="mr-2 h-4 w-4" /> View profile
             </DropdownMenuItem>
@@ -297,7 +296,7 @@ export default function ChatRoom() {
             <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setReport(true)} data-testid="chat-menu-report">
               <ShieldAlert className="mr-2 h-4 w-4" /> Report
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-[10px] py-2.5 text-danger focus:text-danger" onClick={() => setConfirm("block")} data-testid="chat-menu-block">
+            <DropdownMenuItem className="rounded-[10px] py-2.5 text-red focus:text-red" onClick={() => setConfirm("block")} data-testid="chat-menu-block">
               <Ban className="mr-2 h-4 w-4" /> Block
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -305,7 +304,7 @@ export default function ChatRoom() {
       </header>
 
       {!connected && !loading && (
-        <div className="bg-surface2 px-4 py-1.5 text-center text-[12px] font-medium text-mute" data-testid="chat-offline-banner">
+        <div className="bg-surface px-4 py-1.5 text-center text-[12px] font-medium text-mute" data-testid="chat-offline-banner">
           Reconnecting... messages will still arrive.
         </div>
       )}
@@ -322,18 +321,16 @@ export default function ChatRoom() {
             {other && (
               <div className="mb-6 flex flex-col items-center text-center" data-testid="chat-intro">
                 <div className="flex items-center">
-                  <UserPhoto src={user?.photos?.[0]} name={user?.name} className="h-16 w-16 rounded-full border-[3px] border-white text-lg shadow-soft" />
-                  <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-4 h-16 w-16 rounded-full border-[3px] border-white text-lg shadow-soft" />
+                  <UserPhoto src={user?.photos?.[0]} name={user?.name} className="h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
+                  <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-4 h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
                 </div>
-                <p className="mt-3 text-[14px] text-mute">
+                <p className="mt-3 text-[13px] text-mute">
                   You matched with <span className="font-semibold text-ink">{other.name}</span> {timeAgo(match.created_at) === "now" ? "just now" : `${timeAgo(match.created_at)} ago`}
                   {other.shared_interests?.length ? ` · you both like ${other.shared_interests[0]}` : ""}
                 </p>
                 {noTextYet && (
                   <div className="mt-5 w-full">
-                    <div className="vo-label mb-2.5 flex items-center justify-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5" /> Break the ice
-                    </div>
+                    <div className="mb-2.5 text-[12px] font-semibold text-mute">Vibe check</div>
                     <div className="flex flex-col gap-2">
                       {suggestions.map((s) => (
                         <button key={s} type="button" className="vo-chip h-auto justify-start whitespace-normal px-4 py-2.5 text-left text-[14px]" onClick={() => sendMessage(s)} data-testid="chat-suggestion-chip">
@@ -349,7 +346,7 @@ export default function ChatRoom() {
               {rendered.map((r) =>
                 r.type === "day" ? (
                   <div key={r.key} className="my-4 flex items-center justify-center">
-                    <span className="text-[11px] font-medium text-mute">{r.label}</span>
+                    <span className="text-[12px] font-medium text-mute">{r.label}</span>
                   </div>
                 ) : (
                   <motion.div
@@ -364,10 +361,8 @@ export default function ChatRoom() {
                         <ReactionBubble m={r.m} mine={r.m.sender_id === user?.id} otherName={other?.name} />
                       ) : (
                         <div
-                          className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-snug ${
-                            r.m.sender_id === user?.id
-                              ? "rounded-[18px] rounded-br-[6px] bg-tint text-white"
-                              : "rounded-[18px] rounded-bl-[6px] bg-surface2 text-ink"
+                          className={`whitespace-pre-wrap break-words px-4 py-2.5 text-[15px] leading-snug ${
+                            r.m.sender_id === user?.id ? "rounded-[18px] rounded-br-[6px] bg-ink text-onink" : "rounded-[18px] rounded-bl-[6px] bg-surface text-ink"
                           } ${r.m.pending ? "opacity-60" : ""}`}
                           data-testid="chat-message-bubble"
                         >
@@ -379,11 +374,11 @@ export default function ChatRoom() {
                           {clockTime(r.m.created_at)}
                           {r.m.sender_id === user?.id && r.m.id === lastMine?.id && (
                             r.m.read_at ? (
-                              <span className="inline-flex items-center gap-0.5 text-tint" data-testid="chat-seen">
-                                <CheckCheck className="h-3.5 w-3.5" /> Seen
+                              <span className="inline-flex items-center gap-0.5 text-blue" data-testid="chat-seen">
+                                <CheckCheck className="h-3 w-3" /> Seen
                               </span>
                             ) : (
-                              <Check className="h-3.5 w-3.5" />
+                              <Check className="h-3 w-3" />
                             )
                           )}
                         </div>
@@ -395,7 +390,7 @@ export default function ChatRoom() {
             </AnimatePresence>
             {typing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(0.15)} className="mb-2 flex justify-start" data-testid="chat-typing-indicator">
-                <div className="flex items-center gap-1 rounded-[18px] rounded-bl-[6px] bg-surface2 px-4 py-3">
+                <div className="flex items-center gap-1 rounded-[18px] bg-surface px-4 py-3">
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
@@ -416,8 +411,8 @@ export default function ChatRoom() {
         }}
       >
         <div className="flex items-end gap-2">
-          <button type="button" className="vo-icon-btn h-11 w-11 shrink-0 text-tint" onClick={() => setIcebreakers(true)} aria-label="Icebreakers" data-testid="chat-icebreakers-open-button">
-            <Zap className="h-5 w-5 fill-tint" />
+          <button type="button" className="vo-icon-btn h-11 w-11 shrink-0" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
+            <MessageSquareText className="h-5 w-5" strokeWidth={1.75} />
           </button>
           <textarea
             ref={inputRef}
@@ -430,27 +425,27 @@ export default function ChatRoom() {
                 sendMessage();
               }
             }}
-            placeholder={other ? `Message ${other.name}` : "Message"}
-            className="vo-textarea max-h-[120px] min-h-[44px] flex-1 rounded-[22px] border-line bg-white px-4 py-2.5 text-[15px] focus:border-mute2"
+            placeholder="Message"
+            className="vo-textarea max-h-[120px] min-h-[44px] flex-1 rounded-[22px] px-4 py-2.5 text-[15px]"
             style={{ height: Math.min(120, 24 + 20 * Math.max(1, text.split("\n").length)) }}
             data-testid="chat-message-input"
           />
-          <button type="submit" disabled={!text.trim() || sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-tint text-white transition-[background-color,transform] duration-150 ease-ios hover:bg-tint-dark active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
-            <Send className="h-5 w-5" />
+          <button type="submit" disabled={!text.trim() || sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-onink transition-transform duration-150 active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
+            <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
           </button>
         </div>
       </form>
 
       <Drawer open={icebreakers} onOpenChange={setIcebreakers}>
-        <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-sheet border-0 bg-white" data-testid="icebreakers-drawer">
-          <DrawerTitle className="vo-h2 mt-3 px-5">Vibe check</DrawerTitle>
-          <DrawerDescription className="mb-3 mt-1 px-5 text-[14px] text-mute">Tap one to drop it into the chat. Edit it or send as is.</DrawerDescription>
+        <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-[20px] border-0 bg-bg" data-testid="icebreakers-drawer">
+          <DrawerTitle className="mt-3 px-5 text-[18px] font-bold text-ink">Vibe check</DrawerTitle>
+          <DrawerDescription className="mb-3 mt-1 px-5 text-[13px] text-mute">Tap one to drop it into the chat. Edit it or send as is.</DrawerDescription>
           <div className="vo-scroll flex flex-wrap gap-2 px-5 pb-8">
             {drawerBreakers.map((s) => (
               <button
                 key={s}
                 type="button"
-                className="vo-chip h-auto whitespace-normal px-4 py-2.5 text-left text-[14px]"
+                className="vo-chip h-auto whitespace-normal px-3.5 py-2.5 text-left text-[14px]"
                 onClick={() => {
                   setText(s);
                   setIcebreakers(false);

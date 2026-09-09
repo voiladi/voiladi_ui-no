@@ -45,11 +45,21 @@ app.add_middleware(
 )
 
 
+async def _sparse_unique(field: str):
+    """Unique index that ignores documents without the field (email-only and phone-only accounts coexist)."""
+    name = f"{field}_1"
+    info = await db.users.index_information()
+    if name in info and not info[name].get("sparse"):
+        await db.users.drop_index(name)
+    await db.users.create_index(field, unique=True, sparse=True)
+
+
 @app.on_event("startup")
 async def ensure_indexes():
     try:
         await db.users.create_index("id", unique=True)
-        await db.users.create_index("phone", unique=True)
+        await _sparse_unique("phone")
+        await _sparse_unique("email")
         await db.users.create_index([("profile_complete", 1), ("gender", 1)])
         await db.otp_sessions.create_index("phone", unique=True)
         await db.swipes.create_index([("from_id", 1), ("to_id", 1)], unique=True)

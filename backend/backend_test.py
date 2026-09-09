@@ -70,9 +70,43 @@ class VoiladiTester:
             return r.status_code, {}
 
     # ========== AUTH TESTS ==========
+    def test_auth_register(self):
+        """Test POST /auth/register with email+password returns token, user, is_new"""
+        import random
+        self.test_email = f"test{int(time.time())}{random.randint(100,999)}@example.com"
+        self.test_password = "secret123"
+        status, data = self.req('POST', '/auth/register', 200, json={'email': self.test_email, 'password': self.test_password})
+        assert 'token' in data, "token not in response"
+        assert 'user' in data, "user not in response"
+        assert 'is_new' in data, "is_new not in response"
+        assert data['is_new'] == True, "Should be new user"
+        self.email_token = data['token']
+        self.email_user = data['user']
+        print(f"  ✓ Registered with email: {self.test_email}")
+
+    def test_auth_register_duplicate(self):
+        """Test POST /auth/register with duplicate email returns 400"""
+        status, data = self.req('POST', '/auth/register', 400, json={'email': self.test_email, 'password': 'another123'})
+        assert 'already exists' in data.get('detail', '').lower() or 'log in' in data.get('detail', '').lower(), "Should mention duplicate"
+        print(f"  ✓ Duplicate email rejected")
+
+    def test_auth_login_wrong_password(self):
+        """Test POST /auth/login with wrong password returns 400"""
+        status, data = self.req('POST', '/auth/login', 400, json={'email': self.test_email, 'password': 'wrongpass'})
+        assert 'incorrect' in data.get('detail', '').lower(), "Should mention incorrect credentials"
+        print(f"  ✓ Wrong password rejected")
+
+    def test_auth_login_correct(self):
+        """Test POST /auth/login with correct password returns token"""
+        status, data = self.req('POST', '/auth/login', 200, json={'email': self.test_email, 'password': self.test_password})
+        assert 'token' in data, "token not in response"
+        assert 'user' in data, "user not in response"
+        assert data['is_new'] == False, "Should not be new user"
+        print(f"  ✓ Login successful")
+
     def test_auth_request_otp(self):
         """Test POST /auth/request-otp returns dev_code and resend_in"""
-        self.phone = f"+91555000{int(time.time()) % 10000:04d}"
+        self.phone = f"+1999000{int(time.time()) % 10000:04d}"
         status, data = self.req('POST', '/auth/request-otp', 200, json={'phone': self.phone})
         assert 'dev_code' in data, "dev_code not in response"
         assert 'resend_in' in data, "resend_in not in response"
@@ -102,6 +136,26 @@ class VoiladiTester:
         self.token = data['token']
         self.user = data['user']
         print(f"  ✓ Got token and user (is_new={data['is_new']})")
+
+    def test_auth_verify_phone(self):
+        """Test POST /auth/verify-phone attaches phone to email account"""
+        # Switch to email account token
+        old_token = self.token
+        self.token = self.email_token
+        
+        # Request OTP for a new phone
+        verify_phone = f"+1999111{int(time.time()) % 10000:04d}"
+        status, data = self.req('POST', '/auth/request-otp', 200, json={'phone': verify_phone})
+        verify_code = data['dev_code']
+        
+        # Verify phone and attach to email account
+        status, data = self.req('POST', '/auth/verify-phone', 200, json={'phone': verify_phone, 'code': verify_code})
+        assert data['phone'] == verify_phone, "Phone not attached"
+        assert data['phone_verified_at'] is not None, "phone_verified_at should be set"
+        print(f"  ✓ Phone {verify_phone} attached to email account")
+        
+        # Restore token
+        self.token = old_token
 
     def test_auth_me(self):
         """Test GET /auth/me with Bearer token"""
@@ -277,6 +331,33 @@ class VoiladiTester:
         else:
             print(f"  ✓ Discover returned 0 profiles (expected if no seed data)")
 
+    def test_explore_all(self):
+        """Test GET /explore?tab=all"""
+        status, data = self.req('GET', '/explore?tab=all', 200)
+        assert 'profiles' in data, "profiles not in response"
+        assert 'total' in data, "total not in response"
+        assert 'tab' in data, "tab not in response"
+        assert data['tab'] == 'all', f"Expected tab=all, got {data['tab']}"
+        print(f"  ✓ Explore (all) returned {len(data['profiles'])} profiles")
+
+    def test_explore_near(self):
+        """Test GET /explore?tab=near"""
+        status, data = self.req('GET', '/explore?tab=near', 200)
+        assert data['tab'] == 'near', f"Expected tab=near, got {data['tab']}"
+        print(f"  ✓ Explore (near) returned {len(data['profiles'])} profiles")
+
+    def test_explore_new(self):
+        """Test GET /explore?tab=new"""
+        status, data = self.req('GET', '/explore?tab=new', 200)
+        assert data['tab'] == 'new', f"Expected tab=new, got {data['tab']}"
+        print(f"  ✓ Explore (new) returned {len(data['profiles'])} profiles")
+
+    def test_explore_popular(self):
+        """Test GET /explore?tab=popular"""
+        status, data = self.req('GET', '/explore?tab=popular', 200)
+        assert data['tab'] == 'popular', f"Expected tab=popular, got {data['tab']}"
+        print(f"  ✓ Explore (popular) returned {len(data['profiles'])} profiles")
+
     # ========== SWIPE TESTS ==========
     def test_swipe_self(self):
         """Test POST /swipe on self returns 400"""
@@ -309,6 +390,27 @@ class VoiladiTester:
         assert 'count' in data, "count not in response"
         print(f"  ✓ Likes received: {data['count']} likes")
 
+    def test_likes_sent(self):
+        """Test GET /likes/sent returns users I liked"""
+        status, data = self.req('GET', '/likes/sent', 200)
+        assert 'likes' in data, "likes not in response"
+        assert 'count' in data, "count not in response"
+        print(f"  ✓ Likes sent: {data['count']} likes")
+
+    # ========== STATS TESTS ==========
+    def test_stats(self):
+        """Test GET /me/stats returns matches, likes, voilas_used_week, voilas_left, voila_weekly_limit"""
+        status, data = self.req('GET', '/me/stats', 200)
+        assert 'matches' in data, "matches not in response"
+        assert 'likes_received' in data, "likes_received not in response"
+        assert 'likes_sent' in data, "likes_sent not in response"
+        assert 'voilas_used_week' in data, "voilas_used_week not in response"
+        assert 'voilas_left' in data, "voilas_left not in response"
+        assert 'voila_weekly_limit' in data, "voila_weekly_limit not in response"
+        assert data['voila_weekly_limit'] == 5, f"voila_weekly_limit should be 5, got {data['voila_weekly_limit']}"
+        print(f"  ✓ Stats: matches={data['matches']}, likes_received={data['likes_received']}, voilas_left={data['voilas_left']}/5")
+        self.initial_voilas_left = data['voilas_left']
+
     # ========== MATCHES TESTS ==========
     def test_matches_list(self):
         """Test GET /matches returns matches with last_message, unread, total_unread"""
@@ -320,6 +422,29 @@ class VoiladiTester:
             self.match_id = data['matches'][0]['id']
 
     # ========== MESSAGES TESTS ==========
+    def test_messages_get(self):
+        """Test GET /matches/{id}/messages returns messages"""
+        if not hasattr(self, 'match_id'):
+            print(f"  ⚠ Skipped (no match available)")
+            return
+        
+        status, data = self.req('GET', f'/matches/{self.match_id}/messages', 200)
+        assert 'messages' in data, "messages not in response"
+        assert 'has_more' in data, "has_more not in response"
+        print(f"  ✓ Messages: {len(data['messages'])} messages")
+
+    def test_messages_send(self):
+        """Test POST /matches/{id}/messages sends a message"""
+        if not hasattr(self, 'match_id'):
+            print(f"  ⚠ Skipped (no match available)")
+            return
+        
+        status, data = self.req('POST', f'/matches/{self.match_id}/messages', 200, json={'text': 'Hello from test!'})
+        assert 'id' in data, "message id not in response"
+        assert 'text' in data, "text not in response"
+        assert data['text'] == 'Hello from test!', "Message text mismatch"
+        print(f"  ✓ Message sent: {data['text']}")
+
     def test_messages_empty_text(self):
         """Test POST /matches/{id}/messages with empty text returns 400"""
         # Create a match first by having Kiara like us back
@@ -332,6 +457,20 @@ class VoiladiTester:
         print(f"  ✓ Empty message rejected")
 
     # ========== BLOCK/REPORT TESTS ==========
+    def test_users_get(self):
+        """Test GET /users/{id} returns profile and increments profile_views"""
+        # Get a profile
+        status, data = self.req('GET', '/discover', 200)
+        if len(data['profiles']) > 0:
+            target = data['profiles'][0]
+            # Get initial profile_views (if available in response)
+            status, profile = self.req('GET', f'/users/{target["id"]}', 200)
+            assert 'id' in profile, "profile missing id"
+            assert profile['id'] == target['id'], "Profile ID mismatch"
+            print(f"  ✓ GET /users/{target['id']} returned profile")
+        else:
+            print(f"  ⚠ Skipped (no profiles available)")
+
     def test_block_self(self):
         """Test POST /users/{id}/block on self returns 400"""
         status, data = self.req('POST', f'/users/{self.user["id"]}/block', 400)
@@ -375,10 +514,15 @@ def main():
     tester = VoiladiTester()
     
     # Auth tests
+    tester.test("Auth: Register with email+password", tester.test_auth_register)
+    tester.test("Auth: Register duplicate email (400)", tester.test_auth_register_duplicate)
+    tester.test("Auth: Login wrong password (400)", tester.test_auth_login_wrong_password)
+    tester.test("Auth: Login correct password", tester.test_auth_login_correct)
     tester.test("Auth: Request OTP", tester.test_auth_request_otp)
     tester.test("Auth: Rate limit (429)", tester.test_auth_request_otp_rate_limit)
     tester.test("Auth: Verify OTP wrong code", tester.test_auth_verify_otp_wrong_code)
     tester.test("Auth: Verify OTP correct", tester.test_auth_verify_otp_correct)
+    tester.test("Auth: Verify phone (attach to email)", tester.test_auth_verify_phone)
     tester.test("Auth: GET /auth/me", tester.test_auth_me)
     tester.test("Auth: Bad token (401)", tester.test_auth_me_bad_token)
     
@@ -408,6 +552,10 @@ def main():
     
     # Discover tests
     tester.test("Discover: GET /discover", tester.test_discover)
+    tester.test("Explore: tab=all", tester.test_explore_all)
+    tester.test("Explore: tab=near", tester.test_explore_near)
+    tester.test("Explore: tab=new", tester.test_explore_new)
+    tester.test("Explore: tab=popular", tester.test_explore_popular)
     
     # Swipe tests
     tester.test("Swipe: Self (400)", tester.test_swipe_self)
@@ -416,14 +564,21 @@ def main():
     
     # Likes tests
     tester.test("Likes: GET received", tester.test_likes_received)
+    tester.test("Likes: GET sent", tester.test_likes_sent)
+    
+    # Stats tests
+    tester.test("Stats: GET /me/stats", tester.test_stats)
     
     # Matches tests
     tester.test("Matches: GET list", tester.test_matches_list)
     
     # Messages tests
+    tester.test("Messages: GET messages", tester.test_messages_get)
+    tester.test("Messages: POST message", tester.test_messages_send)
     tester.test("Messages: Empty text (400)", tester.test_messages_empty_text)
     
     # Block/Report tests
+    tester.test("Users: GET /users/{id}", tester.test_users_get)
     tester.test("Block: Self (400)", tester.test_block_self)
     tester.test("Report: User", tester.test_report_user)
     

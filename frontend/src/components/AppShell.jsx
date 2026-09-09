@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { UserPhoto } from "@/components/UserPhoto";
 
-/* iOS notification-style banners for realtime events (match, message). */
+/* Tap-to-open banners for realtime events (new match, new message). */
 const RealtimeToasts = () => {
   const { subscribe } = useSocket();
   const { user } = useAuth();
@@ -21,6 +21,8 @@ const RealtimeToasts = () => {
       if (ev.type === "new_match") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         qc.invalidateQueries({ queryKey: ["likes"] });
+        qc.invalidateQueries({ queryKey: ["likes-sent"] });
+        qc.invalidateQueries({ queryKey: ["stats"] });
         const m = ev.match;
         toast.custom(
           (id) => (
@@ -33,10 +35,10 @@ const RealtimeToasts = () => {
               }}
               className="vo-banner"
             >
-              <UserPhoto src={m.user?.photos?.[0]} name={m.user?.name} className="h-10 w-10 rounded-[10px]" />
+              <UserPhoto src={m.user?.photos?.[0]} name={m.user?.name} className="h-11 w-11 rounded-full" />
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold text-ink">It's a Voila</div>
-                <div className="truncate text-[13px] text-mute">You and {m.user?.name} liked each other. Say hi.</div>
+                <div className="text-[15px] font-semibold text-ink">It's a match!</div>
+                <div className="mt-0.5 truncate text-[13px] text-mute">You and {m.user?.name} liked each other.</div>
               </div>
             </button>
           ),
@@ -45,7 +47,6 @@ const RealtimeToasts = () => {
       } else if (ev.type === "message") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         const inRoom = location.pathname === `/chats/${ev.match_id}`;
-        // Reaction "messages" arrive together with the match itself; the match popup already covers them.
         if (!inRoom && ev.message?.sender_id !== user.id && ev.message?.kind !== "reaction") {
           toast.custom(
             (id) => (
@@ -58,10 +59,10 @@ const RealtimeToasts = () => {
                 }}
                 className="vo-banner"
               >
-                <UserPhoto src={ev.sender_photo} name={ev.sender_name || "?"} className="h-10 w-10 rounded-[10px] text-sm" />
+                <UserPhoto src={ev.sender_photo} name={ev.sender_name || "?"} className="h-11 w-11 rounded-full text-sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold text-ink">{ev.sender_name || "New message"}</div>
-                  <div className="truncate text-[13px] text-mute">{ev.message?.text}</div>
+                  <div className="text-[15px] font-semibold text-ink">{ev.sender_name || "New message"}</div>
+                  <div className="mt-0.5 truncate text-[13px] text-mute">{ev.message?.text}</div>
                 </div>
               </button>
             ),
@@ -70,6 +71,7 @@ const RealtimeToasts = () => {
         }
       } else if (ev.type === "unmatch") {
         qc.invalidateQueries({ queryKey: ["matches"] });
+        qc.invalidateQueries({ queryKey: ["stats"] });
       }
     });
   }, [subscribe, user, qc, navigate, location.pathname]);
