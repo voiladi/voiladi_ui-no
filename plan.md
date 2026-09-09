@@ -173,6 +173,7 @@
 - Fixed dialog overlays (bg-ink/30 did not resolve -> bg-black/45).
 - Tests: iteration_7 (BE 47/47, FE 100%), iteration_8 (FE 95%; the 4 flagged items were test-selector mismatches, verified manually).
 - Deployed to Railway (voiladi-api + voiladi-web).
+- Logo updated everywhere to the user's final mark (thick white stroke front, grey stroke behind, radius 23.5%, wordmark 800 weight); favicon.svg, PNG icons (32/64/180/192/512 + maskable), manifest.json, OG tags added. Welcome page made fluid (clamp() sizes, flex rhythm, safe areas) and verified at 320x568, 393x852, 430x932, 1440x900 with no scrolling. Redeployed web.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.

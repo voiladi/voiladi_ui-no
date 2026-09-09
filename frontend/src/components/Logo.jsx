@@ -7,13 +7,13 @@ import React from "react";
 export const LogoMark = ({ size = 28, className = "", testId = "logo-mark" }) => (
   <span
     className={`inline-flex shrink-0 items-center justify-center bg-ink ${className}`}
-    style={{ width: size, height: size, borderRadius: Math.round(size * 0.27) }}
+    style={{ width: size, height: size, borderRadius: "23.5%" }}
     data-testid={testId}
     aria-hidden="true"
   >
-    <svg viewBox="0 0 100 100" width={size} height={size} fill="none">
-      <line x1="68" y1="31" x2="46" y2="71" stroke="#BFC2C9" strokeWidth="11" strokeLinecap="round" />
-      <line x1="32" y1="31" x2="52" y2="71" stroke="#FFFFFF" strokeWidth="13" strokeLinecap="round" />
+    <svg viewBox="0 0 100 100" width="100%" height="100%" fill="none" style={{ display: "block" }}>
+      <line x1="71" y1="30" x2="55" y2="64" stroke="#C8CACE" strokeWidth="12.5" strokeLinecap="round" />
+      <line x1="29.5" y1="30" x2="48" y2="72" stroke="#FFFFFF" strokeWidth="15.5" strokeLinecap="round" />
     </svg>
   </span>
 );
@@ -21,8 +21,8 @@ export const LogoMark = ({ size = 28, className = "", testId = "logo-mark" }) =>
 /* Lowercase wordmark. */
 export const Wordmark = ({ size = 20, light = false, className = "", testId = "logo-wordmark" }) => (
   <span
-    className={`font-bold leading-none ${light ? "text-white" : "text-ink"} ${className}`}
-    style={{ fontSize: size, letterSpacing: "-0.02em" }}
+    className={`font-extrabold leading-none ${light ? "text-white" : "text-ink"} ${className}`}
+    style={{ fontSize: size, letterSpacing: "-0.035em" }}
     data-testid={testId}
   >
     voiladi

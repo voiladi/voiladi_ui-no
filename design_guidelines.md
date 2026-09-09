@@ -41,7 +41,7 @@ Do not introduce new colours, fonts, textures, serif type, gradients (except the
 - Wordmark: "voiladi" lowercase, 20 / 700, letter-spacing -0.01em, sits right of the logo tile.
 
 ## 4. Logo
-- Tile: black (#111) rounded square (radius 27% of size) with a two-stroke "V": white rounded stroke in front (top-left -> bottom), light-grey #BFC2C9 stroke behind (top-right -> bottom). 30px in headers, 76px on Welcome, 84px on the boot splash, 88px on All set.
+- Tile: black (#111) rounded square (radius 23.5%) with a two-stroke "V" (viewBox 100): white stroke 15.5 wide from (29.5,30) to (48,72) in front; light-grey #C8CACE stroke 12.5 wide from (71,30) to (55,64) behind. Same geometry in /public/favicon.svg and the PNG app icons. Wordmark: Inter 800, letter-spacing -0.035em. 30px in headers, 76px on Welcome, 84px on the boot splash, 88px on All set.
 - Header pattern: [tile 30px] 8px [wordmark 21px] on the left of Discover / Explore / Likes / Chat / Profile; header height 56, icon buttons 40px circles on the right.
 
 ## 5. Radii
