@@ -94,7 +94,7 @@ export default function Likes() {
     setActing(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast("Report received. Thank you.");
+      toast.success("Report received. Thank you.");
       setReportTarget(null);
     } catch (e) {
       toast.error(errMsg(e));

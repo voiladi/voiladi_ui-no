@@ -515,6 +515,55 @@ class VoiladiTester:
         else:
             print(f"  ⚠ Skipped (no profiles to report)")
 
+    # ========== NOTIFICATIONS TESTS ==========
+    def test_notifications_unauthenticated(self):
+        """Test GET /notifications without auth returns 401"""
+        old_token = self.token
+        self.token = None
+        status, data = self.req('GET', '/notifications', 401)
+        self.token = old_token
+        print(f"  ✓ Unauthenticated request rejected (401)")
+
+    def test_notifications_get(self):
+        """Test GET /notifications returns items, seen_at, unseen_count"""
+        status, data = self.req('GET', '/notifications', 200)
+        assert 'items' in data, "items not in response"
+        assert 'seen_at' in data, "seen_at not in response"
+        assert 'unseen_count' in data, "unseen_count not in response"
+        assert isinstance(data['items'], list), "items should be a list"
+        assert isinstance(data['unseen_count'], int), "unseen_count should be an int"
+        
+        # Check item structure if any items exist
+        if len(data['items']) > 0:
+            item = data['items'][0]
+            assert 'id' in item, "item missing id"
+            assert 'type' in item, "item missing type"
+            assert item['type'] in ['like', 'superlike', 'match', 'message', 'system'], f"Invalid type: {item['type']}"
+            assert 'title' in item, "item missing title"
+            assert 'sub' in item, "item missing sub"
+            assert 'created_at' in item, "item missing created_at"
+            assert 'href' in item, "item missing href"
+            
+            # Check items are sorted newest first
+            if len(data['items']) > 1:
+                assert data['items'][0]['created_at'] >= data['items'][1]['created_at'], "Items not sorted newest first"
+        
+        self.initial_unseen_count = data['unseen_count']
+        print(f"  ✓ Notifications: {len(data['items'])} items, {data['unseen_count']} unseen")
+
+    def test_notifications_mark_seen(self):
+        """Test POST /notifications/seen marks notifications as seen"""
+        status, data = self.req('POST', '/notifications/seen', 200)
+        assert data.get('ok') == True, "ok should be True"
+        assert 'seen_at' in data, "seen_at not in response"
+        print(f"  ✓ Notifications marked as seen: {data['seen_at']}")
+
+    def test_notifications_unseen_count_zero(self):
+        """Test GET /notifications after marking seen shows unseen_count 0"""
+        status, data = self.req('GET', '/notifications', 200)
+        assert data['unseen_count'] == 0, f"unseen_count should be 0, got {data['unseen_count']}"
+        print(f"  ✓ unseen_count is now 0")
+
     def summary(self):
         """Print test summary"""
         print(f"\n{'='*60}")
@@ -609,6 +658,12 @@ def main():
     tester.test("Users: GET /users/{id}", tester.test_users_get)
     tester.test("Block: Self (400)", tester.test_block_self)
     tester.test("Report: User", tester.test_report_user)
+    
+    # Notifications tests
+    tester.test("Notifications: Unauthenticated (401)", tester.test_notifications_unauthenticated)
+    tester.test("Notifications: GET /notifications", tester.test_notifications_get)
+    tester.test("Notifications: POST /notifications/seen", tester.test_notifications_mark_seen)
+    tester.test("Notifications: unseen_count after seen", tester.test_notifications_unseen_count_zero)
     
     return tester.summary()
 

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useStats } from "@/hooks/useStats";
-import { useBadges } from "@/hooks/useBadges";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Skeleton } from "@/components/Loading";
@@ -100,7 +100,8 @@ export default function Profile() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const { data: stats } = useStats(!!user);
-  const { likes, unread } = useBadges();
+  const { data: notif } = useNotifications(!!user);
+  const unseen = notif?.unseen_count || 0;
   const [boosting, setBoosting] = useState(false);
   const boostLeft = useCountdown(stats?.boost_active ? stats.boost_until : null);
 
@@ -122,7 +123,7 @@ export default function Profile() {
     try {
       await api.post("/me/boost");
       await qc.invalidateQueries({ queryKey: ["stats"] });
-      toast("Boost started. You'll be seen by more people for 90 minutes.");
+      toast.success("Boost started. You'll be seen by more people for 90 minutes.");
     } catch (e) {
       toast.error(errMsg(e));
     } finally {
@@ -138,9 +139,9 @@ export default function Profile() {
       <header className="flex h-[52px] items-center justify-between px-3 pt-1">
         <Brand size={34} />
         <div className="flex items-center gap-3">
-          <button type="button" className="vo-icon-btn relative h-[38px] w-[38px] bg-surface2/70" onClick={() => navigate("/likes")} aria-label="Notifications" data-testid="profile-notifications-button">
+          <button type="button" className="vo-icon-btn relative h-[38px] w-[38px] bg-surface2/70" onClick={() => navigate("/notifications")} aria-label="Notifications" data-testid="profile-notifications-button">
             <Bell className="h-5 w-5" strokeWidth={1.9} />
-            {likes + unread > 0 && <span className="absolute right-[6px] top-[5px] h-2 w-2 rounded-full bg-red" data-testid="profile-notifications-dot" />}
+            {unseen > 0 && <span className="absolute right-[6px] top-[5px] h-2 w-2 rounded-full bg-red" data-testid="profile-notifications-dot" />}
           </button>
           <button type="button" className="vo-icon-btn h-[38px] w-[38px] bg-surface2/70" onClick={() => navigate("/settings")} aria-label="Settings" data-testid="profile-settings-button">
             <Settings className="h-5 w-5" strokeWidth={1.9} />

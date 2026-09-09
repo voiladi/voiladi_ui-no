@@ -38,12 +38,12 @@ const RealtimeToasts = () => {
             >
               <UserPhoto src={m.user?.photos?.[0]} name={m.user?.name} className="h-11 w-11 rounded-full" />
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-semibold text-ink">It's a match!</div>
-                <div className="mt-0.5 truncate text-[13px] text-mute">You and {m.user?.name} liked each other.</div>
+                <div className="vo-banner-title">It's a match!</div>
+                <div className="vo-banner-sub truncate">You and {m.user?.name} liked each other.</div>
               </div>
             </button>
           ),
-          { duration: 5000 }
+          { duration: 5000, position: "top-center" }
         );
       } else if (ev.type === "message") {
         qc.invalidateQueries({ queryKey: ["matches"] });
@@ -62,12 +62,12 @@ const RealtimeToasts = () => {
               >
                 <UserPhoto src={ev.sender_photo} name={ev.sender_name || "?"} className="h-11 w-11 rounded-full text-sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-semibold text-ink">{ev.sender_name || "New message"}</div>
-                  <div className="mt-0.5 truncate text-[13px] text-mute">{ev.message?.text}</div>
+                  <div className="vo-banner-title">{ev.sender_name || "New message"}</div>
+                  <div className="vo-banner-sub truncate">{ev.message?.text}</div>
                 </div>
               </button>
             ),
-            { duration: 4000 }
+            { duration: 4000, position: "top-center" }
           );
         }
       } else if (ev.type === "unmatch") {

@@ -77,7 +77,7 @@ export default function EditProfile() {
         clear_location: !form.location.city,
       });
       setUser(data);
-      toast("Profile saved");
+      toast.success("Profile saved");
       navigate("/profile");
     } catch (e) {
       toast.error(errMsg(e));

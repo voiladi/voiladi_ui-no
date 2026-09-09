@@ -64,7 +64,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
     try {
       await api.put("/profile/photos/order", { photos: next });
       onChange(next);
-      toast("Set as main photo");
+      toast.success("Set as main photo");
     } catch (err) {
       toast.error(errMsg(err));
     } finally {

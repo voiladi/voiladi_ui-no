@@ -74,7 +74,7 @@ export default function Discover() {
           qc.invalidateQueries({ queryKey: ["likes"] });
           qc.invalidateQueries({ queryKey: ["stats"] });
         } else if (action === "superlike") {
-          toast(`Super Like sent to ${profile.name}`);
+          toast.success(`Super Like sent to ${profile.name}`);
         }
       } catch (e) {
         toast.error(errMsg(e));
@@ -134,7 +134,7 @@ export default function Discover() {
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast("Report received. Thank you.");
+      toast.success("Report received. Thank you.");
       setReportTarget(null);
     } catch (e) {
       toast.error(errMsg(e));

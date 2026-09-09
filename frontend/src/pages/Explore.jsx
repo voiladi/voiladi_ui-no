@@ -65,7 +65,7 @@ export default function Explore() {
         qc.invalidateQueries({ queryKey: ["matches"] });
         qc.invalidateQueries({ queryKey: ["stats"] });
       } else if (action === "superlike") {
-        toast(`Super Like sent to ${profile.name}`);
+        toast.success(`Super Like sent to ${profile.name}`);
         qc.invalidateQueries({ queryKey: ["stats"] });
       }
     } catch (e) {
@@ -95,7 +95,7 @@ export default function Explore() {
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast("Report received. Thank you.");
+      toast.success("Report received. Thank you.");
       setReportTarget(null);
     } catch (e) {
       toast.error(errMsg(e));

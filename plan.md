@@ -185,6 +185,13 @@
 - Fit-to-device system (hooks/useFitScale.js): shell laid out at viewport/scale and transform-scaled (0.78..1) so screens keep the mockup proportions on any phone; frozen while typing.
 - Deployed web to Railway (SUCCESS).
 
+
+## Phase 13 — Instagram-style notifications + Notifications page (P0)
+**Status: COMPLETED (2026-09-09)**
+- Toasts: single dark bottom bar above the tab bar (sonner unstyled, .vo-toast), success check / red error icon; realtime match/message banners = dark top card with avatar (.vo-banner, position top-center). No stacking, no white cards.
+- Notifications page (/notifications) from the profile bell: tabs All/Likes/Matches/Messages/System, New/Earlier groups, avatar badges, system notices. Backend routes_notifications.py (GET /api/notifications, POST /api/notifications/seen; users.notifications_seen_at). Bell dot = unseen_count.
+- Tests iteration_11 (toasts) + iteration_12 (notifications, BE+FE 100%). Deployed api + web.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

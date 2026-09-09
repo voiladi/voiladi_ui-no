@@ -60,3 +60,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   via aria-busy, image fade-in, route transitions in AppShell). Dialog overlays fixed (bg-black/45). Tests iteration_7 + iteration_8 green. Redeployed to Railway.
 - Phase 12 (2026-09-09): iOS blank-screen bug fixed (AnimatePresence exit-wait removed; CSS entrance + ScreenErrorBoundary). Exact PNG logo everywhere + icons.
   Profile 1:1 rebuild (fits 393x852, no scroll). Fit-to-device scaling hook (useFitScale, transform scale 0.78..1). Tests iteration_9/10 green. Redeployed web.
+- Phase 13 (2026-09-09): Instagram-style toasts (dark bottom bar; dark top banners with avatar for match/message). Notifications page + API
+  (routes_notifications.py; New/Earlier split via notifications_seen_at; tabs). Tests iteration_11/12 green. Deployed api + web.

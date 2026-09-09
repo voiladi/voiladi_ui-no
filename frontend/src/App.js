@@ -21,6 +21,7 @@ import Profile from "@/pages/Profile";
 import EditProfile from "@/pages/EditProfile";
 import Filters from "@/pages/Filters";
 import Settings from "@/pages/Settings";
+import Notifications from "@/pages/Notifications";
 import Legal from "@/pages/Legal";
 
 /* Boot screen while the session is checked: logo centred, thin spinner near the bottom (as native apps do). */
@@ -99,12 +100,13 @@ function App() {
                   <Route path="/filters" element={<Filters />} />
                   <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/notifications" element={<Notifications />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
-          <Toaster position="top-center" closeButton={false} offset={12} duration={2600} visibleToasts={3} />
+          <Toaster />
         </SocketProvider>
       </AuthProvider>
     </div>
