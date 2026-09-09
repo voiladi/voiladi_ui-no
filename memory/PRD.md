@@ -62,3 +62,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   Profile 1:1 rebuild (fits 393x852, no scroll). Fit-to-device scaling hook (useFitScale, transform scale 0.78..1). Tests iteration_9/10 green. Redeployed web.
 - Phase 13 (2026-09-09): Instagram-style toasts (dark bottom bar; dark top banners with avatar for match/message). Notifications page + API
   (routes_notifications.py; New/Earlier split via notifications_seen_at; tabs). Tests iteration_11/12 green. Deployed api + web.
+- Phase 14 (2026-09-09): Android APK (WebView shell) built without Gradle (hand-encoded AXML/ARSC + javac/d8/apksigner) in /app/android-build;
+  download https://www.voiladi.com/voiladi.apk. Validated iteration_13 (61/61). Bump VERSION_CODE/VERSION_NAME env when rebuilding.

@@ -21,6 +21,15 @@ server {
         try_files $uri =404;
     }
 
+    # Android test build: served with the APK mime type so phones offer to install it directly
+    location = /voiladi.apk {
+        types { application/vnd.android.package-archive apk; }
+        default_type application/vnd.android.package-archive;
+        add_header Content-Disposition 'attachment; filename="voiladi.apk"';
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        try_files $uri =404;
+    }
+
     # SPA fallback: every route renders index.html. no-store so no browser/proxy ever serves a stale shell.
     location / {
         add_header Cache-Control "no-store, no-cache, must-revalidate";

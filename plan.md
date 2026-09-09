@@ -192,6 +192,15 @@
 - Notifications page (/notifications) from the profile bell: tabs All/Likes/Matches/Messages/System, New/Earlier groups, avatar badges, system notices. Backend routes_notifications.py (GET /api/notifications, POST /api/notifications/seen; users.notifications_seen_at). Bell dot = unseen_count.
 - Tests iteration_11 (toasts) + iteration_12 (notifications, BE+FE 100%). Deployed api + web.
 
+
+## Phase 14 — Android APK (P1)
+**Status: COMPLETED (2026-09-09)**
+- /app/android-build: WebView shell (com.voiladi.app, MainActivity -> https://www.voiladi.com/, file chooser, geolocation permission, back navigation, white status bar).
+  build_apk.py hand-encodes AndroidManifest.xml (binary AXML) + resources.arsc (icon) because aapt2 is x86-only; javac + d8 + apksigner (v2/v3, keystore android-build/voiladi-debug.keystore, pass voiladi123).
+  SDK bits in android-build/sdk (gitignored; re-download build-tools_r34 + platform-34-ext7 if missing). Requires openjdk-17 (apt).
+- Download: https://www.voiladi.com/voiladi.apk (nginx serves with APK mime + attachment). Copies: frontend/public/voiladi.apk, deploy/android/voiladi-1.0.0.apk.
+- Validated by testing agent (iteration_13: 61/61 structural checks, androguard + pyaxml + apksigner).
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

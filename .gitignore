@@ -81,3 +81,6 @@ memory/test_credentials.md
 # Mobile development
 android-sdk/deploy/.env.railway
 backend/.env
+android-build/sdk/
+android-build/out/
+android-build/tmp/
