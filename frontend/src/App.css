@@ -1,0 +1,17 @@
+/* Voiladi global app styles. Component classes live in index.css. */
+
+.App {
+  min-height: 100dvh;
+  background: var(--vo-paper);
+}
+
+/* vaul drawer polish */
+[data-vaul-drawer] {
+  outline: none;
+}
+
+/* sonner toast polish */
+[data-sonner-toaster] [data-sonner-toast] {
+  border-radius: 18px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
+}
