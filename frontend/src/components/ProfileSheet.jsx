@@ -4,9 +4,10 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { UserPhoto } from "@/components/UserPhoto";
 import { CompatibilityRing } from "@/components/CompatibilityRing";
 import { Tag } from "@/components/Chip";
+import { ReactHeart } from "@/components/ReactHeart";
 import { distanceLabel, activeLabel, genderLabel } from "@/lib/format";
 
-export const PhotoCarousel = ({ photos = [], name, className = "" }) => {
+export const PhotoCarousel = ({ photos = [], name, className = "", onReact }) => {
   const [idx, setIdx] = useState(0);
   const ref = useRef(null);
   const onScroll = () => {
@@ -19,7 +20,14 @@ export const PhotoCarousel = ({ photos = [], name, className = "" }) => {
     <div className={`relative overflow-hidden rounded-[24px] bg-surface2 ${className}`}>
       <div ref={ref} onScroll={onScroll} className="no-scrollbar flex h-full w-full snap-x snap-mandatory overflow-x-auto">
         {list.map((p, i) => (
-          <UserPhoto key={`${p}-${i}`} src={p} name={name} className="h-full w-full shrink-0 snap-center text-6xl" />
+          <div key={`${p}-${i}`} className="relative h-full w-full shrink-0 snap-center">
+            <UserPhoto src={p} name={name} className="h-full w-full text-6xl" />
+            {onReact && p && (
+              <div className="absolute bottom-3 right-3">
+                <ReactHeart label={`Like this photo of ${name}`} onReact={() => onReact({ type: "photo", photo: p })} testId="sheet-react-photo-button" />
+              </div>
+            )}
+          </div>
         ))}
       </div>
       {list.length > 1 && (
@@ -33,7 +41,7 @@ export const PhotoCarousel = ({ photos = [], name, className = "" }) => {
   );
 };
 
-export const ProfileDetails = ({ profile, showShared = true }) => {
+export const ProfileDetails = ({ profile, showShared = true, onReact }) => {
   const shared = new Set((profile.shared_interests || []).map((s) => s.toLowerCase()));
   return (
     <div className="space-y-6">
@@ -58,11 +66,16 @@ export const ProfileDetails = ({ profile, showShared = true }) => {
         <section className="space-y-3">
           <div className="vo-label">Vibe check</div>
           {profile.prompts.map((p, i) => (
-            <div key={i} className="rounded-[20px] border border-line bg-[rgba(244,246,250,0.6)] p-4" data-testid="profile-prompt">
-              <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-mute">
-                <Quote className="h-3.5 w-3.5" /> {p.question}
+            <div key={i} className="flex items-start gap-3 rounded-[20px] border border-line bg-[rgba(244,246,250,0.6)] p-4" data-testid="profile-prompt">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-mute">
+                  <Quote className="h-3.5 w-3.5" /> {p.question}
+                </div>
+                <div className="font-display text-[18px] leading-snug text-ink">{p.answer}</div>
               </div>
-              <div className="font-display text-[18px] leading-snug text-ink">{p.answer}</div>
+              {onReact && (
+                <ReactHeart size="sm" label={`Like ${profile.name}'s answer`} onReact={() => onReact({ type: "prompt", question: p.question })} className="mt-0.5 shrink-0 border-line" testId="sheet-react-prompt-button" />
+              )}
             </div>
           ))}
         </section>
@@ -71,7 +84,7 @@ export const ProfileDetails = ({ profile, showShared = true }) => {
   );
 };
 
-export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, onReport, isSelf = false }) => {
+export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, onReport, onReact, note, isSelf = false }) => {
   if (!profile) return null;
   const active = activeLabel(profile.last_active);
   return (
@@ -80,7 +93,8 @@ export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, on
         <DrawerTitle className="sr-only">{profile.name}</DrawerTitle>
         <DrawerDescription className="sr-only">Profile details</DrawerDescription>
         <div className="vo-scroll px-4 pb-6 pt-2">
-          <PhotoCarousel photos={profile.photos} name={profile.name} className="aspect-[4/5] w-full" />
+          {note && <div className="mb-3">{note}</div>}
+          <PhotoCarousel photos={profile.photos} name={profile.name} className="aspect-[4/5] w-full" onReact={onReact} />
           <div className="mt-5 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="font-display text-[30px] font-semibold leading-none tracking-tight text-ink" data-testid="profile-sheet-name">
@@ -110,8 +124,13 @@ export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, on
               {profile.shared_interests.length > 3 ? ` +${profile.shared_interests.length - 3} more` : ""}
             </p>
           )}
+          {onReact && (
+            <p className="mt-3 text-[13px] text-mute" data-testid="profile-react-hint">
+              Tap a heart on a photo or answer to like that specifically. It shows up first in your chat if you match.
+            </p>
+          )}
           <div className="mt-6">
-            <ProfileDetails profile={profile} showShared={!isSelf} />
+            <ProfileDetails profile={profile} showShared={!isSelf} onReact={onReact} />
           </div>
           {actions && <div className="mt-8">{actions}</div>}
           {(onBlock || onReport) && (

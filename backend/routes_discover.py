@@ -1,20 +1,80 @@
 """Discovery feed, swipes, likes and matching."""
 import uuid
+from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from core import (db, now_iso, get_current_user, public_profile, get_prefs, calc_age, distance_between,
-                  compatibility, ANYWHERE_KM, SHOW_ME_TO_GENDER)
+from core import (db, now, now_iso, get_current_user, public_profile, get_prefs, calc_age, distance_between,
+                  ANYWHERE_KM, SHOW_ME_TO_GENDER)
 from ws_manager import manager
 
 router = APIRouter(prefix="/api", tags=["discover"])
 
 
+class ReactionIn(BaseModel):
+    """A like tied to a specific photo or prompt (Hinge-style)."""
+    type: str  # photo | prompt
+    photo: Optional[str] = None
+    question: Optional[str] = None
+
+
 class SwipeIn(BaseModel):
     target_id: str
     action: str  # like | pass | superlike
+    reaction: Optional[ReactionIn] = None
+
+
+def _clean_reaction(reaction: Optional[ReactionIn], target: dict) -> Optional[dict]:
+    """Validate the reaction against the target's real photos/prompts and return a storable dict."""
+    if reaction is None:
+        return None
+    if reaction.type == "photo":
+        photos = target.get("photos") or []
+        if not reaction.photo or reaction.photo not in photos:
+            raise HTTPException(status_code=400, detail="That photo isn't on their profile anymore")
+        return {"type": "photo", "photo": reaction.photo, "index": photos.index(reaction.photo)}
+    if reaction.type == "prompt":
+        q = (reaction.question or "").strip()
+        match = next((p for p in (target.get("prompts") or []) if p.get("question") == q), None)
+        if not match:
+            raise HTTPException(status_code=400, detail="That prompt isn't on their profile anymore")
+        return {"type": "prompt", "question": match["question"], "answer": match.get("answer", "")}
+    raise HTTPException(status_code=400, detail="Invalid reaction")
+
+
+def reaction_caption(reaction: dict) -> str:
+    return "Liked your photo" if reaction.get("type") == "photo" else "Liked your answer"
+
+
+def _reaction_message(match_id: str, sender_id: str, reaction: dict, created_at: str) -> dict:
+    return {
+        "id": str(uuid.uuid4()), "match_id": match_id, "sender_id": sender_id, "kind": "reaction",
+        "text": reaction_caption(reaction), "reaction": reaction, "created_at": created_at, "read_at": None, "client_id": None,
+    }
+
+
+async def _seed_reaction_messages(match: dict, entries: list) -> None:
+    """Insert reaction messages (in order) as the opening of a brand-new match and update previews/unread."""
+    if not entries:
+        return
+    base = now()
+    last = None
+    for i, (sender_id, reaction) in enumerate(entries):
+        ts = (base + timedelta(milliseconds=i)).isoformat()
+        msg = _reaction_message(match["id"], sender_id, reaction, ts)
+        await db.messages.insert_one(dict(msg))
+        receiver = [u for u in match["users"] if u != sender_id][0]
+        await db.matches.update_one({"id": match["id"]}, {"$inc": {f"unread.{receiver}": 1}})
+        last = msg
+        payload = {"type": "message", "match_id": match["id"], "message": msg}
+        await manager.send(receiver, payload)
+        await manager.send(sender_id, payload)
+    await db.matches.update_one({"id": match["id"]}, {"$set": {
+        "last_message": {"text": last["text"], "sender_id": last["sender_id"], "created_at": last["created_at"], "kind": "reaction"},
+        "last_message_at": last["created_at"],
+    }})
 
 
 def _accepts(viewer: dict, candidate: dict, dist: Optional[float]) -> bool:
@@ -77,10 +137,11 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
     target = await db.users.find_one({"id": body.target_id}, {"_id": 0})
     if not target:
         raise HTTPException(status_code=404, detail="Profile not found")
+    reaction = _clean_reaction(body.reaction, target) if body.action != "pass" else None
+    swipe_doc = {"from_id": user["id"], "to_id": target["id"], "action": body.action, "created_at": now_iso(), "reaction": reaction}
     await db.swipes.update_one(
         {"from_id": user["id"], "to_id": target["id"]},
-        {"$set": {"from_id": user["id"], "to_id": target["id"], "action": body.action, "created_at": now_iso()},
-         "$setOnInsert": {"id": str(uuid.uuid4())}},
+        {"$set": swipe_doc, "$setOnInsert": {"id": str(uuid.uuid4())}},
         upsert=True,
     )
     matched, match_out = False, None
@@ -91,11 +152,13 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
                                                     {"from_id": target["id"], "to_id": user["id"]}]})
         if reciprocal and not blocked:
             existing = await db.matches.find_one({"users": {"$all": [user["id"], target["id"]]}}, {"_id": 0})
+            fresh_match = False
             if existing and existing.get("active"):
                 match = existing
             elif existing:
                 await db.matches.update_one({"id": existing["id"]}, {"$set": {"active": True, "created_at": now_iso()}})
                 match = {**existing, "active": True}
+                fresh_match = True
             else:
                 match = {
                     "id": str(uuid.uuid4()), "users": [user["id"], target["id"]], "created_at": now_iso(),
@@ -104,8 +167,18 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
                     "superlike": body.action == "superlike" or reciprocal.get("action") == "superlike",
                 }
                 await db.matches.insert_one(dict(match))
+                fresh_match = True
+            if fresh_match:
+                # Their earlier reaction opens the chat first, then ours.
+                entries = []
+                if reciprocal.get("reaction"):
+                    entries.append((target["id"], reciprocal["reaction"]))
+                if reaction:
+                    entries.append((user["id"], reaction))
+                await _seed_reaction_messages(match, entries)
             matched = True
-            match_out = {"id": match["id"], "created_at": match["created_at"], "user": public_profile(target, user)}
+            match_out = {"id": match["id"], "created_at": match["created_at"], "user": public_profile(target, user),
+                         "reaction": reaction, "their_reaction": reciprocal.get("reaction")}
             await manager.send(target["id"], {"type": "new_match", "match": {
                 "id": match["id"], "created_at": match["created_at"], "user": public_profile(user, target)}})
     return {"matched": matched, "match": match_out}
@@ -128,5 +201,6 @@ async def likes_received(user=Depends(get_current_user)):
         u = users.get(l["from_id"])
         if not u:
             continue
-        out.append({"user": public_profile(u, user), "superlike": l["action"] == "superlike", "created_at": l["created_at"]})
+        out.append({"user": public_profile(u, user), "superlike": l["action"] == "superlike", "created_at": l["created_at"],
+                    "reaction": l.get("reaction")})
     return {"likes": out, "count": len(out)}

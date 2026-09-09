@@ -236,6 +236,6 @@ async def block_user(user_id: str, user=Depends(get_current_user)):
 async def report_user(user_id: str, body: ReportIn, user=Depends(get_current_user)):
     if user_id == user["id"]:
         raise HTTPException(status_code=400, detail="Invalid report")
-    await db.reports.insert_one({"id": str(uuid.uuid4()), "from_id": user["id"], "to_id": user_id,
+    await db.reports.insert_one({"id": str(uuid.uuid4()), "from_id": user["id"], "to_id": user_id, "status": "open",
                                  "reason": body.reason[:100], "details": (body.details or "")[:500], "created_at": now_iso()})
     return {"ok": True}

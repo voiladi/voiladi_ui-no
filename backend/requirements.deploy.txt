@@ -1,0 +1,13 @@
+# Lean, pinned production dependencies for Voiladi API (used by backend/Dockerfile on Railway).
+# Dev tooling (pytest, black, mypy, pandas, emergentintegrations, ...) intentionally excluded.
+fastapi==0.110.1
+uvicorn[standard]==0.25.0
+websockets==16.1.1
+motor==3.3.1
+pymongo==4.6.3
+pydantic==2.13.5
+python-dotenv==1.2.3
+PyJWT==2.13.0
+python-multipart==0.0.32
+httpx==0.28.1
+tzdata>=2024.2

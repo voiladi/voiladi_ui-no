@@ -5,11 +5,12 @@ import logging
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from core import db, client, SMS_ENABLED
+from core import db, client, SMS_ENABLED, OTP_PROVIDER
 import routes_auth
 import routes_profile
 import routes_discover
 import routes_chat
+import routes_admin
 import ws_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -20,7 +21,7 @@ app = FastAPI(title="Voiladi API", version="1.0.0")
 
 @app.get("/api/")
 async def root():
-    return {"app": "Voiladi", "status": "ok", "sms_enabled": SMS_ENABLED}
+    return {"app": "Voiladi", "status": "ok", "sms_enabled": SMS_ENABLED, "otp_provider": OTP_PROVIDER}
 
 
 @app.get("/api/health")
@@ -32,6 +33,7 @@ app.include_router(routes_auth.router)
 app.include_router(routes_profile.router)
 app.include_router(routes_discover.router)
 app.include_router(routes_chat.router)
+app.include_router(routes_admin.router)
 app.include_router(ws_manager.router)
 
 app.add_middleware(
@@ -56,7 +58,9 @@ async def ensure_indexes():
         await db.matches.create_index("users")
         await db.messages.create_index([("match_id", 1), ("created_at", 1)])
         await db.blocks.create_index([("from_id", 1), ("to_id", 1)], unique=True)
-        logger.info("Indexes ready. SMS enabled: %s", SMS_ENABLED)
+        await db.reports.create_index([("status", 1), ("created_at", -1)])
+        await db.reports.create_index("to_id")
+        logger.info("Indexes ready. OTP provider: %s (sms_enabled=%s)", OTP_PROVIDER, SMS_ENABLED)
     except Exception as e:
         logger.warning(f"Index creation issue: {e}")
 

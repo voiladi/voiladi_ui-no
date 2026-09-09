@@ -44,7 +44,8 @@ const RealtimeToasts = () => {
       } else if (ev.type === "message") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         const inRoom = location.pathname === `/chats/${ev.match_id}`;
-        if (!inRoom && ev.message?.sender_id !== user.id) {
+        // Reaction "messages" arrive together with the match itself; the match popup already covers them.
+        if (!inRoom && ev.message?.sender_id !== user.id && ev.message?.kind !== "reaction") {
           toast.custom(
             (id) => (
               <button
@@ -56,11 +57,9 @@ const RealtimeToasts = () => {
                 }}
                 className="flex w-[340px] items-center gap-3 rounded-[18px] border border-line bg-white p-3 text-left shadow-[var(--vo-shadow)]"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft text-brand-dark font-display font-bold">
-                  {(ev.sender_name || "N")[0]}
-                </div>
+                <UserPhoto src={ev.sender_photo} name={ev.sender_name || "?"} className="h-10 w-10 rounded-full text-sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold text-ink">New message</div>
+                  <div className="text-[14px] font-semibold text-ink">{ev.sender_name || "New message"}</div>
                   <div className="truncate text-[13px] text-mute">{ev.message?.text}</div>
                 </div>
               </button>

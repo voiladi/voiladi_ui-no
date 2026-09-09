@@ -4,7 +4,12 @@
 - Deliver **Voiladi**: a **mobile-first**, Apple/Google-grade dating app for ages **18–30** with a **fresh swipe UI**.
 - Core v1: **phone OTP auth**, **profile + photo upload**, **swipe + match**, **real-time chat (WS) + fallback**, **vibe-check icebreakers**, **filters (age/distance/gender)**, **deterministic compatibility score**.
 - Ensure **no AI** features/copy anywhere.
-- Keep deployment **env-driven** for Railway later (no secrets hardcoded).
+- Keep deployment **env-driven** (no secrets hardcoded); support Railway hosting.
+- **New (post‑V1 scope)**
+  - **Reactions** (Hinge-style): heart a specific **photo** or **prompt**; if it becomes a match, it appears as the **first chat message** (system message text like “Liked your photo 📷” / “Liked your answer”). **No comment field**.
+  - **Safety everywhere**: expose **Block/Report** UI in Discover/Likes/ProfileSheet; reporting **flags for admin only** (no auto-hide), blocking hides/ends match.
+  - **Production OTP**: wire **Twilio** for real SMS codes (user will provide SID/Auth Token/From number).
+  - **Railway deployment**: deploy to user’s **existing Railway project**, provision **MongoDB inside Railway**, and configure runtime env vars.
 
 ---
 
@@ -114,11 +119,112 @@
 
 ---
 
+### Phase 4 — Reactions + Safety everywhere + Admin review (NEW)
+**Goal:** ship Hinge-style reactions and make safety actions consistent across the app, plus an admin-visible reports feed.
+
+**Backend**
+1) **Reaction-aware swipe**
+   - Extend `POST /api/swipe` to accept optional reaction payload:
+     - `reaction_type`: `photo` | `prompt`
+     - `reaction_ref`: string (photo URL OR prompt question key)
+   - Persist on swipe record (new fields on `swipes` documents).
+
+2) **Match creation emits system message**
+   - On mutual like, if either side’s swipe includes a reaction, insert a **system message** as the **first message**:
+     - Example text: `Liked your photo 📷` or `Liked your answer` (prompt)
+   - Ensure:
+     - Message inserted only once per match creation.
+     - Works for superlike too.
+
+3) **Admin reports endpoint (read-only)**
+   - Add endpoints:
+     - `GET /api/admin/reports` (list recent reports)
+     - Optional: `GET /api/admin/reports/{id}` (details)
+   - Simple auth gate via env var:
+     - `ADMIN_API_KEY` header (e.g., `x-admin-key`) or a bearer token.
+   - Reporting behaviour stays **flag-only** (no auto-hide).
+
+**Frontend**
+1) **Reactions UI**
+   - Discover card + ProfileSheet:
+     - Add heart button overlays:
+       - On active photo: “heart this photo”
+       - On each prompt card: “heart this prompt”
+   - When tapped:
+     - Calls swipe with `action: like` plus reaction payload.
+
+2) **Block/Report everywhere**
+   - Surface **Report** + **Block** actions in:
+     - Discover ProfileSheet
+     - Likes ProfileSheet
+   - Keep existing ChatRoom block/report.
+   - Report uses existing `ReportDialog` reasons from `/api/meta`.
+
+3) **UX copy + telemetry (non-AI)**
+   - Clear copy that reports are private; block ends chat.
+
+**Phase 4 user stories**
+1. As a user, I can heart someone’s specific photo or prompt.
+2. As a user, if we match, the reaction appears as the first chat message.
+3. As a user, I can block/report from anywhere I see a profile.
+4. As an operator, I can review incoming reports via a protected admin endpoint.
+
+**Phase 4 testing checkpoint**
+- Reaction like → mutual match → verify first message is system reaction.
+- Confirm no duplicate system messages.
+- Report endpoint creates report; admin list shows it.
+- Block from Discover/Likes removes from feed and ends active match.
+
+---
+
+### Phase 5 — Twilio real SMS OTP (NEW)
+**Goal:** move from dev OTP hint to real SMS in production.
+
+1) Add Railway env vars:
+   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+2) Confirm:
+   - DEV mode hidden when Twilio send succeeds.
+   - Error handling for Twilio failures (rate limit / invalid number / region).
+3) Production safety:
+   - Keep resend cooldown + attempts cap.
+   - Ensure logs never print OTP codes.
+
+**Phase 5 testing checkpoint**
+- Request OTP → verify OTP with real phone.
+- Verify fallback behaviour if Twilio fails (should not leak codes in prod).
+
+---
+
+### Phase 6 — Railway Deployment (NEW)
+**Goal:** deploy frontend + backend + MongoDB on user’s existing Railway project.
+
+1) **Railway project setup**
+   - Use user’s **existing project** (user provides the project name / invites / access as needed).
+   - Provision **MongoDB inside Railway** and wire `MONGO_URL` + `DB_NAME`.
+
+2) **Services**
+   - Backend service:
+     - Start command: `uvicorn server:app --host 0.0.0.0 --port $PORT`
+   - Frontend service:
+     - Build + serve (Railway Nixpacks / static hosting) with `REACT_APP_BACKEND_URL` pointing to backend URL.
+
+3) **Env var checklist**
+   - Backend: `MONGO_URL`, `DB_NAME`, `JWT_SECRET`, `CORS_ORIGINS`, `UPLOAD_DIR` (or Railway volume path), `ADMIN_API_KEY`, Twilio vars.
+   - Frontend: `REACT_APP_BACKEND_URL`.
+
+4) **Uploads persistence**
+   - Configure Railway **volume** for `UPLOAD_DIR` OR plan move to object storage later.
+
+5) **Smoke test after deploy**
+   - OTP → onboarding → upload photo → discover → match → chat.
+
+---
+
 ## 3) Next Actions
-1) Implement Phase 1 endpoints + `backend/test_core.py` and run until green.
-2) Confirm with you: **DEV OTP hint acceptable** until Twilio creds arrive.
-3) Build Phase 2 end-to-end (backend + frontend + seed) in minimal large commits.
-4) Run E2E test pass and fix UX bugs.
+1) **Phase 4 (IN PROGRESS)**: Implement reactions + safety everywhere + admin reports endpoint.
+2) Create/update tests for reactions/match-first-message + block/report UI flows.
+3) **Phase 5**: When you share Twilio credentials, enable real SMS and disable dev-code UX in production.
+4) **Phase 6**: Deploy to Railway using your existing project + Railway MongoDB.
 
 ---
 
@@ -126,12 +232,17 @@
 - POC script verifies: **OTP→JWT**, **upload→serve**, **WS connect→send/receive** through preview URL.
 - V1 supports: onboarding + photos, swipe/match, filters, likes, realtime chat w/ fallback, deterministic compatibility.
 - UI is **light-mode, polished**, mobile-first with smooth animations; no AI present.
-- All config via env vars; Railway deployment ready when key is provided.
+- Phase 4: reactions are tied to **photo/prompt** and show as **first chat message** on match; block/report accessible everywhere; admin can review reports.
+- Phase 5: real OTP is delivered via **Twilio** in production.
+- Phase 6: Voiladi deploys on Railway via env vars only, using Railway MongoDB.
 
 ---
 
 ## 5) Status Log
 - **Phase 1 (Core POC)**: COMPLETED — `backend/test_core.py` green.
 - **Phase 2 (Full V1: backend + frontend + seed)**: COMPLETED — 2 rounds of E2E testing passed; prompt-editor save bug fixed. Pink brand (#FF2D75) + bold iPhone-style fonts applied per user feedback.
-- **Phase 3 (Hardening + Railway)**: NOT STARTED — waiting on user UAT feedback and Railway API key.
-- **Handover**: App live at preview URL, 32 seeded profiles, DEV OTP mode (code shown on screen). Awaiting user review.
+- **Phase 3 (Hardening + deploy readiness)**: PARTIALLY DONE — WS reconnection + offline banner + polling fallback + upload limits already implemented; remaining hardening optional.
+- **Phase 4 (Reactions + safety everywhere + admin reports)**: COMPLETED — reaction swipes, first-message-on-match, Likes tags, chat bubbles, Block/Report in Discover+Likes, admin endpoint (x-admin-key). Testing agent iteration_3: backend 20/21 (1 timeout, verified manually), frontend 100%.
+- **Phase 5 (Twilio real SMS)**: COMPLETED (pending user real-phone test) — Twilio Verify service 'Voiladi' (VA0bb827f7...) created on user's account; OTP_PROVIDER auto-detect (dev|twilio_verify|twilio_sms); OTP_TEST_PREFIXES=+1999,+1555,+1777,+91555 keep dev codes for seeded/test accounts; Twilio error codes mapped to friendly messages; codes never logged.
+- **Phase 6 (Railway deployment)**: COMPLETED — project 'Voiladi' created (token's account had no existing project), MongoDB + voiladi-api (Dockerfile, volume /data/uploads) + voiladi-web (Dockerfile nginx). Live: https://voiladi-web-production.up.railway.app / https://voiladi-api-production.up.railway.app. WS, uploads, OTP, CORS verified on prod; 24 demo profiles seeded via POST /api/admin/seed. Runbook: /app/deploy/README.md. — Railway token received and stored at `/app/deploy/.env.railway` (gitignored). Need Railway project name/access confirmation during execution.
+- **Handover**: App live at preview URL, 32 seeded profiles, DEV OTP mode (code shown on screen) until Twilio is enabled.

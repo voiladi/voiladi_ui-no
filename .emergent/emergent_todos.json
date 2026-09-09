@@ -1,34 +1,30 @@
 [
   {
-    "content": "Phase 1: Write POC endpoints (OTP→JWT, upload→serve, WS echo) in server.py",
+    "content": "Backend: reactions + first-message-on-match + likes reaction field",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Write & run backend/test_core.py through preview URL until green",
+    "content": "Backend: admin reports + seed endpoints gated by ADMIN_API_KEY",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Design guidelines via design_agent (revised to iPhone-native look per user feedback)",
+    "content": "Twilio Verify OTP provider + test prefixes + error mapping",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend full implementation (auth, profile, photos, meta, discover, swipe, matches, messages, WS, safety, seed)",
+    "content": "Frontend: reaction hearts, chat bubbles, likes tags, block/report everywhere",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Frontend full implementation (auth, onboarding, discover, likes, chats, profile)",
+    "content": "Testing agent run for Phase 4/5 (iteration_3 passed)",
     "status": "completed"
   },
   {
-    "content": "Phase 2: All user stories covered in development",
+    "content": "Railway: project, Mongo, api + web services, volume, variables, domains, deploy, prod smoke test, seed",
     "status": "completed"
   },
   {
-    "content": "Phase 2: End to End Testing using Testing Agent",
-    "status": "in_progress"
-  },
-  {
-    "content": "Phase 2: Fix all issues reported by testing agent",
+    "content": "User to test real SMS with own phone number on production",
     "status": "pending"
   }
 ]

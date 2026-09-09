@@ -2,9 +2,6 @@
 import requests
 import sys
 import time
-import json
-from datetime import datetime
-from pathlib import Path
 
 BASE_URL = "https://match-fresh.preview.emergentagent.com/api"
 TEST_PHOTO = "/app/tests/test_photo.jpg"

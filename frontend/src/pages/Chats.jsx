@@ -110,9 +110,12 @@ export default function Chats() {
                             <span className="shrink-0 text-[12px] text-mute">{timeAgo(m.last_message_at)}</span>
                           </span>
                           <span className="mt-0.5 flex items-center justify-between gap-2">
-                            <span className={`truncate text-[14px] ${m.unread ? "font-semibold text-ink" : "text-mute"}`}>
-                              {mine ? "You: " : ""}
-                              {m.last_message?.text}
+                            <span className={`truncate text-[14px] ${m.unread ? "font-semibold text-ink" : "text-mute"}`} data-testid="chats-last-message">
+                              {m.last_message?.kind === "reaction"
+                                ? mine
+                                  ? m.last_message.text.replace("Liked your", "You liked their")
+                                  : m.last_message.text
+                                : `${mine ? "You: " : ""}${m.last_message?.text}`}
                             </span>
                             {m.unread > 0 && <span className="vo-badge shrink-0" data-testid="chats-unread-badge">{m.unread}</span>}
                           </span>

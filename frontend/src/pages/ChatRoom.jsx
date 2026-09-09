@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MoreHorizontal, Send, Zap, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Send, Zap, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -13,10 +13,36 @@ import { useMeta } from "@/hooks/useMeta";
 import { UserPhoto } from "@/components/UserPhoto";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
+import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Skeleton } from "@/components/EmptyState";
 import { clockTime, dayLabel, timeAgo } from "@/lib/format";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+/** A like that was tied to a specific photo or prompt; opens the conversation Hinge-style. */
+const ReactionBubble = ({ m, mine, otherName }) => {
+  const r = m.reaction || {};
+  return (
+    <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} data-testid="chat-reaction-message">
+      {r.type === "photo" ? (
+        <div className="relative overflow-hidden rounded-[22px] border border-line bg-surface2 shadow-[var(--vo-shadow-soft)]">
+          <UserPhoto src={r.photo} name={mine ? otherName : ""} className="h-48 w-40 text-3xl" />
+          <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand shadow">
+            <Heart className="h-4 w-4 fill-brand" strokeWidth={2.5} />
+          </span>
+        </div>
+      ) : (
+        <div className="max-w-[82%] rounded-[22px] border border-line bg-white px-4 py-3 shadow-[var(--vo-shadow-soft)]">
+          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mute">
+            <Quote className="h-3 w-3" /> {r.question}
+          </div>
+          <div className="font-display text-[16px] leading-snug text-ink">{r.answer}</div>
+        </div>
+      )}
+      <ReactionPill className="mt-1.5">{reactionLabel(r, { mine })}</ReactionPill>
+    </div>
+  );
+};
 
 export default function ChatRoom() {
   const { matchId } = useParams();
@@ -228,6 +254,7 @@ export default function ChatRoom() {
   }, [messages]);
 
   const lastMine = [...messages].reverse().find((m) => m.sender_id === user?.id);
+  const noTextYet = messages.every((m) => m.kind === "reaction");
 
   return (
     <div className="flex h-full flex-col" data-testid="chat-room">
@@ -301,7 +328,7 @@ export default function ChatRoom() {
                   You matched with <span className="font-semibold text-ink">{other.name}</span> {timeAgo(match.created_at) === "now" ? "just now" : `${timeAgo(match.created_at)} ago`}
                   {other.shared_interests?.length ? ` · you both like ${other.shared_interests[0]}` : ""}
                 </p>
-                {messages.length === 0 && (
+                {noTextYet && (
                   <div className="mt-5 w-full">
                     <div className="vo-label mb-2.5 flex items-center justify-center gap-1.5">
                       <Zap className="h-3.5 w-3.5" /> Break the ice
@@ -333,16 +360,20 @@ export default function ChatRoom() {
                     className={`flex ${r.m.sender_id === user?.id ? "justify-end" : "justify-start"} ${r.endOfGroup ? "mb-3" : "mb-1"}`}
                   >
                     <div className={`max-w-[78%] ${r.m.sender_id === user?.id ? "items-end" : "items-start"} flex flex-col`}>
-                      <div
-                        className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-snug ${
-                          r.m.sender_id === user?.id
-                            ? "rounded-[20px] rounded-br-[8px] bg-ink text-white"
-                            : "rounded-[20px] rounded-bl-[8px] border border-line bg-white text-ink"
-                        } ${r.m.pending ? "opacity-60" : ""}`}
-                        data-testid="chat-message-bubble"
-                      >
-                        {r.m.text}
-                      </div>
+                      {r.m.kind === "reaction" ? (
+                        <ReactionBubble m={r.m} mine={r.m.sender_id === user?.id} otherName={other?.name} />
+                      ) : (
+                        <div
+                          className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-snug ${
+                            r.m.sender_id === user?.id
+                              ? "rounded-[20px] rounded-br-[8px] bg-ink text-white"
+                              : "rounded-[20px] rounded-bl-[8px] border border-line bg-white text-ink"
+                          } ${r.m.pending ? "opacity-60" : ""}`}
+                          data-testid="chat-message-bubble"
+                        >
+                          {r.m.text}
+                        </div>
+                      )}
                       {r.endOfGroup && (
                         <div className="mt-1 flex items-center gap-1 px-1 text-[11px] text-mute">
                           {clockTime(r.m.created_at)}

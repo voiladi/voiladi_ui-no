@@ -111,7 +111,8 @@ async def send_message(match_id: str, body: MessageIn, user=Depends(get_current_
                  "last_message_at": msg["created_at"]},
         "$inc": {f"unread.{other}": 1},
     })
-    payload = {"type": "message", "match_id": match_id, "message": msg}
+    payload = {"type": "message", "match_id": match_id, "message": msg,
+               "sender_name": user.get("name") or "Someone", "sender_photo": (user.get("photos") or [None])[0]}
     await manager.send(other, payload)
     await manager.send(user["id"], payload)
     return msg

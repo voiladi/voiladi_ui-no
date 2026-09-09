@@ -4,6 +4,7 @@ import { MapPin, ChevronUp, Quote } from "lucide-react";
 import { UserPhoto } from "@/components/UserPhoto";
 import { CompatibilityRing } from "@/components/CompatibilityRing";
 import { Tag } from "@/components/Chip";
+import { ReactHeart } from "@/components/ReactHeart";
 import { distanceLabel, activeLabel } from "@/lib/format";
 
 const SPRING = { type: "spring", stiffness: 420, damping: 32, mass: 1 };
@@ -18,18 +19,20 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
   const passOp = useTransform(x, [-25, -LIKE_X], [0, 1]);
   const voilaOp = useTransform(y, [-25, VOILA_Y], [0, 1]);
   const [idx, setIdx] = useState(0);
+  const [stamp, setStamp] = useState("Like");
   const exiting = useRef(false);
   const photos = profile.photos?.length ? profile.photos : [null];
 
   const fly = useCallback(
-    (action) => {
+    (action, reaction = null) => {
       if (exiting.current) return;
       exiting.current = true;
+      if (reaction) setStamp(reaction.type === "photo" ? "Liked photo" : "Liked answer");
       const dir = action === "like" ? 1 : action === "pass" ? -1 : 0;
       const tx = dir * 720;
       const ty = action === "superlike" ? -900 : y.get() * 1.5;
       animate(y, ty, { duration: 0.45, ease: [0.22, 1, 0.36, 1] });
-      animate(x, tx, { duration: 0.45, ease: [0.22, 1, 0.36, 1], onComplete: () => onSwipe(profile, action) });
+      animate(x, tx, { duration: 0.45, ease: [0.22, 1, 0.36, 1], onComplete: () => onSwipe(profile, action, reaction) });
     },
     [x, y, onSwipe, profile]
   );
@@ -56,6 +59,8 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
   const yOff = depth * 16;
   const tilt = depth === 0 ? 0 : depth === 1 ? -2.4 : 2.2;
   const activeStr = activeLabel(profile.last_active);
+  const currentPhoto = photos[idx];
+  const prompt = profile.prompts?.[0];
 
   return (
     <motion.div
@@ -78,14 +83,14 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
         <div className="absolute inset-0 overflow-hidden rounded-[30px] border border-line bg-white shadow-[var(--vo-shadow)]">
           <AnimatePresence initial={false}>
             <motion.div
-              key={photos[idx] || idx}
+              key={currentPhoto || idx}
               initial={{ opacity: 0.4 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
               className="absolute inset-0"
             >
-              <UserPhoto src={photos[idx]} name={profile.name} className="h-full w-full text-8xl" />
+              <UserPhoto src={currentPhoto} name={profile.name} className="h-full w-full text-8xl" />
             </motion.div>
           </AnimatePresence>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/35 to-transparent" />
@@ -118,7 +123,7 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
 
           {/* stamps */}
           <motion.div style={{ opacity: likeOp }} className="vo-stamp left-6 top-24 -rotate-12 border-brand bg-brand-soft/90 text-brand">
-            Like
+            {stamp}
           </motion.div>
           <motion.div style={{ opacity: passOp }} className="vo-stamp right-6 top-24 rotate-12 border-pass bg-pass-soft/90 text-pass">
             Pass
@@ -129,6 +134,16 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
 
           {/* info tray */}
           <div className="absolute inset-x-0 bottom-0 rounded-t-[28px] border-t border-line bg-white px-5 pb-5 pt-4">
+            {/* heart for the photo currently showing: floats on the photo's bottom-right corner */}
+            {currentPhoto && active && (
+              <div className="absolute -top-[26px] right-5">
+                <ReactHeart
+                  label={`Like this photo of ${profile.name}`}
+                  onReact={() => fly("like", { type: "photo", photo: currentPhoto })}
+                  testId="discover-react-photo-button"
+                />
+              </div>
+            )}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="truncate font-display text-[28px] font-semibold leading-none tracking-tight text-ink" data-testid={active ? "discover-card-name" : undefined}>
@@ -173,20 +188,32 @@ export const SwipeCard = forwardRef(({ profile, active, depth = 0, onSwipe, onOp
                 <ChevronUp className="h-5 w-5" />
               </button>
             </div>
-            {profile.prompts?.[0] && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpen(profile);
-                }}
-                className="mt-3.5 w-full rounded-[18px] bg-surface2 px-4 py-3 text-left"
-              >
-                <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mute">
-                  <Quote className="h-3 w-3" /> {profile.prompts[0].question}
-                </div>
-                <div className="line-clamp-2 font-display text-[16px] leading-snug text-ink">{profile.prompts[0].answer}</div>
-              </button>
+            {prompt && (
+              <div className="mt-3.5 flex items-center gap-2 rounded-[18px] bg-surface2 pl-4 pr-2.5 py-2.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpen(profile);
+                  }}
+                  className="min-w-0 flex-1 text-left"
+                  data-testid={active ? "discover-card-prompt" : undefined}
+                >
+                  <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mute">
+                    <Quote className="h-3 w-3" /> {prompt.question}
+                  </div>
+                  <div className="line-clamp-2 font-display text-[16px] leading-snug text-ink">{prompt.answer}</div>
+                </button>
+                {active && (
+                  <ReactHeart
+                    size="sm"
+                    label={`Like ${profile.name}'s answer`}
+                    onReact={() => fly("like", { type: "prompt", question: prompt.question })}
+                    className="shrink-0 border-line"
+                    testId="discover-react-prompt-button"
+                  />
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -1,33 +1,63 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, X, Zap } from "lucide-react";
+import { Heart, X, Zap, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useMeta } from "@/hooks/useMeta";
 import { useLikesQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
 import { PageHeader, EmptyState, Skeleton } from "@/components/EmptyState";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
+import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
+import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Tag } from "@/components/Chip";
+
+const ReactionNote = ({ like, me }) => {
+  const r = like?.reaction;
+  if (!r) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-[20px] border border-brand-soft bg-brand-soft/60 p-3" data-testid="likes-reaction-note">
+      {r.type === "photo" ? (
+        <UserPhoto src={r.photo} name={me?.name} className="h-14 w-12 shrink-0 rounded-[12px] text-base" />
+      ) : (
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white text-brand">
+          <Quote className="h-5 w-5" />
+        </span>
+      )}
+      <div className="min-w-0">
+        <div className="text-[14px] font-semibold text-ink">{reactionLabel(r, { name: like.user.name })}</div>
+        {r.type === "prompt" && <div className="truncate text-[13px] text-mute">"{r.answer}"</div>}
+      </div>
+    </div>
+  );
+};
 
 export default function Likes() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { meta } = useMeta();
   const { data, isLoading, isError, refetch } = useLikesQuery();
-  const [sheet, setSheet] = useState(null);
+  const [sheet, setSheet] = useState(null); // like entry {user, reaction, superlike}
   const [match, setMatch] = useState(null);
   const [busy, setBusy] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [acting, setActing] = useState(false);
   const likes = data?.likes || [];
 
-  const respond = async (profile, action) => {
+  const removeFromList = (id) =>
+    qc.setQueryData(["likes"], (old) => (old ? { ...old, likes: old.likes.filter((l) => l.user.id !== id), count: Math.max(0, old.count - 1) } : old));
+
+  const respond = async (profile, action, reaction = null) => {
     setBusy(profile.id);
     try {
-      const { data: res } = await api.post("/swipe", { target_id: profile.id, action });
-      qc.setQueryData(["likes"], (old) => (old ? { ...old, likes: old.likes.filter((l) => l.user.id !== profile.id), count: Math.max(0, old.count - 1) } : old));
+      const { data: res } = await api.post("/swipe", { target_id: profile.id, action, reaction: reaction || undefined });
+      removeFromList(profile.id);
       setSheet(null);
       if (res.matched) {
         setMatch(res.match);
@@ -41,6 +71,38 @@ export default function Likes() {
       setBusy(null);
     }
   };
+
+  const doBlock = async () => {
+    if (!blockTarget) return;
+    setActing(true);
+    try {
+      await api.post(`/users/${blockTarget.id}/block`);
+      removeFromList(blockTarget.id);
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      toast(`${blockTarget.name} is blocked. They won't see you again.`);
+      setBlockTarget(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const doReport = async (reason, details) => {
+    if (!reportTarget) return;
+    setActing(true);
+    try {
+      await api.post(`/users/${reportTarget.id}/report`, { reason, details });
+      toast.success("Thanks. We've received your report and will review it.");
+      setReportTarget(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const sheetProfile = sheet?.user || null;
 
   return (
     <div className="min-h-full pb-28" data-testid="likes-page">
@@ -88,15 +150,22 @@ export default function Likes() {
                 className="relative overflow-hidden rounded-[22px] border border-line bg-white shadow-[var(--vo-shadow-soft)]"
                 data-testid="likes-grid-tile"
               >
-                <button type="button" className="block w-full text-left" onClick={() => setSheet(p)} data-testid="likes-tile-open">
+                <button type="button" className="block w-full text-left" onClick={() => setSheet(l)} data-testid="likes-tile-open">
                   <div className="relative aspect-[3/4]">
                     <UserPhoto src={p.photos?.[0]} name={p.name} className="h-full w-full text-5xl" />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
-                    {l.superlike && (
-                      <Tag tone="voila" className="absolute left-2.5 top-2.5 h-7 px-2.5 text-[12px]">
-                        <Zap className="h-3.5 w-3.5 fill-voila" /> Voila'd you
-                      </Tag>
-                    )}
+                    <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
+                      {l.superlike && (
+                        <Tag tone="voila" className="h-7 px-2.5 text-[12px]">
+                          <Zap className="h-3.5 w-3.5 fill-voila" /> Voila'd you
+                        </Tag>
+                      )}
+                      {l.reaction && (
+                        <ReactionPill className="bg-white/95 backdrop-blur" testId="likes-reaction-tag">
+                          {l.reaction.type === "photo" ? "Liked your photo" : "Liked your answer"}
+                        </ReactionPill>
+                      )}
+                    </div>
                     <div className="absolute inset-x-3 bottom-3 text-white">
                       <div className="font-display text-[19px] font-semibold leading-tight">
                         {p.name}
@@ -127,16 +196,26 @@ export default function Likes() {
       )}
 
       <ProfileSheet
-        profile={sheet}
-        open={!!sheet}
+        profile={sheetProfile}
+        open={!!sheetProfile}
         onOpenChange={(o) => !o && setSheet(null)}
+        note={<ReactionNote like={sheet} me={user} />}
+        onReact={(reaction) => sheetProfile && respond(sheetProfile, "like", reaction)}
+        onBlock={() => {
+          setBlockTarget(sheetProfile);
+          setSheet(null);
+        }}
+        onReport={() => {
+          setReportTarget(sheetProfile);
+          setSheet(null);
+        }}
         actions={
-          sheet && (
+          sheetProfile && (
             <div className="flex gap-3">
-              <button type="button" className="vo-btn-outline flex-1 text-pass" onClick={() => respond(sheet, "pass")} disabled={busy === sheet.id} data-testid="sheet-pass-button">
+              <button type="button" className="vo-btn-outline flex-1 text-pass" onClick={() => respond(sheetProfile, "pass")} disabled={busy === sheetProfile.id} data-testid="sheet-pass-button">
                 <X className="h-5 w-5" /> Pass
               </button>
-              <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => respond(sheet, "like")} disabled={busy === sheet.id} data-testid="sheet-like-button">
+              <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => respond(sheetProfile, "like")} disabled={busy === sheetProfile.id} data-testid="sheet-like-button">
                 <Heart className="h-5 w-5 fill-white" /> Like back
               </button>
             </div>
@@ -144,6 +223,18 @@ export default function Likes() {
         }
       />
       <MatchModal match={match} me={user} onClose={() => setMatch(null)} onSayHi={() => navigate(`/chats/${match.id}`)} />
+      <ConfirmDialog
+        open={!!blockTarget}
+        onOpenChange={(o) => !o && setBlockTarget(null)}
+        title={`Block ${blockTarget?.name}?`}
+        description="They won't be able to see your profile or message you, and you won't see them again. They won't be notified."
+        confirmText="Block"
+        danger
+        loading={acting}
+        onConfirm={doBlock}
+        testId="block-dialog"
+      />
+      <ReportDialog open={!!reportTarget} onOpenChange={(o) => !o && setReportTarget(null)} reasons={meta.report_reasons} onSubmit={doReport} loading={acting} name={reportTarget?.name} />
     </div>
   );
 }

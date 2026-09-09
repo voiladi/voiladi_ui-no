@@ -1,0 +1,10 @@
+.env
+.env.*
+__pycache__/
+*.pyc
+uploads/
+tests/
+*_test.py
+test_*.py
+pytest.ini
+.pytest_cache/

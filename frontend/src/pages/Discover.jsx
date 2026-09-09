@@ -12,6 +12,7 @@ import { CardStack } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { FiltersDrawer } from "@/components/FiltersDrawer";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { EmptyState, Skeleton } from "@/components/EmptyState";
 
 export default function Discover() {
@@ -26,6 +27,9 @@ export default function Discover() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [sheet, setSheet] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [busy, setBusy] = useState(false);
   const topRef = useRef(null);
   const swiped = useRef(new Set());
 
@@ -58,17 +62,19 @@ export default function Discover() {
   }, [queue.length, loading, load]);
 
   const onSwipe = useCallback(
-    async (profile, action) => {
+    async (profile, action, reaction = null) => {
       swiped.current.add(profile.id);
       setQueue((q) => q.filter((p) => p.id !== profile.id));
       try {
-        const { data } = await api.post("/swipe", { target_id: profile.id, action });
+        const { data } = await api.post("/swipe", { target_id: profile.id, action, reaction: reaction || undefined });
         if (data.matched) {
           setMatch(data.match);
           qc.invalidateQueries({ queryKey: ["matches"] });
           qc.invalidateQueries({ queryKey: ["likes"] });
         } else if (action === "superlike") {
           toast(`Voila sent to ${profile.name}. They'll see you first.`);
+        } else if (reaction) {
+          toast(`You liked ${profile.name}'s ${reaction.type === "photo" ? "photo" : "answer"}`);
         }
       } catch (e) {
         toast.error(errMsg(e));
@@ -77,14 +83,14 @@ export default function Discover() {
     [qc]
   );
 
-  const trigger = (action) => {
+  const trigger = (action, reaction = null) => {
     if (!queue.length) return;
-    topRef.current?.swipe(action);
+    topRef.current?.swipe(action, reaction);
   };
 
   useEffect(() => {
     const onKey = (e) => {
-      if (sheet || match || filtersOpen) return;
+      if (sheet || match || filtersOpen || blockTarget || reportTarget) return;
       if (e.key === "ArrowRight") trigger("like");
       if (e.key === "ArrowLeft") trigger("pass");
       if (e.key === "ArrowUp") trigger("superlike");
@@ -92,7 +98,7 @@ export default function Discover() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue.length, sheet, match, filtersOpen]);
+  }, [queue.length, sheet, match, filtersOpen, blockTarget, reportTarget]);
 
   const applyPrefs = async (prefs) => {
     setSavingPrefs(true);
@@ -113,6 +119,43 @@ export default function Discover() {
 
   const anywhere = async () => {
     await applyPrefs({ ...(user?.preferences || {}), max_distance_km: meta.anywhere_km || 250 });
+  };
+
+  const fromSheet = (action, reaction = null) => {
+    setSheet(null);
+    setTimeout(() => trigger(action, reaction), 150);
+  };
+
+  const doBlock = async () => {
+    if (!blockTarget) return;
+    setBusy(true);
+    try {
+      await api.post(`/users/${blockTarget.id}/block`);
+      swiped.current.add(blockTarget.id);
+      setQueue((q) => q.filter((p) => p.id !== blockTarget.id));
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["likes"] });
+      toast(`${blockTarget.name} is blocked. They won't see you again.`);
+      setBlockTarget(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doReport = async (reason, details) => {
+    if (!reportTarget) return;
+    setBusy(true);
+    try {
+      await api.post(`/users/${reportTarget.id}/report`, { reason, details });
+      toast.success("Thanks. We've received your report and will review it.");
+      setReportTarget(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const empty = !loading && queue.length === 0;
@@ -215,33 +258,38 @@ export default function Discover() {
         profile={sheet}
         open={!!sheet}
         onOpenChange={(o) => !o && setSheet(null)}
+        onReact={(reaction) => fromSheet("like", reaction)}
+        onBlock={() => {
+          setBlockTarget(sheet);
+          setSheet(null);
+        }}
+        onReport={() => {
+          setReportTarget(sheet);
+          setSheet(null);
+        }}
         actions={
           <div className="flex gap-3">
-            <button
-              type="button"
-              className="vo-btn-outline flex-1 text-pass"
-              onClick={() => {
-                setSheet(null);
-                setTimeout(() => trigger("pass"), 150);
-              }}
-              data-testid="sheet-pass-button"
-            >
+            <button type="button" className="vo-btn-outline flex-1 text-pass" onClick={() => fromSheet("pass")} data-testid="sheet-pass-button">
               <X className="h-5 w-5" /> Pass
             </button>
-            <button
-              type="button"
-              className="vo-btn-primary flex-[1.4]"
-              onClick={() => {
-                setSheet(null);
-                setTimeout(() => trigger("like"), 150);
-              }}
-              data-testid="sheet-like-button"
-            >
+            <button type="button" className="vo-btn-primary flex-[1.4]" onClick={() => fromSheet("like")} data-testid="sheet-like-button">
               <Heart className="h-5 w-5 fill-white" /> Like
             </button>
           </div>
         }
       />
+      <ConfirmDialog
+        open={!!blockTarget}
+        onOpenChange={(o) => !o && setBlockTarget(null)}
+        title={`Block ${blockTarget?.name}?`}
+        description="They won't be able to see your profile or message you, and you won't see them again. They won't be notified."
+        confirmText="Block"
+        danger
+        loading={busy}
+        onConfirm={doBlock}
+        testId="block-dialog"
+      />
+      <ReportDialog open={!!reportTarget} onOpenChange={(o) => !o && setReportTarget(null)} reasons={meta.report_reasons} onSubmit={doReport} loading={busy} name={reportTarget?.name} />
     </div>
   );
 }

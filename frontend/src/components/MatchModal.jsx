@@ -73,7 +73,11 @@ export const MatchModal = ({ match, me, onClose, onSayHi }) => {
             <DialogTitle className="vo-h1 mt-7 text-[34px]">It's a Voila!</DialogTitle>
             <DialogDescription className="mt-2 text-[15px] text-mute">
               You and <span className="font-semibold text-ink">{other.name}</span> liked each other.
-              {match.superlike ? " Someone sent a Voila, so this one's special." : " Don't leave them on read."}
+              {match.reaction || match.their_reaction
+                ? ` ${match.their_reaction ? `${other.name} liked your ${match.their_reaction.type === "photo" ? "photo" : "answer"}` : `You liked their ${match.reaction.type === "photo" ? "photo" : "answer"}`} - it's already waiting in your chat.`
+                : match.superlike
+                  ? " Someone sent a Voila, so this one's special."
+                  : " Don't leave them on read."}
             </DialogDescription>
             <div className="mt-7 space-y-2.5">
               <button type="button" className="vo-btn-primary w-full" onClick={onSayHi} data-testid="match-say-hi-button">

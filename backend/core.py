@@ -29,7 +29,30 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 TWILIO_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_FROM = os.environ.get("TWILIO_FROM_NUMBER")
-SMS_ENABLED = bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_FROM)
+TWILIO_MESSAGING_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID")
+TWILIO_VERIFY_SID = os.environ.get("TWILIO_VERIFY_SERVICE_SID")
+
+
+def _detect_otp_provider() -> str:
+    """dev (code shown in app) | twilio_verify (Twilio Verify API) | twilio_sms (our code via Messages API)."""
+    forced = (os.environ.get("OTP_PROVIDER") or "auto").strip().lower()
+    if forced in ("dev", "twilio_verify", "twilio_sms"):
+        return forced
+    if TWILIO_SID and TWILIO_TOKEN and TWILIO_VERIFY_SID:
+        return "twilio_verify"
+    if TWILIO_SID and TWILIO_TOKEN and (TWILIO_MESSAGING_SID or TWILIO_FROM):
+        return "twilio_sms"
+    return "dev"
+
+
+OTP_PROVIDER = _detect_otp_provider()
+SMS_ENABLED = OTP_PROVIDER != "dev"
+# Phone prefixes that always use the in-app dev code (seeded/test accounts, app-store review), even when SMS is live.
+OTP_TEST_PREFIXES = [p.strip() for p in (os.environ.get("OTP_TEST_PREFIXES") or "").split(",") if p.strip()]
+
+
+def is_test_phone(phone: str) -> bool:
+    return any(phone.startswith(p) for p in OTP_TEST_PREFIXES)
 
 ANYWHERE_KM = 250  # slider max => no distance filter
 DEFAULT_PREFS = {"age_min": 18, "age_max": 30, "max_distance_km": ANYWHERE_KM, "show_me": "everyone"}
