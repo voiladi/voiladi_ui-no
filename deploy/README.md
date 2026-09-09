@@ -42,3 +42,19 @@ Changing a variable on a service triggers an automatic redeploy. To switch to Gi
 - Test-prefix numbers (+1999/+1555/+1777) log in without SMS. Remove OTP_TEST_PREFIXES on voiladi-api before a public launch.
 - railway.json config-as-code is deprecated by Railway (works until 2026-12-01); settings are also applied in the dashboard.
 - Custom domain: `railway domain yourdomain.com --service voiladi-web` then add the DNS records it prints; update CORS_ORIGINS on the api.
+
+## Custom domain voiladi.com (added 2026-09-09, DNS at GoDaddy)
+Railway custom domains attached: voiladi.com + www.voiladi.com -> voiladi-web, api.voiladi.com -> voiladi-api.
+Required DNS records (from `railway domain status <host> --service <svc> --json`, copies in deploy/dns_*.json):
+| Type  | Host (name)          | Value                                                     |
+|-------|----------------------|-----------------------------------------------------------|
+| CNAME | @  (voiladi.com)     | kt4522tf.up.railway.app                                   |
+| CNAME | www                  | 79o52nmh.up.railway.app                                   |
+| CNAME | api                  | jbpsrl5b.up.railway.app                                   |
+| TXT   | _railway-verify      | railway-verify=8917ab44ccdc5a6d3a094ee88ee631c26c3e5707d28460f7eda60d3d070cedbc |
+| TXT   | _railway-verify.www  | (token in deploy/dns_www.voiladi.com.json)                |
+| TXT   | _railway-verify.api  | (token in deploy/dns_api.voiladi.com.json)                |
+GoDaddy cannot CNAME the root (@). Recommended: move DNS to Cloudflare (free, CNAME flattening) OR keep GoDaddy and
+forward voiladi.com -> https://www.voiladi.com (301) with CNAMEs for www + api only.
+After DNS resolves: set voiladi-web REACT_APP_BACKEND_URL=https://api.voiladi.com (triggers rebuild) and keep CORS_ORIGINS
+(already includes https://voiladi.com and https://www.voiladi.com).

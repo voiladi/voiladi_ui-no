@@ -1,0 +1,31 @@
+{
+  "domain": {
+    "id": "f4003961-5fb1-4c74-ad1b-a6db256da649",
+    "domain": "api.voiladi.com",
+    "type": "custom",
+    "targetPort": 8001,
+    "syncStatus": "ACTIVE",
+    "createdAt": "2026-09-09T10:19:35.483+00:00",
+    "updatedAt": "2026-09-09T10:19:36.010+00:00",
+    "dnsRecords": [
+      {
+        "recordType": "DNS_RECORD_TYPE_CNAME",
+        "name": "api",
+        "fqdn": "api.voiladi.com",
+        "requiredValue": "jbpsrl5b.up.railway.app",
+        "currentValue": "",
+        "status": "DNS_RECORD_STATUS_REQUIRES_UPDATE",
+        "zone": "voiladi.com",
+        "purpose": "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE"
+      }
+    ],
+    "verification": {
+      "verified": false,
+      "dnsHost": "_railway-verify.api",
+      "token": "railway-verify=054429d3a604ecc2c4bee8b5385b378c09ce660f1e84864cbd14e22e25e54101"
+    },
+    "certificate": {
+      "status": "CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP"
+    }
+  }
+}
