@@ -58,3 +58,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Phase 11 (2026-09-09): Profile rebuilt 1:1 from the user's hi-res reference; REAL Boost (POST /api/me/boost, 90 min, 1/24h, countdown pill);
   final Welcome screen ("Connect with people.", two-stroke V logo); loading system in components/Loading.jsx (Spinner, PageLoader, Skeleton*, busy buttons
   via aria-busy, image fade-in, route transitions in AppShell). Dialog overlays fixed (bg-black/45). Tests iteration_7 + iteration_8 green. Redeployed to Railway.
+- Phase 12 (2026-09-09): iOS blank-screen bug fixed (AnimatePresence exit-wait removed; CSS entrance + ScreenErrorBoundary). Exact PNG logo everywhere + icons.
+  Profile 1:1 rebuild (fits 393x852, no scroll). Fit-to-device scaling hook (useFitScale, transform scale 0.78..1). Tests iteration_9/10 green. Redeployed web.

@@ -133,3 +133,16 @@ Do not introduce new colours, fonts, textures, serif type, gradients (except the
 - Any button doing work: `aria-busy` + `<Spinner size={20} />` replaces the label; the button stays solid ink (never greyed out) and ignores taps.
 - Photos: shimmer behind, fade in 260ms once decoded (`UserPhoto`).
 - Route changes: tabs cross-fade 150ms; pushed screens slide in 28px from the right (AppShell AnimatePresence).
+
+## 12. Fit-to-device scaling (hooks/useFitScale.js)
+- Screens are authored on a 393 x 852 canvas. On viewports smaller than that (Safari toolbars, small Androids) the shell is laid out
+  at (viewport / scale) and scaled with `transform: scale()` (scale = clamp(0.78, min(vw/393, vh/852), 1)). Desktop keeps the 430px frame.
+  The scale is frozen while an input is focused (on-screen keyboard) and re-applied on blur. Do not use vh units inside screens.
+
+## 13. Profile screen (final hi-res reference) — canvas bg --canvas #F6F6F8, white cards
+- Header 52: Brand 34 left; two 38px --surface-2 circles right (bell with red dot, gear), page padding 12.
+- Avatar 102 + 32px white camera disc bottom-right; name 26/700, tagline 14 muted + chevron, stats 20/700 + 14 muted with 32px hairlines.
+- Cards `.vo-pcard` (white, radius 16, faint edge) with 10px side margins: completion (label 11/600 upper .08em, title 22/700, % 22/700 + 24px chevron circle,
+  sub 14 muted, bar 6px) -> features (rows 60, 38px --surface-2 icon tile radius 10 with filled 20px icon, title 18/700, sub 12.5 muted, --surface-2 value pill h26 14/600,
+  chevron 16; hairline inset 68px left / 10px right) -> menu (rows 42, outlined 24px icons, label 17/500).
+- Everything fits 393 x 852 without scrolling; bottom padding 74 for the tab bar (62 + 13px labels + 27px icons).

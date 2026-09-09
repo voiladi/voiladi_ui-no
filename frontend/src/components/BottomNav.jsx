@@ -35,10 +35,10 @@ export const BottomNav = () => {
                 }`}
               >
                 <span className="relative">
-                  <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.1 : 1.7} fill={active && t.fill ? "currentColor" : "none"} />
+                  <Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.1 : 1.7} fill={active && t.fill ? "currentColor" : "none"} />
                   {badge > 0 && <span data-testid={`bottom-nav-${t.id}-badge`} className="absolute -right-1 -top-0.5 h-[9px] w-[9px] rounded-full bg-red ring-2 ring-bg" />}
                 </span>
-                <span className={`text-[12px] leading-none tracking-[-0.01em] ${active ? "font-semibold" : "font-medium"}`}>{t.label}</span>
+                <span className={`text-[13px] leading-none tracking-[-0.01em] ${active ? "font-semibold" : "font-medium"}`}>{t.label}</span>
               </NavLink>
             </li>
           );

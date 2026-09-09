@@ -33,7 +33,7 @@ export default function Welcome() {
       <div className="flex-[1.15]" aria-hidden="true" />
 
       <div className="flex flex-col items-center">
-        <motion.div {...item(0)} style={{ width: logoSize, height: logoSize }}>
+        <motion.div {...item(0)} style={{ width: logoSize }}>
           <LogoMark size="100%" testId="welcome-logo" />
         </motion.div>
         <motion.div {...item(1)} className="mt-[clamp(12px,2vh,18px)]">

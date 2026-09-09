@@ -175,6 +175,16 @@
 - Deployed to Railway (voiladi-api + voiladi-web).
 - Logo updated everywhere to the user's final mark (thick white stroke front, grey stroke behind, radius 23.5%, wordmark 800 weight); favicon.svg, PNG icons (32/64/180/192/512 + maskable), manifest.json, OG tags added. Welcome page made fluid (clamp() sizes, flex rhythm, safe areas) and verified at 320x568, 393x852, 430x932, 1440x900 with no scrolling. Redeployed web.
 
+
+## Phase 12 — Blank-screen bug, exact logo, Profile 1:1 + fit-to-device scaling (P0)
+**Status: COMPLETED (2026-09-09)**
+- BUG (iOS Safari: Profile/Likes/Filters turned white until reload): root cause = AnimatePresence mode="wait" exit-wait in AppShell. Fixed with a plain
+  <main key={pathname}> + CSS entrance animation (.vo-page-fade/.vo-page-push) + ScreenErrorBoundary. Verified iteration_9 (80 rapid switches, 0 blank) and iteration_10 (70/70).
+- Logo: user's own PNG cropped pixel-exact (/public/logo-mark.png) used by LogoMark everywhere; favicon/app icons/manifest regenerated from it.
+- Profile rebuilt 1:1 from the hi-res reference (canvas bg, white cards, 60/42px rows) and fits 393x852 without scrolling.
+- Fit-to-device system (hooks/useFitScale.js): shell laid out at viewport/scale and transform-scaled (0.78..1) so screens keep the mockup proportions on any phone; frozen while typing.
+- Deployed web to Railway (SUCCESS).
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

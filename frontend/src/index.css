@@ -8,6 +8,7 @@
         --bg: #FFFFFF;
         --surface: #F2F2F4;
         --surface-2: #E9E9EC;
+        --canvas: #F6F6F8;
         --ink: #111111;
         --ink-2: #3A3A3C;
         --muted: #8A8A8E;
@@ -49,6 +50,7 @@
         --bg: #000000;
         --surface: #1C1C1E;
         --surface-2: #2C2C2E;
+        --canvas: #000000;
         --ink: #F5F5F7;
         --ink-2: #D1D1D6;
         --muted: #8E8E93;
@@ -408,10 +410,16 @@
         @apply h-px w-full bg-line;
     }
 
-    /* Profile screen rows (Boost / Super Likes / VOILADI+ and the account menu): 16px side padding,
-       40px icon column, hairline between rows starting after the icon column (as in the reference). */
+    /* Profile cards: white on the light canvas, faint edge */
+    .vo-pcard {
+        @apply rounded-[16px] bg-bg;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Profile screen rows (Boost / Super Likes / VOILADI+ and the account menu): 14px side padding,
+       38px icon column, hairline between rows starting after the icon column (as in the reference). */
     .vo-prow {
-        @apply relative flex h-16 w-full items-center gap-2.5 px-3.5 text-left focus-visible:outline-none active:bg-surface2;
+        @apply relative flex h-16 w-full items-center gap-4 px-3.5 text-left focus-visible:outline-none active:bg-surface;
         transition-property: background-color;
         transition-duration: 120ms;
     }
@@ -419,8 +427,8 @@
     .vo-prow + .vo-prow::before {
         content: "";
         position: absolute;
-        left: 64px;
-        right: 0;
+        left: 68px;
+        right: 10px;
         top: 0;
         height: 1px;
         background: var(--line);
@@ -502,6 +510,29 @@
         background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
         background-size: 400% 100%;
         animation: shimmer 1.6s ease infinite;
+    }
+
+    /* screen entrance: resting state is fully visible; the animation only plays on top of it */
+    .vo-page-fade {
+        animation: vo-page-fade 160ms ease-out both;
+    }
+
+    .vo-page-push {
+        animation: vo-page-push 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    @keyframes vo-page-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes vo-page-push {
+        from { opacity: 0; transform: translateX(24px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .vo-page-fade, .vo-page-push { animation: none; }
     }
 
     /* ring spinner (Instagram-style) */

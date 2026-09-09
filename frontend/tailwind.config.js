@@ -14,6 +14,7 @@ module.exports = {
         bg: 'var(--bg)',
         surface: 'var(--surface)',
         surface2: 'var(--surface-2)',
+        canvas: 'var(--canvas)',
         ink: 'var(--ink)',
         ink2: 'var(--ink-2)',
         mute: 'var(--muted)',

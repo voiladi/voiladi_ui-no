@@ -1,13 +1,12 @@
 import React, { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { tween, D, EASE_OUT } from "@/lib/motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { UserPhoto } from "@/components/UserPhoto";
+import { useFitScale, shellStyle } from "@/hooks/useFitScale";
 
 /* Tap-to-open banners for realtime events (new match, new message). */
 const RealtimeToasts = () => {
@@ -80,7 +79,44 @@ const RealtimeToasts = () => {
   return null;
 };
 
-/* Tabs swap with a quick fade; pushed screens (chat room, edit profile, filters...) slide in from the right. */
+/* Catches a render crash inside a screen so the user sees a retry card instead of a blank white area. */
+class ScreenErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error) {
+    // eslint-disable-next-line no-console
+    console.error("Screen crashed:", error);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-full flex-col items-center justify-center px-8 text-center" data-testid="screen-error">
+          <p className="text-[20px] font-bold text-ink">Something went wrong</p>
+          <p className="mt-2 text-[15px] text-mute">This screen could not be shown. Please try again.</p>
+          <button type="button" className="vo-btn-primary mt-6 px-8" onClick={() => window.location.reload()} data-testid="screen-error-reload">
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/*
+ * Screen container. Tabs fade in, pushed screens (chat room, edit profile, filters...) slide in from the right.
+ * The entrance is a plain CSS animation on an element whose resting style is fully visible: even if the browser
+ * throttles or skips the animation (mobile Safari, background tabs) the screen is always shown. No JS-driven
+ * exit/wait phase exists any more - that is what left the page blank until a reload.
+ */
 const TAB_PATHS = ["/discover", "/explore", "/likes", "/chats", "/profile"];
 const isTab = (path) => TAB_PATHS.includes(path);
 
@@ -88,22 +124,15 @@ export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const tab = isTab(pathname);
+  const fit = useFitScale();
   return (
     <div className="vo-backdrop">
-      <div className="vo-shell" data-testid="app-shell">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.main
-            key={pathname}
-            className="vo-scroll relative"
-            id="vo-main"
-            initial={tab ? { opacity: 0 } : { opacity: 0, x: 28 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={tab ? { opacity: 0 } : { opacity: 0, x: 16 }}
-            transition={tween(tab ? D.fast : D.base, 0, EASE_OUT)}
-          >
+      <div className="vo-shell" style={shellStyle(fit)} data-fit-scale={fit.scale} data-testid="app-shell">
+        <main key={pathname} className={`vo-scroll relative ${tab ? "vo-page-fade" : "vo-page-push"}`} id="vo-main">
+          <ScreenErrorBoundary key={pathname}>
             <Outlet />
-          </motion.main>
-        </AnimatePresence>
+          </ScreenErrorBoundary>
+        </main>
         {nav && <BottomNav />}
         {user && <RealtimeToasts />}
       </div>
