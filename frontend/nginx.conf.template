@@ -14,9 +14,17 @@ server {
         try_files $uri =404;
     }
 
-    # SPA fallback: every route renders index.html
+    # The build manifest is polled by the app to detect new deploys: never cache it anywhere.
+    location = /asset-manifest.json {
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        add_header Pragma "no-cache";
+        try_files $uri =404;
+    }
+
+    # SPA fallback: every route renders index.html. no-store so no browser/proxy ever serves a stale shell.
     location / {
-        add_header Cache-Control "no-cache";
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        add_header Pragma "no-cache";
         try_files $uri $uri/ /index.html;
     }
 }
