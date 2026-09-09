@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
 import { LogoMark } from "@/components/Logo";
+import { Spinner } from "@/components/Loading";
 import Welcome from "@/pages/Welcome";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
@@ -22,10 +23,14 @@ import Filters from "@/pages/Filters";
 import Settings from "@/pages/Settings";
 import Legal from "@/pages/Legal";
 
+/* Boot screen while the session is checked: logo centred, thin spinner near the bottom (as native apps do). */
 const Splash = () => (
   <div className="vo-backdrop">
     <div className="vo-shell items-center justify-center" data-testid="splash-screen">
-      <LogoMark size={72} />
+      <LogoMark size={84} />
+      <div className="absolute bottom-0 flex flex-col items-center gap-3 text-mute" style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}>
+        <Spinner size={22} stroke={2} />
+      </div>
     </div>
   </div>
 );

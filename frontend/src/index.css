@@ -130,17 +130,17 @@
 @layer components {
     /* ---------- type ---------- */
     .vo-title {
-        @apply text-[28px] font-bold leading-[1.15] text-ink;
+        @apply text-[30px] font-bold leading-[1.15] text-ink;
         letter-spacing: -0.02em;
     }
 
     .vo-h1 {
-        @apply text-[26px] font-bold leading-[1.2] text-ink;
+        @apply text-[28px] font-bold leading-[1.2] text-ink;
         letter-spacing: -0.02em;
     }
 
     .vo-sub {
-        @apply text-[15px] leading-[1.45] text-mute;
+        @apply text-[16px] leading-[1.45] text-mute;
     }
 
     .vo-section {
@@ -148,7 +148,7 @@
     }
 
     .vo-label {
-        @apply block text-[14px] font-medium text-ink;
+        @apply block text-[15px] font-semibold text-ink;
     }
 
     /* ---------- shell ---------- */
@@ -212,7 +212,7 @@
 
     /* ---------- buttons ---------- */
     .vo-btn {
-        @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2;
+        @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[16px] font-semibold select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2;
         --tw-ring-offset-color: var(--bg);
         transition-property: color, background-color, border-color, opacity, transform;
         transition-duration: 150ms;
@@ -249,7 +249,7 @@
     }
 
     .vo-icon-btn {
-        @apply inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface text-ink hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
         transition-property: color, background-color, opacity, transform;
         transition-duration: 150ms;
         transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -283,8 +283,8 @@
 
     /* ---------- inputs ---------- */
     .vo-input {
-        @apply w-full rounded-[12px] bg-surface px-4 text-[16px] text-ink focus:outline-none;
-        height: 48px;
+        @apply w-full rounded-[14px] bg-surface px-4 text-[16px] text-ink focus:outline-none;
+        height: 52px;
         border: 1.5px solid transparent;
         transition-property: border-color, background-color;
         transition-duration: 150ms;
@@ -333,7 +333,7 @@
 
     /* ---------- chips ---------- */
     .vo-chip {
-        @apply inline-flex h-9 items-center justify-center rounded-full bg-surface px-4 text-[14px] font-medium text-ink select-none hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
+        @apply inline-flex h-[42px] items-center justify-center rounded-full bg-surface px-5 text-[15px] font-medium text-ink select-none hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
         transition-property: color, background-color, transform;
         transition-duration: 150ms;
         transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -349,19 +349,19 @@
 
     /* translucent chip that sits on a photo */
     .vo-chip-glass {
-        @apply inline-flex h-[30px] items-center rounded-full px-3 text-[13px] font-medium text-white;
-        background: rgba(255, 255, 255, 0.18);
+        @apply inline-flex h-[32px] items-center rounded-full px-3.5 text-[14px] font-medium text-white;
+        background: rgba(0, 0, 0, 0.38);
         -webkit-backdrop-filter: blur(8px);
         backdrop-filter: blur(8px);
     }
 
     /* ---------- segmented control ---------- */
     .vo-seg {
-        @apply grid rounded-full bg-surface p-[3px];
+        @apply grid rounded-full bg-surface p-1;
     }
 
     .vo-seg-item {
-        @apply h-9 rounded-full text-[14px] font-medium text-mute focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
+        @apply h-9 rounded-full text-[15px] font-medium text-mute focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
         transition-property: color, background-color, box-shadow;
         transition-duration: 150ms;
     }
@@ -384,8 +384,8 @@
     }
 
     .vo-row {
-        @apply flex w-full items-center gap-3 px-4 text-left text-[15px] font-medium text-ink hover:bg-surface2 active:bg-surface2 focus-visible:outline-none focus-visible:bg-surface2;
-        min-height: 52px;
+        @apply flex w-full items-center gap-3.5 px-4 text-left text-[16px] font-medium text-ink hover:bg-surface2 active:bg-surface2 focus-visible:outline-none focus-visible:bg-surface2;
+        min-height: 56px;
         transition-property: background-color;
         transition-duration: 120ms;
     }
@@ -408,8 +408,26 @@
         @apply h-px w-full bg-line;
     }
 
+    /* Profile screen rows (Boost / Super Likes / VOILADI+ and the account menu): 16px side padding,
+       40px icon column, hairline between rows starting after the icon column (as in the reference). */
+    .vo-prow {
+        @apply relative flex h-16 w-full items-center gap-2.5 px-3.5 text-left focus-visible:outline-none active:bg-surface2;
+        transition-property: background-color;
+        transition-duration: 120ms;
+    }
+
+    .vo-prow + .vo-prow::before {
+        content: "";
+        position: absolute;
+        left: 64px;
+        right: 0;
+        top: 0;
+        height: 1px;
+        background: var(--line);
+    }
+
     .vo-badge {
-        @apply inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-1.5 text-[12px] font-semibold text-onink;
+        @apply inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-ink px-1.5 text-[13px] font-semibold text-onink;
     }
 
     .vo-dot-online {
@@ -484,6 +502,33 @@
         background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
         background-size: 400% 100%;
         animation: shimmer 1.6s ease infinite;
+    }
+
+    /* ring spinner (Instagram-style) */
+    .vo-spin {
+        animation: vo-spin 0.85s linear infinite;
+        transform-origin: center;
+    }
+
+    @keyframes vo-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* photos fade in once decoded; the shimmer sits behind them until then */
+    .vo-img {
+        opacity: 0;
+        transition: opacity 260ms ease-out;
+    }
+
+    .vo-img-ready {
+        opacity: 1;
+    }
+
+    /* a button that is doing work: stays solid (not greyed out), shows the spinner, ignores taps */
+    .vo-btn[aria-busy="true"],
+    .vo-btn[aria-busy="true"]:disabled {
+        pointer-events: none;
+        opacity: 1;
     }
 
     @keyframes shimmer {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Calendar, Camera, Bell, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Camera, Bell, Lock } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -247,12 +248,12 @@ export default function Onboarding() {
                 />
                 <Calendar className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink" strokeWidth={1.75} />
               </div>
-              <p className={`mt-2 text-[12px] ${dob && age !== null && age < 18 ? "text-red" : "text-mute"}`} data-testid="onboarding-age-note">
+              <p className={`mt-3 text-center text-[14px] ${dob && age !== null && age < 18 ? "text-red" : "text-mute"}`} data-testid="onboarding-age-note">
                 You must be 18 or older to use Voiladi.
               </p>
 
               <span className="vo-label mb-2 mt-5">I am</span>
-              <Segmented options={meta.genders} value={gender} onChange={setGender} render={genderLabel} testIdPrefix="onboarding-gender" dark />
+              <Segmented options={meta.genders} value={gender} onChange={setGender} render={genderLabel} testIdPrefix="onboarding-gender" />
 
               {error && (
                 <p className="mt-3 text-[14px] text-red" data-testid="onboarding-error">
@@ -260,8 +261,8 @@ export default function Onboarding() {
                 </p>
               )}
               <div className="mt-auto pt-8">
-                <button type="submit" className="vo-btn-primary w-full" disabled={!nameValid || saving} data-testid="onboarding-next-button">
-                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                <button type="submit" className="vo-btn-primary w-full" disabled={!nameValid || saving} aria-busy={saving} data-testid="onboarding-next-button">
+                  {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
                 </button>
               </div>
             </form>
@@ -284,11 +285,11 @@ export default function Onboarding() {
                 </p>
               )}
               <div className="mt-auto pt-8">
-                <button type="submit" className="vo-btn-primary w-full" disabled={!validPhone || saving} data-testid="onboarding-next-button">
-                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                <button type="submit" className="vo-btn-primary w-full" disabled={!validPhone || saving} aria-busy={saving} data-testid="onboarding-next-button">
+                  {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
                 </button>
-                <p className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-mute">
-                  <Lock className="h-3.5 w-3.5" /> Your number is kept private.
+                <p className="mt-5 flex items-center justify-center gap-1.5 text-[14px] text-mute">
+                  <Lock className="h-4 w-4" /> Your number is kept private.
                 </p>
               </div>
             </form>
@@ -317,7 +318,7 @@ export default function Onboarding() {
                   setError("");
                 }}
                 onComplete={(v) => verifyPhone(v)}
-                disabled={saving}
+                disabled={saving} aria-busy={saving}
               />
             </div>
             {error && (
@@ -325,12 +326,12 @@ export default function Onboarding() {
                 {error}
               </p>
             )}
-            <p className="mt-8 text-center text-[13px] text-mute">
+            <p className="mt-10 text-center text-[14px] text-mute">
               Didn't receive the code?{" "}
               {resendIn > 0 ? (
                 <span data-testid="auth-resend-timer">Resend in {mmss(resendIn)}</span>
               ) : (
-                <button type="button" className="vo-link text-[13px]" onClick={requestOtp} disabled={saving} data-testid="auth-resend-button">
+                <button type="button" className="vo-link text-[14px]" onClick={requestOtp} disabled={saving} aria-busy={saving} data-testid="auth-resend-button">
                   Resend
                 </button>
               )}
@@ -345,8 +346,8 @@ export default function Onboarding() {
               />
             )}
             <div className="mt-auto pt-8">
-              <button type="button" className="vo-btn-primary w-full" disabled={code.length !== 6 || saving} onClick={() => verifyPhone()} data-testid="onboarding-next-button">
-                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+              <button type="button" className="vo-btn-primary w-full" disabled={code.length !== 6 || saving} aria-busy={saving} onClick={() => verifyPhone()} data-testid="onboarding-next-button">
+                {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
               </button>
             </div>
           </Step>
@@ -355,22 +356,22 @@ export default function Onboarding() {
         {step === "photo" && (
           <Step key="photo" testId="onboarding-step-photo" title="Add a profile photo" sub="A clear photo helps you get better matches.">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} data-testid="photo-file-input" />
-            <div className="mt-12 flex justify-center">
-              <button type="button" onClick={() => fileRef.current?.click()} className="relative block h-[160px] w-[160px] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Add photo" data-testid="onboarding-photo-add-button" disabled={saving}>
+            <div className="mt-14 flex justify-center">
+              <button type="button" onClick={() => fileRef.current?.click()} className="relative block h-[220px] w-[220px] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Add photo" data-testid="onboarding-photo-add-button" disabled={saving} aria-busy={saving}>
                 {photo ? (
-                  <UserPhoto src={photo} name={user?.name} className="h-full w-full rounded-full text-4xl" />
+                  <UserPhoto src={photo} name={user?.name} className="h-full w-full rounded-full text-5xl" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center rounded-full bg-surface text-mute">
-                    <Camera className="h-10 w-10" strokeWidth={1.5} />
+                    <Camera className="h-14 w-14" strokeWidth={1.4} />
                   </span>
                 )}
-                <span className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink shadow-action">
-                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" strokeWidth={2} />}
+                <span className="absolute bottom-2 right-0 flex h-14 w-14 items-center justify-center rounded-full bg-white text-ink shadow-action">
+                  {saving ? <Spinner size={24} stroke={2} /> : <Camera className="h-6 w-6" strokeWidth={2} />}
                 </span>
               </button>
             </div>
             <div className="mt-auto pt-8">
-              <button type="button" className="vo-btn-primary w-full" disabled={!photo || saving} onClick={() => go("interests")} data-testid="onboarding-next-button">
+              <button type="button" className="vo-btn-primary w-full" disabled={!photo || saving} aria-busy={saving} onClick={() => go("interests")} data-testid="onboarding-next-button">
                 Continue
               </button>
               <button
@@ -390,12 +391,12 @@ export default function Onboarding() {
 
         {step === "interests" && (
           <Step key="interests" testId="onboarding-step-interests" title="What are you into?" sub="Select a few interests to find people with similar vibes.">
-            <div className="mt-8 grid grid-cols-3 gap-2.5" data-testid="interests-list">
+            <div className="mt-8 grid grid-cols-3 gap-3" data-testid="interests-list">
               {meta.interests.map((i) => (
                 <Chip
                   key={i}
                   active={interests.includes(i)}
-                  className="h-10 w-full px-2"
+                  className="h-11 w-full whitespace-nowrap px-2 text-[14px]"
                   onClick={() => {
                     if (interests.includes(i)) setInterests(interests.filter((x) => x !== i));
                     else if (interests.length >= 10) toast("You can pick up to 10");
@@ -407,7 +408,7 @@ export default function Onboarding() {
                 </Chip>
               ))}
             </div>
-            <p className="mt-4 text-center text-[13px] text-mute" data-testid="interests-count">
+            <p className="mt-4 text-center text-[14px] text-mute" data-testid="interests-count">
               {interests.length < MIN_INTERESTS ? `Pick at least ${MIN_INTERESTS}` : `${interests.length} selected`}
             </p>
             {error && (
@@ -415,9 +416,9 @@ export default function Onboarding() {
                 {error}
               </p>
             )}
-            <div className="mt-auto pt-6">
-              <button type="button" className="vo-btn-primary w-full" disabled={interests.length < MIN_INTERESTS || saving} onClick={saveInterests} data-testid="onboarding-next-button">
-                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+            <div className="vo-bar sticky bottom-0 -mx-5 mt-auto px-5 pt-4" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+              <button type="button" className="vo-btn-primary w-full" disabled={interests.length < MIN_INTERESTS || saving} aria-busy={saving} onClick={saveInterests} data-testid="onboarding-next-button">
+                {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
               </button>
             </div>
           </Step>
@@ -426,8 +427,8 @@ export default function Onboarding() {
         {step === "notifications" && (
           <Step key="notifications" testId="onboarding-step-notifications" title="Turn on notifications?" sub="Get notified about new matches, messages and more.">
             <div className="mt-16 flex justify-center">
-              <span className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-surface text-ink">
-                <Bell className="h-12 w-12" strokeWidth={1.5} />
+              <span className="flex h-[160px] w-[160px] items-center justify-center rounded-full bg-surface text-ink">
+                <Bell className="h-16 w-16" strokeWidth={1.4} />
               </span>
             </div>
             <div className="mt-auto pt-8">
@@ -444,7 +445,7 @@ export default function Onboarding() {
         {step === "done" && (
           <motion.div key="done" {...slideX(1)} className="relative flex flex-1 flex-col items-center text-center" data-testid="onboarding-step-done">
             <Confetti />
-            <LogoMark size={72} className="mt-[14vh]" />
+            <LogoMark size={88} className="mt-[16vh]" />
             <h1 className="vo-h1 mt-6">You're all set!</h1>
             <p className="vo-sub mt-2">
               Welcome to Voiladi.
@@ -452,8 +453,8 @@ export default function Onboarding() {
               Let's make better connections.
             </p>
             <div className="mt-auto w-full pt-8">
-              <button type="button" className="vo-btn-primary w-full" onClick={finish} disabled={saving} data-testid="onboarding-finish-button">
-                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+              <button type="button" className="vo-btn-primary w-full" onClick={finish} disabled={saving} aria-busy={saving} data-testid="onboarding-finish-button">
+                {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
               </button>
             </div>
           </motion.div>

@@ -10,7 +10,7 @@ export const ConfirmDialog = ({ open, onOpenChange, title, description, confirmT
       <AlertDialogTitle className="text-center text-[20px] font-bold leading-tight tracking-[-0.01em] text-ink">{title}</AlertDialogTitle>
       <AlertDialogDescription className="text-center text-[14px] leading-relaxed text-mute">{description}</AlertDialogDescription>
       <div className="mt-4 flex flex-col gap-2">
-        <button type="button" className={`${danger ? "vo-btn bg-red text-white" : "vo-btn-primary"} w-full`} onClick={onConfirm} disabled={loading} data-testid={`${testId}-confirm`}>
+        <button type="button" className={`${danger ? "vo-btn bg-red text-white" : "vo-btn-primary"} w-full`} onClick={onConfirm} disabled={loading} aria-busy={loading} data-testid={`${testId}-confirm`}>
           {loading ? "Working..." : confirmText}
         </button>
         <button type="button" className="vo-btn-ghost w-full" onClick={() => onOpenChange(false)} data-testid={`${testId}-cancel`}>
@@ -50,7 +50,7 @@ export const ReportDialog = ({ open, onOpenChange, reasons = [], onSubmit, loadi
         </div>
         <textarea className="vo-textarea mt-3 min-h-[72px] text-[15px]" placeholder="Anything else? (optional)" value={details} onChange={(e) => setDetails(e.target.value)} data-testid="report-details-input" />
         <div className="mt-4 flex flex-col gap-2">
-          <button type="button" className="vo-btn bg-red text-white w-full" disabled={!reason || loading} onClick={() => onSubmit(reason, details)} data-testid="report-submit-button">
+          <button type="button" className="vo-btn bg-red text-white w-full" disabled={!reason || loading} aria-busy={loading} onClick={() => onSubmit(reason, details)} data-testid="report-submit-button">
             {loading ? "Sending..." : "Send report"}
           </button>
           <button type="button" className="vo-btn-ghost w-full" onClick={() => onOpenChange(false)}>

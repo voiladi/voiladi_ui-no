@@ -39,9 +39,9 @@ export const PageHeader = ({ title, subtitle, right, brand, className = "", titl
 export const ModalHeader = ({ left, title, right, className = "" }) => (
   <header className={`vo-bar sticky top-0 z-20 grid h-14 grid-cols-[1fr_auto_1fr] items-center px-4 ${className}`}>
     <div className="flex justify-start">{left}</div>
-    <h1 className="text-[16px] font-semibold text-ink">{title}</h1>
+    <h1 className="text-[17px] font-semibold text-ink">{title}</h1>
     <div className="flex justify-end">{right}</div>
   </header>
 );
 
-export const Skeleton = ({ className = "" }) => <div className={`vo-shimmer rounded-[12px] ${className}`} data-testid="loading-skeleton" />;
+export { Skeleton, SkeletonRow, SkeletonList, SkeletonLines, Spinner, PageLoader } from "@/components/Loading";

@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { tween, D, EASE_OUT } from "@/lib/motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
@@ -78,14 +80,30 @@ const RealtimeToasts = () => {
   return null;
 };
 
+/* Tabs swap with a quick fade; pushed screens (chat room, edit profile, filters...) slide in from the right. */
+const TAB_PATHS = ["/discover", "/explore", "/likes", "/chats", "/profile"];
+const isTab = (path) => TAB_PATHS.includes(path);
+
 export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
+  const { pathname } = useLocation();
+  const tab = isTab(pathname);
   return (
     <div className="vo-backdrop">
       <div className="vo-shell" data-testid="app-shell">
-        <main className="vo-scroll relative" id="vo-main">
-          <Outlet />
-        </main>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.main
+            key={pathname}
+            className="vo-scroll relative"
+            id="vo-main"
+            initial={tab ? { opacity: 0 } : { opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={tab ? { opacity: 0 } : { opacity: 0, x: 16 }}
+            transition={tween(tab ? D.fast : D.base, 0, EASE_OUT)}
+          >
+            <Outlet />
+          </motion.main>
+        </AnimatePresence>
         {nav && <BottomNav />}
         {user && <RealtimeToasts />}
       </div>

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import { Plus, Minus, Loader2 } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { UserPhoto } from "@/components/UserPhoto";
@@ -86,7 +87,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
       aria-label="Remove photo"
       data-testid={`photo-remove-${i}`}
     >
-      {busy === url ? <Loader2 className="h-3 w-3 animate-spin" /> : <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
+      {busy === url ? <Spinner size={14} stroke={2} /> : <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
     </button>
   );
 
@@ -100,8 +101,8 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
             <RemoveBadge url={main} i={0} />
           </div>
         ) : (
-          <button type="button" onClick={pick} disabled={uploading} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[20px] bg-surface text-ink" data-testid="onboarding-photo-add-button" aria-label="Add photo">
-            {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
+          <button type="button" onClick={pick} disabled={uploading} aria-busy={uploading} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[20px] bg-surface text-ink" data-testid="onboarding-photo-add-button" aria-label="Add photo">
+            {uploading ? <Spinner size={24} stroke={2} /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
             <span className="text-[13px] font-medium text-mute">Add Photo</span>
           </button>
         )}
@@ -113,7 +114,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
           data-testid={main ? "onboarding-photo-add-button" : "photo-add-button-secondary"}
           aria-label="Add photo"
         >
-          {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
+          {uploading ? <Spinner size={24} stroke={2} /> : <Plus className="h-7 w-7" strokeWidth={1.75} />}
           <span className="text-[13px] font-medium text-mute">{full ? "Max photos" : "Add Photo"}</span>
         </button>
       </div>

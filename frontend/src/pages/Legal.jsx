@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { api, errMsg } from "@/lib/api";
@@ -130,7 +131,7 @@ const Notifications = () => {
             <span className="block">Push notifications</span>
             <span className="block text-[12px] font-normal text-mute">New matches and messages</span>
           </span>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin text-mute" /> : <Switch checked={on} onCheckedChange={toggle} aria-label="Push notifications" className="data-[state=checked]:bg-ink" data-testid="notifications-push-switch" />}
+          {busy ? <Spinner size={16} stroke={2} className="text-mute" /> : <Switch checked={on} onCheckedChange={toggle} aria-label="Push notifications" className="data-[state=checked]:bg-ink" data-testid="notifications-push-switch" />}
         </div>
       </div>
       <p className="px-1 text-[13px] text-mute">{perm === "denied" ? "Notifications are blocked for this site. Allow them in your browser settings." : "You'll also see in-app banners while Voiladi is open."}</p>

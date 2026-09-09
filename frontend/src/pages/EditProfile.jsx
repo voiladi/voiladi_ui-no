@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { toast } from "sonner";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -95,13 +96,13 @@ export default function EditProfile() {
         }
         title="Edit Profile"
         right={
-          <button type="button" className="text-[16px] font-semibold text-ink disabled:opacity-40" disabled={!valid || saving} onClick={save} data-testid="edit-save-button">
-            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Done"}
+          <button type="button" className="text-[16px] font-semibold text-ink disabled:opacity-40" disabled={!valid || saving} aria-busy={saving} onClick={save} data-testid="edit-save-button">
+            {saving ? <Spinner size={20} stroke={2} /> : "Done"}
           </button>
         }
       />
 
-      <div className="flex-1 px-5 pb-10 pt-2">
+      <div className="flex-1 px-4 pb-10 pt-2">
         <PhotoGrid photos={user?.photos || []} onChange={(photos) => setUser((u) => ({ ...u, photos }))} max={meta.max_photos} />
 
         <h3 className="vo-section mt-7 mb-2.5">About me</h3>
@@ -122,7 +123,7 @@ export default function EditProfile() {
             <p className="mt-1.5 text-[12px] text-mute">{form.birthday ? `Born ${longDate(form.birthday)}. ` : ""}Only your age is shown.</p>
           </Row>
           <Row label="Gender" value={genderLabel(form.gender)} open={open === "gender"} onToggle={() => toggle("gender")} testId="edit-gender-row">
-            <Segmented options={meta.genders} value={form.gender} onChange={(gender) => set({ gender })} render={genderLabel} testIdPrefix="gender" dark className="bg-bg" />
+            <Segmented options={meta.genders} value={form.gender} onChange={(gender) => set({ gender })} render={genderLabel} testIdPrefix="gender" className="bg-surface2" />
           </Row>
           <Row label="Location" value={form.location.city || "Add"} open={open === "location"} onToggle={() => toggle("location")} testId="edit-location-row">
             <LocationPicker cities={meta.cities} value={form.location} onChange={(location) => set({ location })} />
@@ -170,8 +171,8 @@ export default function EditProfile() {
           </Row>
         </div>
 
-        <button type="button" className="vo-btn-primary mt-8 w-full" disabled={!valid || saving} onClick={save} data-testid="edit-save-bottom-button">
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Done"}
+        <button type="button" className="vo-btn-primary mt-8 w-full" disabled={!valid || saving} aria-busy={saving} onClick={save} data-testid="edit-save-bottom-button">
+          {saving ? <Spinner size={20} stroke={2} /> : "Done"}
         </button>
       </div>
     </div>

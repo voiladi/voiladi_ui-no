@@ -106,24 +106,24 @@ export default function Explore() {
 
   return (
     <div className="min-h-full pb-24" data-testid="explore-page">
-      <header className="px-5 pt-2">
-        <div className="flex h-12 items-center justify-between">
-          <Brand />
+      <header className="px-4 pt-1">
+        <div className="flex h-14 items-center justify-between">
+          <Brand size={30} />
           <button type="button" className={`vo-icon-btn ${searching ? "bg-ink text-onink hover:bg-ink" : ""}`} onClick={() => setSearching((s) => !s)} aria-label="Search" data-testid="explore-search-button">
-            <Search className="h-[18px] w-[18px]" strokeWidth={2} />
+            <Search className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
-        <h1 className="vo-title mt-3">Explore</h1>
-        <p className="mt-1 text-[14px] text-mute">Find people who vibe with you.</p>
+        <h1 className="vo-title mt-2">Explore</h1>
+        <p className="mt-1 text-[15px] text-mute">Find people who vibe with you.</p>
         {searching && (
           <div className="relative mt-3">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" />
             <input autoFocus className="vo-input h-11 pl-11 text-[15px]" style={{ height: 44 }} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} data-testid="explore-search-input" />
           </div>
         )}
-        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto" data-testid="explore-tabs">
+        <div className="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto" data-testid="explore-tabs">
           {TABS.map((t) => (
-            <Chip key={t.key} active={tab === t.key} onClick={() => setTab(t.key)} className="h-10 shrink-0 px-5 text-[15px]" data-testid={`explore-tab-${t.key}`}>
+            <Chip key={t.key} active={tab === t.key} onClick={() => setTab(t.key)} className="shrink-0" data-testid={`explore-tab-${t.key}`}>
               {t.label}
             </Chip>
           ))}
@@ -131,8 +131,8 @@ export default function Explore() {
       </header>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 px-5 pt-5">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-3 px-4 pt-5" data-testid="explore-loading">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="aspect-[3/4] rounded-[20px]" />
           ))}
         </div>
@@ -160,26 +160,26 @@ export default function Explore() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 px-5 pt-5" data-testid="explore-grid">
+        <div className="grid grid-cols-2 gap-3 px-4 pt-5" data-testid="explore-grid">
           {people.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="relative aspect-[3/4] overflow-hidden rounded-[20px] bg-surface2" data-testid="explore-tile">
               <button type="button" className="block h-full w-full text-left focus-visible:outline-none" onClick={() => setSheet(p)} data-testid="explore-tile-open">
                 <UserPhoto src={p.photos?.[0]} name={p.name} className="h-full w-full text-4xl" />
                 <div className="vo-photo-fade pointer-events-none absolute inset-x-0 bottom-0 h-1/2" />
                 <div className="pointer-events-none absolute inset-x-3 bottom-3 text-white">
-                  <div className="text-[16px] font-semibold leading-tight">
-                    {p.name} <span className="font-normal">{p.age}</span>
+                  <div className="text-[18px] font-bold leading-tight tracking-[-0.01em]">
+                    {p.name} <span className="font-medium">{p.age}</span>
                   </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-[12px] text-white/85">
-                    <span className={`h-1.5 w-1.5 rounded-full ${p.distance_km !== null && p.distance_km !== undefined && p.distance_km <= 5 ? "bg-amber" : "bg-white/70"}`} />
+                  <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-white/90">
+                    <span className={`h-2 w-2 rounded-full ${p.distance_km !== null && p.distance_km !== undefined && p.distance_km <= 5 ? "bg-amber" : "bg-white/70"}`} />
                     {kmLabel(p.distance_km, p.city) || "Nearby"}
                   </div>
                 </div>
               </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur-md focus-visible:outline-none" aria-label="More" data-testid="explore-tile-menu">
-                    <MoreHorizontal className="h-4 w-4" />
+                  <button type="button" className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-white focus-visible:outline-none" aria-label="More" data-testid="explore-tile-menu">
+                    <MoreHorizontal className="h-5 w-5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">

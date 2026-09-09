@@ -56,7 +56,7 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
 
   return (
     <motion.article
-      className="vo-gpu absolute inset-0 overflow-hidden rounded-[28px] bg-surface2 shadow-action"
+      className="vo-gpu absolute inset-0 overflow-hidden rounded-[24px] bg-surface2 shadow-action"
       style={{ x, y, rotate }}
       drag="x"
       dragElastic={0.9}
@@ -68,21 +68,13 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
       <UserPhoto src={photos[idx]} name={profile.name} className="h-full w-full text-8xl" data-testid="discover-card-photo" />
       <div className="vo-photo-fade pointer-events-none absolute inset-x-0 bottom-0 h-[55%]" />
 
-      {photos.length > 1 && (
-        <div className="pointer-events-none absolute inset-x-4 top-3 flex gap-1.5" data-testid="discover-card-photo-dots">
-          {photos.map((_, i) => (
-            <span key={i} className={`h-[3px] flex-1 rounded-full ${i === idx ? "bg-white" : "bg-white/40"}`} />
-          ))}
-        </div>
-      )}
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="absolute right-4 top-6 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label="More"
             data-testid="discover-card-menu-button"
           >
@@ -113,22 +105,22 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
 
       <div className="pointer-events-none absolute inset-x-5 bottom-5 text-white">
         <div className="flex items-center gap-2">
-          <h2 className="text-[30px] font-bold leading-none tracking-[-0.02em]" data-testid="discover-card-name">
+          <h2 className="text-[32px] font-bold leading-none tracking-[-0.02em]" data-testid="discover-card-name">
             {profile.name}
           </h2>
           {profile.age ? <span className="text-[26px] font-medium leading-none">{profile.age}</span> : null}
-          {profile.verified && <BadgeCheck className="h-6 w-6 text-blue" fill="currentColor" stroke="white" strokeWidth={1.75} data-testid="discover-card-verified" />}
+          {profile.verified && <BadgeCheck className="ml-0.5 h-7 w-7 text-blue" fill="currentColor" stroke="white" strokeWidth={1.75} data-testid="discover-card-verified" />}
         </div>
         {profile.job && (
-          <div className="mt-2.5 flex items-center gap-2 text-[15px] font-medium">
-            <Briefcase className="h-4 w-4" strokeWidth={1.75} /> {profile.job}
+          <div className="mt-3 flex items-center gap-2 text-[16px] font-medium">
+            <Briefcase className="h-[18px] w-[18px]" strokeWidth={1.75} /> {profile.job}
           </div>
         )}
-        <div className="mt-1.5 flex items-center gap-2 text-[15px] font-medium" data-testid="discover-card-distance">
-          <MapPin className="h-4 w-4" strokeWidth={1.75} /> {distanceLabel(profile.distance_km, profile.city)}
+        <div className="mt-1.5 flex items-center gap-2 text-[16px] font-medium" data-testid="discover-card-distance">
+          <MapPin className="h-[18px] w-[18px]" strokeWidth={1.75} /> {distanceLabel(profile.distance_km, profile.city)}
         </div>
         {chips.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3.5 flex flex-wrap gap-2">
             {chips.map((c) => (
               <span key={c} className="vo-chip-glass">
                 {c}

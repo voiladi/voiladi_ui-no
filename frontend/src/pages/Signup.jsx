@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -84,18 +85,18 @@ export const EmailPasswordForm = ({ mode }) => {
         )}
 
         <div className="mt-auto pt-10">
-          <button type="submit" className="vo-btn-primary w-full" disabled={!valid || busy} data-testid="auth-continue-button">
-            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : signup ? "Continue" : "Log in"}
+          <button type="submit" className="vo-btn-primary w-full" disabled={!valid || busy} aria-busy={busy} data-testid="auth-continue-button">
+            {busy ? <Spinner size={20} stroke={2} /> : signup ? "Continue" : "Log in"}
           </button>
           {!signup && (
-            <button type="button" className="vo-btn-ghost mt-2 w-full text-[14px] text-mute" onClick={() => navigate("/login/phone")} data-testid="auth-phone-login-link">
+            <button type="button" className="vo-btn-ghost mt-2 w-full text-[15px] text-mute" onClick={() => navigate("/login/phone")} data-testid="auth-phone-login-link">
               Log in with phone number instead
             </button>
           )}
         </div>
-        <p className="mt-8 text-center text-[13px] text-mute">
+        <p className="mt-8 text-center text-[15px] text-mute">
           {signup ? "Already have an account? " : "Don't have an account? "}
-          <button type="button" className="vo-link text-[13px]" onClick={() => navigate(signup ? "/login" : "/signup")} data-testid={signup ? "auth-go-login-link" : "auth-go-signup-link"}>
+          <button type="button" className="vo-link text-[15px]" onClick={() => navigate(signup ? "/login" : "/signup")} data-testid={signup ? "auth-go-login-link" : "auth-go-signup-link"}>
             {signup ? "Log in" : "Create one"}
           </button>
         </p>

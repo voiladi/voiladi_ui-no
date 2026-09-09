@@ -158,6 +158,22 @@
 
 ---
 
+
+---
+
+## Phase 11 — Profile 1:1 rebuild, Boost, Welcome screen, loading system (P0)
+**Status: COMPLETED (2026-09-09)**
+- Profile screen rebuilt from the user's high-res reference (100px avatar + camera disc, name/tagline/stats column, PROFILE COMPLETION card,
+  grey card with Boost / Super Likes / VOILADI+ rows (white icon tiles + white pills), grey card with Account / Privacy & Safety / Preferences / Help & Support).
+- REAL Boost: `POST /api/me/boost` (90 min, one per 24h), `/api/me/stats` returns boost_active/boost_until/boost_next_at; boosted users rank first in discover/explore. Live HH:MM:SS countdown pill.
+- Bottom nav: 26px icons, 12px labels, plain red dot badges, two-squares Discover icon.
+- Global size corrections measured from the boards (inputs 52, chips 42, buttons 16px, icon buttons 40, OTP boxes white+border, dark glass chips on Discover card, white segmented everywhere, hairline dividers on Filters).
+- NEW Welcome screen exactly as the user's final reference (logo with two-stroke V, "Connect with people.", blurb, Create new account / Log in, legal line).
+- Loading system: Spinner / PageLoader / Skeleton* (components/Loading.jsx), boot splash with spinner, busy buttons keep solid ink with spinner, list skeletons, chat-room spinner, image fade-in, route transitions.
+- Fixed dialog overlays (bg-ink/30 did not resolve -> bg-black/45).
+- Tests: iteration_7 (BE 47/47, FE 100%), iteration_8 (FE 95%; the 4 flagged items were test-selector mismatches, verified manually).
+- Deployed to Railway (voiladi-api + voiladi-web).
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:
@@ -192,6 +208,7 @@
 - **Phase 8 (Editorial redesign)**: COMPLETED but rejected.
 - **Phase 9 (Exact UI replication from photos)**: **COMPLETED** — compiled, visually verified, tested; critical onboarding country selector issue fixed.
 - **Phase 10 (Railway deploy of Phase 9 build)**: **COMPLETED** — live on www.voiladi.com.
+- **Phase 11 (Profile 1:1 + Boost + Welcome + loading system)**: **COMPLETED** — redeployed to Railway.
 
 ---
 

@@ -149,16 +149,16 @@ export default function Discover() {
 
   return (
     <div className="flex h-full flex-col" data-testid="discover-page">
-      <header className="flex h-14 items-center justify-between px-5 pt-2">
-        <Brand />
+      <header className="flex h-14 items-center justify-between px-4 pt-1">
+        <Brand size={30} />
         <button type="button" className="vo-icon-btn" onClick={() => navigate("/filters")} aria-label="Filters" data-testid="filters-open-button">
-          <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={2} />
+          <SlidersHorizontal className="h-5 w-5" strokeWidth={2} />
         </button>
       </header>
 
-      <div className="relative mx-5 mt-2 min-h-0 flex-1" data-testid="discover-card-stack">
+      <div className="relative mx-4 mt-2 min-h-0 flex-1" data-testid="discover-card-stack">
         {loading && queue.length === 0 ? (
-          <Skeleton className="absolute inset-0 rounded-[28px]" />
+          <Skeleton className="absolute inset-0 rounded-[24px]" />
         ) : error ? (
           <EmptyState
             icon={RefreshCw}
@@ -189,7 +189,7 @@ export default function Discover() {
           />
         ) : (
           <>
-            {next && <div className="absolute inset-0 scale-[0.96] translate-y-2 overflow-hidden rounded-[28px] bg-surface2" aria-hidden="true" />}
+            {next && <div className="absolute inset-0 scale-[0.96] translate-y-2 overflow-hidden rounded-[24px] bg-surface2" aria-hidden="true" />}
             <SwipeCard
               key={current.id}
               ref={topRef}
@@ -204,15 +204,15 @@ export default function Discover() {
       </div>
 
       {/* Three round actions */}
-      <div className="flex items-center justify-center gap-6 pt-5" style={{ paddingBottom: "calc(74px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
-        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-action h-14 w-14" aria-label="Pass" data-testid="discover-pass-button">
-          <X className="h-6 w-6" strokeWidth={2.5} />
+      <div className="flex items-center justify-center gap-7 pt-4" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
+        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-action h-16 w-16" aria-label="Pass" data-testid="discover-pass-button">
+          <X className="h-7 w-7" strokeWidth={2.5} />
         </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-action h-16 w-16" aria-label="Like" data-testid="discover-like-button">
-          <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
+        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-action h-[76px] w-[76px]" aria-label="Like" data-testid="discover-like-button">
+          <Heart className="h-8 w-8" fill="currentColor" strokeWidth={2} />
         </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-action h-14 w-14 text-blue" aria-label="Super Like" data-testid="discover-voila-button">
-          <Star className="h-6 w-6" fill="currentColor" strokeWidth={2} />
+        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-action h-16 w-16 text-blue" aria-label="Super Like" data-testid="discover-voila-button">
+          <Star className="h-7 w-7" fill="currentColor" strokeWidth={2} />
         </button>
       </div>
 

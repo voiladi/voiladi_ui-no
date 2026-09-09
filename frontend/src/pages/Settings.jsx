@@ -10,10 +10,10 @@ import { ConfirmDialog } from "@/components/Dialogs";
 const Row = ({ icon: Icon, label, value, onClick, right, testId }) => {
   const inner = (
     <>
-      <Icon className="h-5 w-5 shrink-0 text-ink" strokeWidth={1.75} />
+      <Icon className="h-[22px] w-[22px] shrink-0 text-ink" strokeWidth={1.75} />
       <span className="flex-1">{label}</span>
       {value && <span className="text-[14px] font-normal text-mute">{value}</span>}
-      {right !== undefined ? right : <ChevronRight className="h-4 w-4 text-mute" />}
+      {right !== undefined ? right : <ChevronRight className="h-[18px] w-[18px] text-mute" strokeWidth={2} />}
     </>
   );
   if (!onClick) {
@@ -47,7 +47,7 @@ export default function Settings() {
         title="Settings"
       />
 
-      <div className="flex-1 space-y-4 px-5 pb-10 pt-2">
+      <div className="flex-1 space-y-4 px-4 pb-10 pt-2">
         <div className="vo-card overflow-hidden">
           <Row icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
           <Row icon={Shield} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="settings-privacy-row" />

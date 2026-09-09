@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMatchesQuery } from "@/hooks/useBadges";
 import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
-import { EmptyState, Skeleton } from "@/components/EmptyState";
+import { EmptyState, SkeletonList } from "@/components/EmptyState";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
 
@@ -33,28 +33,24 @@ export default function Chats() {
 
   return (
     <div className="min-h-full pb-24" data-testid="chats-page">
-      <header className="px-5 pt-2">
-        <div className="flex h-12 items-center">
-          <Brand />
+      <header className="px-4 pt-1">
+        <div className="flex h-14 items-center">
+          <Brand size={30} />
         </div>
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-2 flex items-center justify-between">
           <h1 className="vo-title">Chat</h1>
           <button type="button" className="vo-icon-plain text-ink" onClick={() => setCompose(true)} aria-label="New message" data-testid="chats-compose-button">
-            <SquarePen className="h-[22px] w-[22px]" strokeWidth={1.75} />
+            <SquarePen className="h-6 w-6" strokeWidth={1.9} />
           </button>
         </div>
-        <div className="relative mt-3">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" />
-          <input className="vo-input h-11 pl-11 text-[15px]" style={{ height: 44 }} placeholder="Search conversations" value={q} onChange={(e) => setQ(e.target.value)} data-testid="chats-search-input" />
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-mute" strokeWidth={2} />
+          <input className="vo-input pl-12 text-[16px]" style={{ height: 48 }} placeholder="Search conversations" value={q} onChange={(e) => setQ(e.target.value)} data-testid="chats-search-input" />
         </div>
       </header>
 
       {isLoading ? (
-        <div className="space-y-2 px-5 pt-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[64px]" />
-          ))}
-        </div>
+        <SkeletonList rows={6} avatar={60} className="mt-1 px-4" />
       ) : isError ? (
         <EmptyState
           icon={MessageCircle}
@@ -79,26 +75,26 @@ export default function Chats() {
           }
         />
       ) : rows.length === 0 ? (
-        <p className="px-5 pt-6 text-center text-[14px] text-mute" data-testid="chats-no-results">
+        <p className="px-4 pt-6 text-center text-[14px] text-mute" data-testid="chats-no-results">
           No conversations match "{q}".
         </p>
       ) : (
-        <ul className="mt-2 px-5" data-testid="chats-list">
+        <ul className="mt-1 px-4" data-testid="chats-list">
           {rows.map((m, i) => (
             <motion.li key={m.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="border-b border-line">
-              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="flex w-full items-center gap-3 py-3 text-left active:opacity-70" data-testid="chats-list-row">
+              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="flex w-full items-center gap-3.5 py-3 text-left active:opacity-70" data-testid="chats-list-row">
                 <span className="relative shrink-0">
-                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} className="h-12 w-12 rounded-full text-base" />
+                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} className="h-[60px] w-[60px] rounded-full text-xl" />
                   {m.online && <span className="vo-dot-online" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[16px] font-semibold text-ink">{m.user.name}</span>
-                  <span className={`mt-0.5 block truncate text-[14px] ${m.unread ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
+                  <span className="block truncate text-[18px] font-semibold tracking-[-0.01em] text-ink">{m.user.name}</span>
+                  <span className={`mt-0.5 block truncate text-[15px] ${m.unread ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
                     {preview(m)}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className="text-[12px] text-mute">{chatTime(m.last_message_at || m.created_at)}</span>
+                  <span className="text-[14px] text-mute">{chatTime(m.last_message_at || m.created_at)}</span>
                   {m.unread > 0 && (
                     <span className="vo-badge" data-testid="chats-unread-badge">
                       {m.unread}

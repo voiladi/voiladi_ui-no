@@ -399,17 +399,41 @@ class VoiladiTester:
 
     # ========== STATS TESTS ==========
     def test_stats(self):
-        """Test GET /me/stats returns matches, likes, voilas_used_week, voilas_left, voila_weekly_limit"""
+        """Test GET /me/stats returns matches, likes, voilas_used_week, voilas_left, voila_weekly_limit, boost fields"""
         status, data = self.req('GET', '/me/stats', 200)
         assert 'matches' in data, "matches not in response"
         assert 'likes_received' in data, "likes_received not in response"
         assert 'likes_sent' in data, "likes_sent not in response"
+        assert 'followers' in data, "followers not in response"
+        assert 'following' in data, "following not in response"
+        assert 'profile_views' in data, "profile_views not in response"
         assert 'voilas_used_week' in data, "voilas_used_week not in response"
         assert 'voilas_left' in data, "voilas_left not in response"
         assert 'voila_weekly_limit' in data, "voila_weekly_limit not in response"
         assert data['voila_weekly_limit'] == 5, f"voila_weekly_limit should be 5, got {data['voila_weekly_limit']}"
-        print(f"  ✓ Stats: matches={data['matches']}, likes_received={data['likes_received']}, voilas_left={data['voilas_left']}/5")
+        # NEW: Boost fields
+        assert 'boost_active' in data, "boost_active not in response"
+        assert 'boost_until' in data, "boost_until not in response"
+        assert 'boost_next_at' in data, "boost_next_at not in response"
+        assert isinstance(data['boost_active'], bool), "boost_active should be bool"
+        print(f"  ✓ Stats: matches={data['matches']}, likes_received={data['likes_received']}, voilas_left={data['voilas_left']}/5, boost_active={data['boost_active']}")
         self.initial_voilas_left = data['voilas_left']
+    
+    # ========== BOOST TESTS ==========
+    def test_boost_start_fresh(self):
+        """Test POST /me/boost on fresh account returns success"""
+        status, data = self.req('POST', '/me/boost', 200)
+        assert data.get('ok') == True, "ok should be True"
+        assert data.get('boost_active') == True, "boost_active should be True"
+        assert 'boost_until' in data, "boost_until not in response"
+        assert data['boost_until'] is not None, "boost_until should not be None"
+        print(f"  ✓ Boost started: boost_until={data['boost_until']}")
+    
+    def test_boost_already_running(self):
+        """Test POST /me/boost when boost is already running returns 400"""
+        status, data = self.req('POST', '/me/boost', 400)
+        assert 'already running' in data.get('detail', '').lower(), "Should mention boost already running"
+        print(f"  ✓ Second boost rejected: {data.get('detail')}")
 
     # ========== MATCHES TESTS ==========
     def test_matches_list(self):
@@ -568,6 +592,10 @@ def main():
     
     # Stats tests
     tester.test("Stats: GET /me/stats", tester.test_stats)
+    
+    # Boost tests
+    tester.test("Boost: Start boost (fresh account)", tester.test_boost_start_fresh)
+    tester.test("Boost: Already running (400)", tester.test_boost_already_running)
     
     # Matches tests
     tester.test("Matches: GET list", tester.test_matches_list)

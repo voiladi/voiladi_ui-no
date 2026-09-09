@@ -15,6 +15,7 @@ import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Skeleton } from "@/components/EmptyState";
+import { Spinner } from "@/components/Loading";
 import { clockTime, dayLabel, timeAgo, activeLabel } from "@/lib/format";
 import { tween } from "@/lib/motion";
 
@@ -311,10 +312,8 @@ export default function ChatRoom() {
 
       <div className="vo-scroll px-4 pb-3 pt-4" data-testid="chat-messages">
         {loading ? (
-          <div className="space-y-3">
-            <Skeleton className="ml-auto h-10 w-44 rounded-[18px]" />
-            <Skeleton className="h-10 w-56 rounded-[18px]" />
-            <Skeleton className="ml-auto h-10 w-32 rounded-[18px]" />
+          <div className="flex h-full min-h-[40vh] items-center justify-center text-ink" data-testid="chat-loading">
+            <Spinner size={28} stroke={2.5} />
           </div>
         ) : (
           <>
@@ -430,7 +429,7 @@ export default function ChatRoom() {
             style={{ height: Math.min(120, 24 + 20 * Math.max(1, text.split("\n").length)) }}
             data-testid="chat-message-input"
           />
-          <button type="submit" disabled={!text.trim() || sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-onink transition-transform duration-150 active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
+          <button type="submit" disabled={!text.trim() || sending} aria-busy={sending} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-onink transition-transform duration-150 active:scale-95 disabled:opacity-40" aria-label="Send" data-testid="chat-send-button">
             <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
           </button>
         </div>

@@ -1,6 +1,6 @@
 """Discovery feed, explore grid, swipes, likes and matching."""
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional, List, Tuple
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -20,6 +20,28 @@ EXPLORE_TABS = ("all", "near", "new", "popular")
 async def voilas_used_this_week(user_id: str) -> int:
     since = (now() - timedelta(days=7)).isoformat()
     return await db.swipes.count_documents({"from_id": user_id, "action": "superlike", "created_at": {"$gte": since}})
+
+
+# Boost: a 90-minute window during which the profile is ranked first in other people's decks. One boost per 24h.
+BOOST_MINUTES = 90
+BOOST_COOLDOWN_HOURS = 24
+
+
+def _boost_active(doc: dict) -> bool:
+    until = (doc or {}).get("boost_until")
+    return bool(until) and until > now_iso()
+
+
+def _boost_state(doc: dict) -> dict:
+    until = (doc or {}).get("boost_until")
+    active = _boost_active(doc)
+    next_at = None
+    if until and not active:
+        try:
+            next_at = (datetime.fromisoformat(until) + timedelta(hours=BOOST_COOLDOWN_HOURS - BOOST_MINUTES / 60)).isoformat()
+        except ValueError:
+            next_at = None
+    return {"boost_active": active, "boost_until": until if active else None, "boost_next_at": next_at if next_at and next_at > now_iso() else None}
 
 
 class ReactionIn(BaseModel):
@@ -145,6 +167,8 @@ async def _candidates(user: dict) -> List[Tuple[int, dict, dict]]:
             continue
         p = public_profile(c, user)
         rank = p["compatibility"] + (12 if c["id"] in liked_me else 0) + _pref_boost(user, c)
+        if _boost_active(c):
+            rank += 40  # Boost: be seen by more people -> boosted profiles surface first
         scored.append((rank, p, c))
     scored.sort(key=lambda t: t[0], reverse=True)
     return scored
@@ -254,7 +278,7 @@ async def my_stats(user=Depends(get_current_user)):
     likes_received = await db.swipes.count_documents({"to_id": user["id"], "action": {"$in": ["like", "superlike"]}})
     likes_sent = await db.swipes.count_documents({"from_id": user["id"], "action": {"$in": ["like", "superlike"]}})
     used = await voilas_used_this_week(user["id"])
-    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "profile_views": 1})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "profile_views": 1, "boost_until": 1})
     return {
         "matches": matches,
         "likes_received": likes_received,
@@ -265,7 +289,22 @@ async def my_stats(user=Depends(get_current_user)):
         "voilas_used_week": used,
         "voilas_left": max(0, VOILA_WEEKLY_LIMIT - used),
         "voila_weekly_limit": VOILA_WEEKLY_LIMIT,
+        **_boost_state(fresh),
     }
+
+
+@router.post("/me/boost")
+async def start_boost(user=Depends(get_current_user)):
+    """Start a Boost (profile shown first to others for BOOST_MINUTES). One per BOOST_COOLDOWN_HOURS."""
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "boost_until": 1})
+    state = _boost_state(fresh)
+    if state["boost_active"]:
+        raise HTTPException(400, "Boost is already running")
+    if state["boost_next_at"]:
+        raise HTTPException(400, "You can boost once a day. Come back later.")
+    until = (now() + timedelta(minutes=BOOST_MINUTES)).isoformat()
+    await db.users.update_one({"id": user["id"]}, {"$set": {"boost_until": until}})
+    return {"ok": True, "boost_active": True, "boost_until": until, "boost_next_at": None}
 
 
 async def _blocked_ids(uid: str) -> set:

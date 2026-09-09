@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Search, LocateFixed, Check, Plus, X, Loader2 } from "lucide-react";
+import { Search, LocateFixed, Check, Plus, X } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { toast } from "sonner";
 
 /* ---------------- Prompts ("Vibe check") ---------------- */
@@ -110,7 +111,7 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
   return (
     <div data-testid="location-picker">
       <button type="button" onClick={useMyLocation} disabled={locating} className="vo-btn-secondary mb-3 h-11 w-full justify-start px-4 text-[14px]" data-testid="location-use-current-button">
-        {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+        {locating ? <Spinner size={16} stroke={2} /> : <LocateFixed className="h-4 w-4" />}
         {locating ? "Finding you..." : "Use my current location"}
       </button>
       <div className="relative mb-2">

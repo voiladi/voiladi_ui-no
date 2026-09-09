@@ -12,7 +12,7 @@ import { useLikesQuery, useLikesSentQuery } from "@/hooks/useBadges";
 import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Segmented } from "@/components/Chip";
-import { EmptyState, Skeleton } from "@/components/EmptyState";
+import { EmptyState, SkeletonList, Skeleton } from "@/components/EmptyState";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
@@ -108,25 +108,21 @@ export default function Likes() {
 
   return (
     <div className="min-h-full pb-24" data-testid="likes-page">
-      <header className="px-5 pt-2">
-        <div className="flex h-12 items-center">
-          <Brand />
+      <header className="px-4 pt-1">
+        <div className="flex h-14 items-center">
+          <Brand size={30} />
         </div>
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-2 flex items-center justify-between">
           <h1 className="vo-title">Likes</h1>
-          <span className="text-[20px] font-semibold text-ink" data-testid="likes-count">
-            {total}
+          <span className="flex h-7 items-center text-[24px] font-semibold tracking-[-0.01em] text-ink" data-testid="likes-count">
+            {loading ? <Skeleton className="h-4 w-6 rounded-full" /> : total}
           </span>
         </div>
-        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-4" />
+        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-5" />
       </header>
 
       {loading ? (
-        <div className="space-y-2 px-5 pt-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[68px]" />
-          ))}
-        </div>
+        <SkeletonList rows={6} avatar={64} className="mt-1 px-4" />
       ) : received.isError || sent.isError ? (
         <EmptyState
           icon={Heart}
@@ -158,34 +154,34 @@ export default function Likes() {
           }
         />
       ) : (
-        <ul className="mt-2 px-5" data-testid="likes-list">
+        <ul className="mt-1 px-4" data-testid="likes-list">
           {rows.map((l, i) => {
             const p = l.user;
             const mine = l.direction === "sent";
             return (
-              <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="flex items-center gap-3 border-b border-line py-3" data-testid="likes-row">
+              <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="flex items-center gap-2 border-b border-line py-3.5" data-testid="likes-row">
                 <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setSheet(l)} data-testid="likes-row-open">
                   <span className="relative shrink-0">
-                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-12 w-12 rounded-full text-base" />
-                    <span className={`absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-bg ${l.superlike ? "bg-blue" : "bg-red"} text-white`}>
-                      {l.superlike ? <Star className="h-2.5 w-2.5" fill="currentColor" /> : <Heart className="h-2.5 w-2.5" fill="currentColor" />}
+                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-16 w-16 rounded-full text-xl" />
+                    <span className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-bg ${l.superlike ? "bg-blue" : "bg-red"} text-white`}>
+                      {l.superlike ? <Star className="h-3 w-3" fill="currentColor" /> : <Heart className="h-3 w-3" fill="currentColor" />}
                     </span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[16px] font-semibold text-ink">
+                    <span className="block truncate text-[18px] font-semibold tracking-[-0.01em] text-ink">
                       {p.name} <span className="font-normal">{p.age}</span>
                     </span>
-                    <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-mute" data-testid="likes-row-sub">
+                    <span className="mt-1 flex items-center gap-1.5 text-[15px] text-mute" data-testid="likes-row-sub">
                       <span className={`h-1.5 w-1.5 rounded-full ${mine ? "bg-mute" : "bg-red"}`} />
                       {mine ? "You liked" : l.superlike ? "Super Liked you" : "Liked you"} {agoLabel(l.created_at)}
                     </span>
                   </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-mute" />
+                  <ChevronRight className="h-5 w-5 shrink-0 text-mute" />
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button type="button" className="vo-icon-plain h-9 w-9 text-mute" aria-label="More" data-testid="likes-row-menu">
-                      <MoreHorizontal className="h-5 w-5" />
+                    <button type="button" className="vo-icon-plain h-10 w-10 text-mute" aria-label="More" data-testid="likes-row-menu">
+                      <MoreHorizontal className="h-6 w-6" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">

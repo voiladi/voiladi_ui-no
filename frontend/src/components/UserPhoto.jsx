@@ -2,10 +2,17 @@ import React, { useEffect, useState } from "react";
 import { photoUrl } from "@/lib/api";
 import { initials } from "@/lib/format";
 
-/* Photo with a neutral initials fallback. The parent decides the shape (rounded-full for avatars). */
+/*
+ * Photo with a neutral initials fallback. The parent decides the shape (rounded-full for avatars).
+ * While the image loads a soft shimmer shows; the photo then fades in (no hard pop-in).
+ */
 export const UserPhoto = ({ src, name = "", className = "", alt, style, ...rest }) => {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    setReady(false);
+  }, [src]);
   const url = photoUrl(src);
   if (!url || failed) {
     return (
@@ -20,15 +27,17 @@ export const UserPhoto = ({ src, name = "", className = "", alt, style, ...rest 
     );
   }
   return (
-    <img
-      src={url}
-      alt={alt || name}
-      className={`object-cover ${className}`}
-      style={style}
-      onError={() => setFailed(true)}
-      draggable={false}
-      decoding="async"
-      {...rest}
-    />
+    <span className={`relative block overflow-hidden ${ready ? "" : "vo-shimmer"} ${className}`} style={style}>
+      <img
+        src={url}
+        alt={alt || name}
+        className={`vo-img absolute inset-0 h-full w-full object-cover ${ready ? "vo-img-ready" : ""}`}
+        onLoad={() => setReady(true)}
+        onError={() => setFailed(true)}
+        draggable={false}
+        decoding="async"
+        {...rest}
+      />
+    </span>
   );
 };

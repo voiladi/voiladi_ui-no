@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 import { PhoneField, OtpBoxes, DevCodeCard, guessCountry, mmss } from "@/components/PhoneOtp";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -93,8 +94,8 @@ export default function PhoneLogin() {
                 </p>
               )}
               <div className="mt-auto pt-8">
-                <button type="submit" className="vo-btn-primary w-full" disabled={!validPhone || sending} data-testid="auth-send-otp-button">
-                  {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                <button type="submit" className="vo-btn-primary w-full" disabled={!validPhone || sending} aria-busy={sending} data-testid="auth-send-otp-button">
+                  {sending ? <Spinner size={20} stroke={2} /> : "Continue"}
                 </button>
                 <p className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-mute">
                   <Lock className="h-3.5 w-3.5" /> Your number is kept private.
@@ -132,7 +133,7 @@ export default function PhoneLogin() {
               {resendIn > 0 ? (
                 <span data-testid="auth-resend-timer">Resend in {mmss(resendIn)}</span>
               ) : (
-                <button type="button" className="vo-link text-[13px]" onClick={requestOtp} disabled={sending} data-testid="auth-resend-button">
+                <button type="button" className="vo-link text-[13px]" onClick={requestOtp} disabled={sending} aria-busy={sending} data-testid="auth-resend-button">
                   Resend
                 </button>
               )}
@@ -148,7 +149,7 @@ export default function PhoneLogin() {
             )}
             <div className="mt-auto pt-8">
               <button type="button" className="vo-btn-primary w-full" disabled={code.length !== 6 || verifying} onClick={() => verify()} data-testid="auth-verify-otp-button">
-                {verifying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+                {verifying ? <Spinner size={20} stroke={2} /> : "Continue"}
               </button>
             </div>
           </motion.div>

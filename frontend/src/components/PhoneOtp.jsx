@@ -72,7 +72,7 @@ export const OtpBoxes = forwardRef(({ value, onChange, onComplete, disabled }, r
           <InputOTPSlot
             key={i}
             index={i}
-            className="h-[52px] w-[46px] rounded-[10px] border-0 bg-surface text-[20px] font-semibold text-ink shadow-none first:rounded-[10px] last:rounded-[10px] data-[active=true]:ring-[1.5px] data-[active=true]:ring-ink"
+            className="h-[56px] w-[48px] rounded-[12px] border border-line bg-bg text-[24px] font-medium text-ink shadow-none first:rounded-[12px] last:rounded-[12px] data-[active=true]:border-ink data-[active=true]:ring-0"
           />
         ))}
       </InputOTPGroup>
