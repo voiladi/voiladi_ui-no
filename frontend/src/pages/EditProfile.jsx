@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
+import { useFlash } from "@/hooks/useFlash";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { ModalHeader } from "@/components/EmptyState";
 import { Chip, Segmented } from "@/components/Chip";
@@ -42,6 +43,7 @@ export default function EditProfile() {
   const { meta } = useMeta();
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(null);
+  const [limitHit, flashLimit] = useFlash();
   const [form, setForm] = useState({
     name: user?.name || "",
     birthday: user?.birthday || "",
@@ -77,10 +79,9 @@ export default function EditProfile() {
         clear_location: !form.location.city,
       });
       setUser(data);
-      toast.success("Profile saved");
       navigate("/profile");
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setSaving(false);
     }
@@ -153,7 +154,7 @@ export default function EditProfile() {
                   className="bg-bg"
                   onClick={() => {
                     if (form.interests.includes(i)) set({ interests: form.interests.filter((x) => x !== i) });
-                    else if (form.interests.length >= 10) toast("You can pick up to 10");
+                    else if (form.interests.length >= 10) flashLimit();
                     else set({ interests: [...form.interests, i] });
                   }}
                   data-testid={`interest-chip-${i.replace(/\s+/g, "-").toLowerCase()}`}
@@ -162,8 +163,8 @@ export default function EditProfile() {
                 </Chip>
               ))}
             </div>
-            <p className="mt-2 text-[12px] text-mute" data-testid="interests-count">
-              {form.interests.length}/10 - pick at least 3 to be shown to others.
+            <p className={`mt-2 text-[12px] ${limitHit ? "font-semibold text-red" : "text-mute"}`} style={{ transition: "color 150ms" }} data-testid="interests-count">
+              {limitHit ? "10/10 - that's the maximum" : `${form.interests.length}/10 - pick at least 3 to be shown to others.`}
             </p>
           </Row>
           <Row label="Vibe check" value={form.prompts.length ? `${form.prompts.length} ${form.prompts.length === 1 ? "prompt" : "prompts"}` : "Add"} open={open === "prompts"} onToggle={() => toggle("prompts")} testId="edit-prompts-row">

@@ -1,63 +1,107 @@
 import React, { useState } from "react";
-import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+import * as AD from "@radix-ui/react-alert-dialog";
 import { Check } from "lucide-react";
+import { Spinner } from "@/components/Loading";
 
-const PANEL = "w-[calc(100%-40px)] max-w-[340px] rounded-[24px] border-0 bg-bg p-6 shadow-modal";
+/*
+ * Confirmations, iOS style (UIAlertController .actionSheet):
+ *  - slides up from the bottom, frosted-glass group with grey title/message, big red destructive action,
+ *    and a separate solid "Cancel" pill underneath. Apple text stack. Works in light and dark mode.
+ *  - ReportDialog is the same sheet with a reason list; on success it shows an inline
+ *    "Thanks for letting us know" state instead of a popup.
+ */
+
+const Sheet = ({ open, onOpenChange, children, testId }) => (
+  <AD.Root open={open} onOpenChange={onOpenChange}>
+    <AD.Portal>
+      <AD.Overlay className="vo-sheet-overlay" />
+      <AD.Content className="vo-sheet vo-apple" data-testid={testId} onOpenAutoFocus={(e) => e.preventDefault()}>
+        {children}
+      </AD.Content>
+    </AD.Portal>
+  </AD.Root>
+);
 
 export const ConfirmDialog = ({ open, onOpenChange, title, description, confirmText = "Confirm", danger = false, onConfirm, loading, testId = "confirm-dialog" }) => (
-  <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent className={PANEL} data-testid={testId}>
-      <AlertDialogTitle className="text-center text-[20px] font-bold leading-tight tracking-[-0.01em] text-ink">{title}</AlertDialogTitle>
-      <AlertDialogDescription className="text-center text-[14px] leading-relaxed text-mute">{description}</AlertDialogDescription>
-      <div className="mt-4 flex flex-col gap-2">
-        <button type="button" className={`${danger ? "vo-btn bg-red text-white" : "vo-btn-primary"} w-full`} onClick={onConfirm} disabled={loading} aria-busy={loading} data-testid={`${testId}-confirm`}>
-          {loading ? "Working..." : confirmText}
-        </button>
-        <button type="button" className="vo-btn-ghost w-full" onClick={() => onOpenChange(false)} data-testid={`${testId}-cancel`}>
-          Cancel
-        </button>
+  <Sheet open={open} onOpenChange={onOpenChange} testId={testId}>
+    <div className="vo-sheet-group">
+      <div className="vo-sheet-head">
+        <AD.Title className="vo-sheet-title">{title}</AD.Title>
+        {description && <AD.Description className="vo-sheet-desc">{description}</AD.Description>}
       </div>
-    </AlertDialogContent>
-  </AlertDialog>
+      <button type="button" className={`vo-sheet-action ${danger ? "vo-sheet-danger" : ""}`} onClick={onConfirm} disabled={loading} aria-busy={loading} data-testid={`${testId}-confirm`}>
+        {loading ? <Spinner size={22} stroke={2} /> : confirmText}
+      </button>
+    </div>
+    <button type="button" className="vo-sheet-cancel" onClick={() => onOpenChange(false)} disabled={loading} data-testid={`${testId}-cancel`}>
+      Cancel
+    </button>
+  </Sheet>
 );
 
 export const ReportDialog = ({ open, onOpenChange, reasons = [], onSubmit, loading, name }) => {
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
+  const [done, setDone] = useState(false);
+
+  const close = (o) => {
+    if (!o) {
+      setReason("");
+      setDetails("");
+      setDone(false);
+    }
+    onOpenChange(o);
+  };
+
+  const submit = async () => {
+    const ok = await onSubmit(reason, details);
+    if (ok !== false) setDone(true);
+  };
+
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) {
-          setReason("");
-          setDetails("");
-        }
-        onOpenChange(o);
-      }}
-    >
-      <AlertDialogContent className={`${PANEL} max-w-[380px]`} data-testid="report-dialog">
-        <AlertDialogTitle className="text-[20px] font-bold leading-tight tracking-[-0.01em] text-ink">Report {name || "this profile"}</AlertDialogTitle>
-        <AlertDialogDescription className="text-[14px] text-mute">Tell us what's going on. Reports are private.</AlertDialogDescription>
-        <div className="mt-2 overflow-hidden rounded-[16px] bg-surface">
-          {reasons.map((r) => (
-            <button key={r} type="button" onClick={() => setReason(r)} className="vo-row" data-testid="report-reason-option" aria-pressed={reason === r}>
-              <span className="flex-1">{r}</span>
-              <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${reason === r ? "border-ink bg-ink text-onink" : "border-mute"}`}>
-                {reason === r && <Check className="h-3 w-3" strokeWidth={3} />}
+    <Sheet open={open} onOpenChange={close} testId="report-dialog">
+      {done ? (
+        <>
+          <div className="vo-sheet-group">
+            <div className="vo-sheet-head py-7" data-testid="report-done">
+              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-ink text-onink">
+                <Check className="h-6 w-6" strokeWidth={2.5} />
               </span>
-            </button>
-          ))}
-        </div>
-        <textarea className="vo-textarea mt-3 min-h-[72px] text-[15px]" placeholder="Anything else? (optional)" value={details} onChange={(e) => setDetails(e.target.value)} data-testid="report-details-input" />
-        <div className="mt-4 flex flex-col gap-2">
-          <button type="button" className="vo-btn bg-red text-white w-full" disabled={!reason || loading} aria-busy={loading} onClick={() => onSubmit(reason, details)} data-testid="report-submit-button">
-            {loading ? "Sending..." : "Send report"}
+              <AD.Title className="vo-sheet-title text-[17px] text-ink">Thanks for letting us know</AD.Title>
+              <AD.Description className="vo-sheet-desc">Your report is private. We'll review it and take action if it breaks our guidelines.</AD.Description>
+            </div>
+          </div>
+          <button type="button" className="vo-sheet-cancel" onClick={() => close(false)} data-testid="report-done-button">
+            Done
           </button>
-          <button type="button" className="vo-btn-ghost w-full" onClick={() => onOpenChange(false)}>
+        </>
+      ) : (
+        <>
+          <div className="vo-sheet-group">
+            <div className="vo-sheet-head">
+              <AD.Title className="vo-sheet-title">Report {name || "this profile"}</AD.Title>
+              <AD.Description className="vo-sheet-desc">Why are you reporting this? Reports are private.</AD.Description>
+            </div>
+            <div className="vo-sheet-list" role="radiogroup">
+              {reasons.map((r) => (
+                <button key={r} type="button" role="radio" aria-checked={reason === r} onClick={() => setReason(r)} className="vo-sheet-option" data-testid="report-reason-option">
+                  <span className="flex-1 truncate">{r}</span>
+                  {reason === r && <Check className="h-[18px] w-[18px] shrink-0" strokeWidth={2.5} />}
+                </button>
+              ))}
+            </div>
+            <div className="px-3 pb-3 pt-2">
+              <textarea className="vo-sheet-textarea" placeholder="Anything else? (optional)" value={details} onChange={(e) => setDetails(e.target.value)} data-testid="report-details-input" />
+            </div>
+            <button type="button" className="vo-sheet-action vo-sheet-danger" disabled={!reason || loading} aria-busy={loading} onClick={submit} data-testid="report-submit-button">
+              {loading ? <Spinner size={22} stroke={2} /> : "Submit report"}
+            </button>
+          </div>
+          <button type="button" className="vo-sheet-cancel" onClick={() => close(false)} disabled={loading}>
             Cancel
           </button>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
+        </>
+      )}
+    </Sheet>
   );
 };

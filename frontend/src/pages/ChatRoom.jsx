@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, MessageSquareText } from "lucide-react";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -107,7 +107,7 @@ export default function ChatRoom() {
         setMessages(msgs.messages);
         if (m.unread > 0) markRead();
       } catch (e) {
-        toast.error(errMsg(e, "This chat isn't available"));
+        notice(errMsg(e, "This chat isn't available"));
         navigate("/chats", { replace: true });
       } finally {
         if (alive) setLoading(false);
@@ -135,7 +135,7 @@ export default function ChatRoom() {
         } else if (ev.type === "read") {
           setMessages((prev) => prev.map((m) => (m.sender_id === user?.id && !m.read_at ? { ...m, read_at: ev.read_at } : m)));
         } else if (ev.type === "unmatch") {
-          toast("This match has ended");
+          notice("This match has ended");
           navigate("/chats", { replace: true });
         }
       }),
@@ -184,7 +184,7 @@ export default function ChatRoom() {
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.client_id !== client_id));
       setText(body);
-      toast.error(errMsg(e, "Message didn't send"));
+      notice(errMsg(e, "Message didn't send"));
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -196,10 +196,9 @@ export default function ChatRoom() {
     try {
       await api.delete(`/matches/${matchId}`);
       qc.invalidateQueries({ queryKey: ["matches"] });
-      toast("Unmatched");
       navigate("/chats", { replace: true });
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(false);
       setConfirm(null);
@@ -212,10 +211,9 @@ export default function ChatRoom() {
       await api.post(`/users/${match.user.id}/block`);
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
-      toast(`${match.user.name} is blocked`);
       navigate("/chats", { replace: true });
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(false);
       setConfirm(null);
@@ -226,10 +224,10 @@ export default function ChatRoom() {
     setBusy(true);
     try {
       await api.post(`/users/${match.user.id}/report`, { reason, details });
-      toast.success("Report received. Thank you.");
-      setReport(false);
+      return true;
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
+      return false;
     } finally {
       setBusy(false);
     }

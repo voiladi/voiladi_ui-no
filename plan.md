@@ -210,6 +210,15 @@
 - Tests iteration_14: 100% (web offline, bridge, regression, APK structure, rebuild). Deployed web (serves the new APK). Copies: deploy/android/voiladi-1.1.0.apk.
 - Ops note: pod restarts wipe the railway CLI -> reinstall (see deploy/README.md); java 17 survived, android-build/sdk is in /app.
 
+## Phase 16 — No-popup feedback: inline states + iOS glass sheets (P0) — COMPLETED 2026-09-10
+User rejected toast pop-ups ("weird / AI generated"). Chosen after visual mockups: (C) inline state, no popup for successes;
+Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (glass, red destructive, separate Cancel) for confirmations.
+- lib/feedback.js (notice/banner store) + components/Feedback.jsx (NoticeBar above tab bar, iOS notification Banner at top) mounted in AppShell.
+- components/Dialogs.jsx rebuilt: ConfirmDialog = iOS action sheet; ReportDialog = sheet with reason list + inline "Thanks for letting us know" done state.
+- Sonner Toaster removed from App.js; all 45 toast() call sites converted (Profile VOILADI+ -> "Soon" pill; block/unmatch/superlike/save/boost -> silent inline;
+  interests limit -> red counter flash via hooks/useFlash.js; notifications switch disabled when blocked). Apple font stack + glass tokens in index.css.
+- Tests iteration_15: 17/17 pass. Dev hook window.__voFeedback (non-production only).
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

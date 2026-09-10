@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Calendar, Camera, Bell, Lock } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
+import { useFlash } from "@/hooks/useFlash";
 import { UserPhoto } from "@/components/UserPhoto";
 import { LogoMark } from "@/components/Logo";
 import { Chip, Segmented } from "@/components/Chip";
@@ -65,6 +66,7 @@ export default function Onboarding() {
   const fileRef = useRef(null);
   // interests
   const [interests, setInterests] = useState(user?.interests || []);
+  const [limitHit, flashLimit] = useFlash();
 
   const fullPhone = useMemo(() => `${cc}${number.replace(/\D/g, "")}`, [cc, number]);
   const validPhone = number.replace(/\D/g, "").length >= 7;
@@ -147,11 +149,11 @@ export default function Onboarding() {
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Only images are allowed");
+      notice("Only images are allowed");
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
-      toast.error("Images must be under 8MB");
+      notice("Images must be under 8MB");
       return;
     }
     setSaving(true);
@@ -161,7 +163,7 @@ export default function Onboarding() {
       const { data } = await api.post("/profile/photos", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setUser((u) => ({ ...u, photos: data.photos }));
     } catch (err) {
-      toast.error(errMsg(err, "Upload failed. Try another photo."));
+      notice(errMsg(err, "Upload failed. Try another photo."));
     } finally {
       setSaving(false);
     }
@@ -199,7 +201,7 @@ export default function Onboarding() {
       setUser(data);
       if (!data.onboarded) await refresh();
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setSaving(false);
     }
@@ -399,7 +401,7 @@ export default function Onboarding() {
                   className="h-11 w-full whitespace-nowrap px-2 text-[14px]"
                   onClick={() => {
                     if (interests.includes(i)) setInterests(interests.filter((x) => x !== i));
-                    else if (interests.length >= 10) toast("You can pick up to 10");
+                    else if (interests.length >= 10) flashLimit();
                     else setInterests([...interests, i]);
                   }}
                   data-testid={`interest-chip-${i.replace(/\s+/g, "-").toLowerCase()}`}
@@ -408,8 +410,8 @@ export default function Onboarding() {
                 </Chip>
               ))}
             </div>
-            <p className="mt-4 text-center text-[14px] text-mute" data-testid="interests-count">
-              {interests.length < MIN_INTERESTS ? `Pick at least ${MIN_INTERESTS}` : `${interests.length} selected`}
+            <p className={`mt-4 text-center text-[14px] ${limitHit ? "font-semibold text-red" : "text-mute"}`} style={{ transition: "color 150ms" }} data-testid="interests-count">
+              {limitHit ? "Up to 10 interests" : interests.length < MIN_INTERESTS ? `Pick at least ${MIN_INTERESTS}` : `${interests.length} selected`}
             </p>
             {error && (
               <p className="mt-3 text-[14px] text-red" data-testid="onboarding-error">

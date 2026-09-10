@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search, LocateFixed, Check, Plus, X } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 
 /* ---------------- Prompts ("Vibe check") ---------------- */
 export const PromptEditor = ({ questions = [], value = [], onChange, max = 3 }) => {
@@ -80,7 +80,7 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("Location isn't available on this device");
+      notice("Location isn't available on this device");
       return;
     }
     setLocating(true);
@@ -102,7 +102,7 @@ export const LocationPicker = ({ cities = [], value, onChange }) => {
       },
       () => {
         setLocating(false);
-        toast.error("Couldn't get your location. Pick a city instead.");
+        notice("Couldn't get your location. Pick a city instead.");
       },
       { timeout: 10000 }
     );

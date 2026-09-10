@@ -1,26 +1,34 @@
 [
   {
-    "content": "Compile-check frontend with esbuild and fix errors",
+    "content": "Build feedback system: lib/feedback.js store + NoticeBar (glass snackbar, errors only) + iOS-style realtime Banner inside shell",
     "status": "completed"
   },
   {
-    "content": "Verify backend starts cleanly (supervisor logs)",
+    "content": "Rebuild Dialogs.jsx: ConfirmDialog -> iOS glass action sheet; ReportDialog -> bottom sheet with inline 'Thanks' done state",
     "status": "completed"
   },
   {
-    "content": "Screenshot-verify all screens vs reference photos",
+    "content": "Convert all ~45 toast call sites to inline state / notice",
     "status": "completed"
   },
   {
-    "content": "Run testing agent (backend + frontend) and fix bugs",
+    "content": "Remove Sonner Toaster from App.js, add CSS tokens (Apple font stack, glass)",
     "status": "completed"
   },
   {
-    "content": "Deploy backend + frontend to Railway",
+    "content": "Compile check + screenshots (action sheet, notice, VOILADI+ Soon pill, report done state)",
     "status": "completed"
   },
   {
-    "content": "Post-deploy smoke test on production",
+    "content": "Remove /__preview route",
     "status": "completed"
+  },
+  {
+    "content": "Run testing agent, fix issues",
+    "status": "in_progress"
+  },
+  {
+    "content": "Update plan.md + PRD.md",
+    "status": "pending"
   }
 ]

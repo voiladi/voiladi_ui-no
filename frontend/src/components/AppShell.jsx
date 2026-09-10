@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { banner } from "@/lib/feedback";
+import { FeedbackLayer } from "@/components/Feedback";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { UserPhoto } from "@/components/UserPhoto";
 import { useFitScale, shellStyle } from "@/hooks/useFitScale";
 import { OfflineBanner } from "@/components/Offline";
 
@@ -26,50 +26,28 @@ const RealtimeToasts = () => {
         qc.invalidateQueries({ queryKey: ["likes-sent"] });
         qc.invalidateQueries({ queryKey: ["stats"] });
         const m = ev.match;
-        toast.custom(
-          (id) => (
-            <button
-              type="button"
-              data-testid="toast-new-match"
-              onClick={() => {
-                toast.dismiss(id);
-                navigate(`/chats/${m.id}`);
-              }}
-              className="vo-banner"
-            >
-              <UserPhoto src={m.user?.photos?.[0]} name={m.user?.name} className="h-11 w-11 rounded-full" />
-              <div className="min-w-0 flex-1">
-                <div className="vo-banner-title">It's a match!</div>
-                <div className="vo-banner-sub truncate">You and {m.user?.name} liked each other.</div>
-              </div>
-            </button>
-          ),
-          { duration: 5000, position: "top-center" }
-        );
+        banner({
+          title: "It's a match!",
+          sub: `You and ${m.user?.name} liked each other. Say hi.`,
+          photo: m.user?.photos?.[0],
+          name: m.user?.name,
+          onClick: () => navigate(`/chats/${m.id}`),
+          duration: 5000,
+          testId: "toast-new-match",
+        });
       } else if (ev.type === "message") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         const inRoom = location.pathname === `/chats/${ev.match_id}`;
         if (!inRoom && ev.message?.sender_id !== user.id && ev.message?.kind !== "reaction") {
-          toast.custom(
-            (id) => (
-              <button
-                type="button"
-                data-testid="toast-new-message"
-                onClick={() => {
-                  toast.dismiss(id);
-                  navigate(`/chats/${ev.match_id}`);
-                }}
-                className="vo-banner"
-              >
-                <UserPhoto src={ev.sender_photo} name={ev.sender_name || "?"} className="h-11 w-11 rounded-full text-sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="vo-banner-title">{ev.sender_name || "New message"}</div>
-                  <div className="vo-banner-sub truncate">{ev.message?.text}</div>
-                </div>
-              </button>
-            ),
-            { duration: 4000, position: "top-center" }
-          );
+          banner({
+            title: ev.sender_name || "New message",
+            sub: ev.message?.text,
+            photo: ev.sender_photo,
+            name: ev.sender_name || "?",
+            onClick: () => navigate(`/chats/${ev.match_id}`),
+            duration: 4000,
+            testId: "toast-new-message",
+          });
         }
       } else if (ev.type === "unmatch") {
         qc.invalidateQueries({ queryKey: ["matches"] });
@@ -136,6 +114,7 @@ export const AppShell = ({ nav = false }) => {
         </main>
         {nav && <BottomNav />}
         <OfflineBanner />
+        <FeedbackLayer nav={nav} />
         {user && <RealtimeToasts />}
       </div>
     </div>

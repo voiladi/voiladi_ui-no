@@ -66,3 +66,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   download https://www.voiladi.com/voiladi.apk. Validated iteration_13 (61/61). Bump VERSION_CODE/VERSION_NAME env when rebuilding.
 - Phase 15 (2026-09-10): Offline banner/screen (web) + native offline view, Android background notifications (JobScheduler polling, no FCM),
   native splash, JS bridge window.VoiladiNative. APK 1.1.0 at https://www.voiladi.com/voiladi.apk. Tests iteration_14 100%.
+- Phase 16 (2026-09-10): Toasts removed app-wide. Successes are inline (no popup); errors use a glass notice bar (lib/feedback.js, components/Feedback.jsx);
+  confirmations are iOS glass action sheets (components/Dialogs.jsx). VOILADI+ shows a "Soon" pill. Tests iteration_15 17/17. NOT yet redeployed to Railway.

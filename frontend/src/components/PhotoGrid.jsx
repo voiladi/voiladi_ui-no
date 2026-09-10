@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { UserPhoto } from "@/components/UserPhoto";
 
@@ -19,18 +19,18 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
     if (!files.length) return;
     const room = max - photos.length;
     if (room <= 0) {
-      toast.error(`You can add up to ${max} photos`);
+      notice(`You can add up to ${max} photos`);
       return;
     }
     setUploading(true);
     let current = photos;
     for (const file of files.slice(0, room)) {
       if (!file.type.startsWith("image/")) {
-        toast.error("Only images are allowed");
+        notice("Only images are allowed");
         continue;
       }
       if (file.size > 8 * 1024 * 1024) {
-        toast.error("Images must be under 8MB");
+        notice("Images must be under 8MB");
         continue;
       }
       const fd = new FormData();
@@ -40,7 +40,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
         current = data.photos;
         onChange(current);
       } catch (err) {
-        toast.error(errMsg(err, "Upload failed. Try another photo."));
+        notice(errMsg(err, "Upload failed. Try another photo."));
       }
     }
     setUploading(false);
@@ -52,7 +52,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
       const { data } = await api.delete("/profile/photos", { params: { url } });
       onChange(data.photos);
     } catch (err) {
-      toast.error(errMsg(err));
+      notice(errMsg(err));
     } finally {
       setBusy(null);
     }
@@ -64,9 +64,8 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
     try {
       await api.put("/profile/photos/order", { photos: next });
       onChange(next);
-      toast.success("Set as main photo");
     } catch (err) {
-      toast.error(errMsg(err));
+      notice(errMsg(err));
     } finally {
       setBusy(null);
     }

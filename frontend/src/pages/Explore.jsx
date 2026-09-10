@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Search, MoreHorizontal, X, Heart, Star, UserRound, ShieldAlert, Ban, SearchX } from "lucide-react";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -65,11 +65,10 @@ export default function Explore() {
         qc.invalidateQueries({ queryKey: ["matches"] });
         qc.invalidateQueries({ queryKey: ["stats"] });
       } else if (action === "superlike") {
-        toast.success(`Super Like sent to ${profile.name}`);
         qc.invalidateQueries({ queryKey: ["stats"] });
       }
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     }
   };
 
@@ -81,10 +80,9 @@ export default function Explore() {
       remove(blockTarget.id);
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
-      toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(false);
     }
@@ -95,10 +93,10 @@ export default function Explore() {
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast.success("Report received. Thank you.");
-      setReportTarget(null);
+      return true;
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
+      return false;
     } finally {
       setBusy(false);
     }

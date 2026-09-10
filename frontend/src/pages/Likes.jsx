@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, X, ChevronRight, MoreHorizontal, UserRound, ShieldAlert, Ban, MessageCircle, Star } from "lucide-react";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api, errMsg } from "@/lib/api";
@@ -66,7 +66,7 @@ export default function Likes() {
         qc.invalidateQueries({ queryKey: ["stats"] });
       }
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(null);
     }
@@ -80,10 +80,9 @@ export default function Likes() {
       dropReceived(blockTarget.id);
       dropSent(blockTarget.id);
       qc.invalidateQueries({ queryKey: ["matches"] });
-      toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setActing(false);
     }
@@ -94,10 +93,10 @@ export default function Likes() {
     setActing(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast.success("Report received. Thank you.");
-      setReportTarget(null);
+      return true;
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
+      return false;
     } finally {
       setActing(false);
     }

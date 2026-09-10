@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Heart, Star, SlidersHorizontal, RefreshCw, SquareStack } from "lucide-react";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -74,10 +74,9 @@ export default function Discover() {
           qc.invalidateQueries({ queryKey: ["likes"] });
           qc.invalidateQueries({ queryKey: ["stats"] });
         } else if (action === "superlike") {
-          toast.success(`Super Like sent to ${profile.name}`);
         }
       } catch (e) {
-        toast.error(errMsg(e));
+        notice(errMsg(e));
       }
     },
     [qc]
@@ -88,7 +87,7 @@ export default function Discover() {
   const trigger = (action, reaction = null) => {
     if (!queue.length) return;
     if (action === "superlike" && voilasLeft === 0) {
-      toast.error(`You've used all ${stats?.voila_weekly_limit || 5} Super Likes this week.`);
+      notice(`You've used all ${stats?.voila_weekly_limit || 5} Super Likes this week.`);
       return;
     }
     topRef.current?.swipe(action, reaction);
@@ -120,10 +119,9 @@ export default function Discover() {
       setQueue((q) => q.filter((p) => p.id !== blockTarget.id));
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
-      toast(`${blockTarget.name} is blocked`);
       setBlockTarget(null);
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(false);
     }
@@ -134,10 +132,10 @@ export default function Discover() {
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
-      toast.success("Report received. Thank you.");
-      setReportTarget(null);
+      return true;
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
+      return false;
     } finally {
       setBusy(false);
     }

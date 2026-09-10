@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
@@ -119,7 +118,6 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
-          <Toaster />
           <NativeReady />
         </SocketProvider>
       </AuthProvider>

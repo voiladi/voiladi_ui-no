@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { Switch } from "@/components/ui/switch";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -63,10 +63,9 @@ const Safety = () => {
     try {
       await api.delete("/auth/account");
       logout();
-      toast("Your account has been deleted. Take care.");
       navigate("/welcome", { replace: true });
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBusy(false);
       setConfirm(false);
@@ -111,10 +110,7 @@ const Notifications = () => {
   const [busy, setBusy] = useState(false);
   const on = perm === "granted";
   const toggle = async () => {
-    if (!supported || perm === "denied") {
-      toast("Turn notifications on or off in your browser settings");
-      return;
-    }
+    if (!supported || perm === "denied") return; // switch is disabled; the helper text below explains
     setBusy(true);
     try {
       const p = await Notification.requestPermission();
@@ -131,10 +127,10 @@ const Notifications = () => {
             <span className="block">Push notifications</span>
             <span className="block text-[12px] font-normal text-mute">New matches and messages</span>
           </span>
-          {busy ? <Spinner size={16} stroke={2} className="text-mute" /> : <Switch checked={on} onCheckedChange={toggle} aria-label="Push notifications" className="data-[state=checked]:bg-ink" data-testid="notifications-push-switch" />}
+          {busy ? <Spinner size={16} stroke={2} className="text-mute" /> : <Switch checked={on} disabled={!supported || perm === "denied"} onCheckedChange={toggle} aria-label="Push notifications" className="data-[state=checked]:bg-ink" data-testid="notifications-push-switch" />}
         </div>
       </div>
-      <p className="px-1 text-[13px] text-mute">{perm === "denied" ? "Notifications are blocked for this site. Allow them in your browser settings." : "You'll also see in-app banners while Voiladi is open."}</p>
+      <p className="px-1 text-[13px] text-mute">{perm === "denied" ? "Notifications are blocked for this site. Allow them in your browser settings." : !supported ? "Notifications aren't supported on this device." : "You'll also see in-app banners while Voiladi is open."}</p>
     </div>
   );
 };

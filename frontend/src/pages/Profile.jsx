@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp } from "lucide-react";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useStats } from "@/hooks/useStats";
@@ -25,8 +25,8 @@ const Stat = ({ label, value, testId }) => (
 const StatDivider = () => <span className="h-8 w-px shrink-0 bg-line" aria-hidden="true" />;
 
 /* Boost / Super Likes / VOILADI+ : grey icon tile, bold title, muted subtitle, grey value pill, chevron. */
-const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId, pillTestId }) => (
-  <button type="button" onClick={onClick} className="vo-prow h-[60px]" data-testid={testId}>
+const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId, pillTestId, soon = false }) => (
+  <button type="button" onClick={onClick} className="vo-prow h-[60px]" aria-disabled={soon || undefined} data-testid={testId}>
     <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-surface2 text-ink">
       <Icon className="h-5 w-5" fill="currentColor" strokeWidth={1.5} />
     </span>
@@ -34,12 +34,20 @@ const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId, pillTestId 
       <span className="block truncate text-[18px] font-bold leading-[22px] tracking-[-0.01em] text-ink">{title}</span>
       <span className="block truncate text-[12.5px] leading-[17px] tracking-[-0.02em] text-mute">{sub}</span>
     </span>
-    {pill !== undefined && (
-      <span className="inline-flex h-[26px] shrink-0 items-center rounded-full bg-surface2 px-2.5 text-[14px] font-semibold tabular-nums tracking-[-0.01em] text-ink" data-testid={pillTestId}>
-        {pill}
+    {soon ? (
+      <span className="inline-flex h-[26px] shrink-0 items-center rounded-full bg-surface2 px-2.5 text-[13px] font-semibold tracking-[-0.01em] text-mute" data-testid={pillTestId}>
+        Soon
       </span>
+    ) : (
+      <>
+        {pill !== undefined && (
+          <span className="inline-flex h-[26px] shrink-0 items-center rounded-full bg-surface2 px-2.5 text-[14px] font-semibold tabular-nums tracking-[-0.01em] text-ink" data-testid={pillTestId}>
+            {pill}
+          </span>
+        )}
+        <ChevronRight className="h-4 w-4 shrink-0 text-mute" strokeWidth={2.2} />
+      </>
     )}
-    <ChevronRight className="h-4 w-4 shrink-0 text-mute" strokeWidth={2.2} />
   </button>
 );
 
@@ -115,17 +123,13 @@ export default function Profile() {
 
   const startBoost = async () => {
     if (boosting) return;
-    if (stats?.boost_active) {
-      toast(`Boost is running - ${hhmmss(boostLeft)} left`);
-      return;
-    }
+    if (stats?.boost_active) return; // the pill already shows the live countdown
     setBoosting(true);
     try {
       await api.post("/me/boost");
       await qc.invalidateQueries({ queryKey: ["stats"] });
-      toast.success("Boost started. You'll be seen by more people for 90 minutes.");
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setBoosting(false);
     }
@@ -205,7 +209,7 @@ export default function Profile() {
       <section className="vo-pcard mx-2.5 mt-3.5 overflow-hidden" data-testid="profile-features">
         <FeatureRow icon={Zap} title="Boost" sub="Be seen by more people" pill={boostPill} onClick={startBoost} testId="profile-boost-row" pillTestId="profile-boost-pill" />
         <FeatureRow icon={Star} title="Super Likes" sub="Show someone you're really interested" pill={stats ? stats.voilas_left : <Skeleton className="h-3 w-4 rounded-full" />} onClick={() => navigate("/discover")} testId="profile-superlikes-row" pillTestId="profile-superlikes-pill" />
-        <FeatureRow icon={Crown} title="VOILADI+" sub="Unlock premium features" onClick={() => toast("VOILADI+ is coming soon")} testId="profile-plus-row" />
+        <FeatureRow icon={Crown} title="VOILADI+" sub="Unlock premium features" soon testId="profile-plus-row" pillTestId="profile-plus-pill" />
       </section>
 
       {/* account menu */}

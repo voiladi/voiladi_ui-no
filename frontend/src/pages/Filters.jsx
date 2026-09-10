@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Spinner } from "@/components/Loading";
-import { toast } from "sonner";
+import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
@@ -61,7 +61,7 @@ export default function Filters() {
       setUser((u) => ({ ...u, preferences: data, looking_for: data.show_me }));
       navigate(-1);
     } catch (e) {
-      toast.error(errMsg(e));
+      notice(errMsg(e));
     } finally {
       setSaving(false);
     }
