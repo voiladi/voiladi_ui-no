@@ -78,4 +78,4 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Phase 22 (2026-09-10): Verification moved out of Profile into Settings (IG "Meta Verified" style). Profile shows only a small grey "Not verified >" link under @username
   -> /settings/verification (status card + how-it-works + Get verified -> /verify). Settings restyled to Soft UI with grouped sections; new ACCOUNT rows:
   Email (/settings/email, PUT /api/auth/email - password accounts must confirm password), Phone (/settings/phone, request-otp + verify-phone), Verification.
-  New shared pieces: SoftPageHeader / SoftSectionLabel / SoftRow (SoftUI.jsx), lib/phone.js (splitPhone/formatPhone). Tests iteration_20 100%. NOT yet redeployed to Railway.
+  New shared pieces: SoftPageHeader / SoftSectionLabel / SoftRow (SoftUI.jsx), lib/phone.js (splitPhone/formatPhone). Tests iteration_20 100%. Deployed to Railway 2026-09-10 11:55 UTC (api + web).
