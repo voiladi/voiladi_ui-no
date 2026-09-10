@@ -60,7 +60,7 @@ export const FeedbackLayer = ({ nav = false }) => {
             data-testid={b.testId}
           >
             <span className="vo-ios-banner-photo">
-              {b.photo || b.name ? <UserPhoto src={b.photo} name={b.name || "?"} className="h-full w-full rounded-[10px] text-sm" /> : <LogoMark size={38} />}
+              {b.photo || b.name ? <UserPhoto src={b.photo} name={b.name || "?"} size="xs" className="h-full w-full rounded-[10px] text-sm" /> : <LogoMark size={38} />}
             </span>
             <span className="min-w-0 flex-1 text-left">
               <span className="vo-ios-banner-title truncate">{b.title}</span>

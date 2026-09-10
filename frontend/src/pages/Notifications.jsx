@@ -44,7 +44,7 @@ const Avatar = ({ item }) => {
   const b = BADGE[item.type] || BADGE.like;
   return (
     <span className="relative shrink-0">
-      <UserPhoto src={item.user?.photos?.[0]} name={item.user?.name} className="h-[60px] w-[60px] rounded-full text-xl" />
+      <UserPhoto src={item.user?.photos?.[0]} name={item.user?.name} size="xs" className="h-[60px] w-[60px] rounded-full text-xl" />
       <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full text-white ring-[3px] ring-bg" style={{ background: b.bg }}>
         <b.Icon className="h-[13px] w-[13px]" fill="currentColor" strokeWidth={2} />
       </span>

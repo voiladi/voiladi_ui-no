@@ -16,9 +16,15 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-export const photoUrl = (u) => {
+/*
+ * Absolute URL for a photo. `w` (240 | 480 | 800) asks the API for a downscaled variant of our own uploads -
+ * grids and list rows never download the full 1280px original. External URLs are returned untouched.
+ */
+export const photoUrl = (u, w) => {
   if (!u) return "";
-  return u.startsWith("http") ? u : `${BACKEND_URL}${u}`;
+  if (u.startsWith("http")) return u;
+  const abs = `${BACKEND_URL}${u}`;
+  return w && u.startsWith("/api/uploads/") ? `${abs}?w=${w}` : abs;
 };
 
 export const errMsg = (e, fallback = "Something went wrong. Try again.") => {

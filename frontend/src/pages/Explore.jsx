@@ -72,7 +72,7 @@ const TopicTile = ({ topic, onOpen, testId = "explore-topic-tile", className = "
 const PersonRow = ({ p, sub, onOpen, onFollow, followed, followedLabel = "Following", isMe = false, last = false, testId = "explore-person-row" }) => (
   <div className={`flex items-center gap-4 py-3 ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
     <button type="button" className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none" onClick={() => onOpen(p)} data-testid={`${testId}-open`}>
-      <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
+      <UserPhoto src={p.photos?.[0]} name={p.name} size="sm" className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-[clamp(16px,4.6cqi,18px)] font-bold leading-[1.22] tracking-[-0.01em] text-ink">
           <span className="truncate">{p.name}</span>

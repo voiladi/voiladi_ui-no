@@ -1,18 +1,22 @@
 [
   {
-    "content": "Static pre-JS splash in index.html (logo + spinner, dark-mode aware, matches React Splash)",
+    "content": "Shrink logo-mark.png (361KB→~15KB) + cache headers for images at nginx root",
     "status": "completed"
   },
   {
-    "content": "Route-level code splitting (React.lazy) with on-canvas RouteLoader fallback for every screen",
+    "content": "index.html: async platform script, preconnect to API, preload logo",
     "status": "completed"
   },
   {
-    "content": "Fill remaining gaps: Profile boost pill spinner; chunk-fail auto reload",
-    "status": "completed"
+    "content": "Backend: on-demand resized photo variants (?w=240/480/800) with immutable cache, edge-cacheable",
+    "status": "in_progress"
   },
   {
-    "content": "Run testing agent across all routes (lazy loading regression), then deploy",
-    "status": "completed"
+    "content": "Frontend: UserPhoto size prop; thumbnails in grids/lists/avatars, full only for swipe card/profile sheet",
+    "status": "pending"
+  },
+  {
+    "content": "Test, deploy web+api, verify cf-cache HIT + sizes",
+    "status": "pending"
   }
 ]

@@ -84,3 +84,4 @@ backend/.env
 android-build/sdk/
 android-build/out/
 android-build/tmp/
+backend/uploads/_thumbs/

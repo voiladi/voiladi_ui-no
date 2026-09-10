@@ -100,7 +100,7 @@ export default function Chats() {
             <motion.li key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)}>
               <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-soft-row" data-testid="chats-list-row">
                 <span className="relative shrink-0">
-                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} className="h-[56px] w-[56px] rounded-full text-xl" />
+                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} size="xs" className="h-[56px] w-[56px] rounded-full text-xl" />
                   {m.online && <span className="vo-dot-online" />}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -163,7 +163,7 @@ export default function Chats() {
                     }}
                     data-testid="compose-match-row"
                   >
-                    <UserPhoto src={m.user.photos?.[0]} name={m.user.name} className="h-11 w-11 rounded-full text-sm" />
+                    <UserPhoto src={m.user.photos?.[0]} name={m.user.name} size="xs" className="h-11 w-11 rounded-full text-sm" />
                     <span className="text-[16px] font-semibold text-ink">{m.user.name}</span>
                   </button>
                 ))}

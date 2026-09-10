@@ -361,7 +361,7 @@ export default function Onboarding() {
             <div className="mt-14 flex justify-center">
               <button type="button" onClick={() => fileRef.current?.click()} className="relative block h-[220px] w-[220px] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Add photo" data-testid="onboarding-photo-add-button" disabled={saving} aria-busy={saving}>
                 {photo ? (
-                  <UserPhoto src={photo} name={user?.name} className="h-full w-full rounded-full text-5xl" />
+                  <UserPhoto src={photo} name={user?.name} size="sm" className="h-full w-full rounded-full text-5xl" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center rounded-full bg-surface text-mute">
                     <Camera className="h-14 w-14" strokeWidth={1.4} />

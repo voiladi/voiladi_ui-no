@@ -6,14 +6,17 @@ import { initials } from "@/lib/format";
  * Photo with a neutral initials fallback. The parent decides the shape (rounded-full for avatars).
  * While the image loads a soft shimmer shows; the photo then fades in (no hard pop-in).
  */
-export const UserPhoto = ({ src, name = "", className = "", alt, style, ...rest }) => {
+/* size: "xs" 240px (avatars, chat bubbles) | "sm" 480px (grid tiles, list rows) | "md" 800px (large cards) | "full" original */
+const WIDTHS = { xs: 240, sm: 480, md: 800, full: undefined };
+
+export const UserPhoto = ({ src, name = "", className = "", alt, style, size = "full", ...rest }) => {
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     setFailed(false);
     setReady(false);
   }, [src]);
-  const url = photoUrl(src);
+  const url = photoUrl(src, WIDTHS[size]);
   if (!url || failed) {
     return (
       <div

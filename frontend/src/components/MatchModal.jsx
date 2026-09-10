@@ -15,8 +15,8 @@ export const MatchModal = ({ match, me, onClose, onSayHi }) => {
         {other && (
           <div className="flex flex-col items-center text-center">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={tween(D.slow)} className="relative flex items-center justify-center">
-              <UserPhoto src={me?.photos?.[0]} name={me?.name} className="h-24 w-24 rounded-full border-4 border-bg text-2xl" />
-              <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-5 h-24 w-24 rounded-full border-4 border-bg text-2xl" />
+              <UserPhoto src={me?.photos?.[0]} name={me?.name} size="sm" className="h-24 w-24 rounded-full border-4 border-bg text-2xl" />
+              <UserPhoto src={other.photos?.[0]} name={other.name} size="sm" className="-ml-5 h-24 w-24 rounded-full border-4 border-bg text-2xl" />
               <span className="absolute -bottom-2 flex h-9 w-9 items-center justify-center rounded-full bg-ink text-onink shadow-action">
                 <Heart className="h-4 w-4" fill="currentColor" />
               </span>

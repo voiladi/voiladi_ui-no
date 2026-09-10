@@ -157,7 +157,7 @@ export default function Profile() {
       {/* avatar + name / edit / stats */}
       <section className="mt-3 flex items-start gap-[clamp(12px,4cqi,16px)] px-4" data-testid="profile-summary-card">
         <button type="button" className="vo-soft relative flex h-[clamp(84px,24cqi,96px)] w-[clamp(84px,24cqi,96px)] shrink-0 items-center justify-center rounded-full" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
-          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[79%] w-[79%] rounded-[22px] text-[30px]" />
+          <UserPhoto src={user.photos?.[0]} name={user.name} size="xs" className="h-[79%] w-[79%] rounded-[22px] text-[30px]" />
           <span className="vo-soft absolute -bottom-0.5 right-0 flex h-[34px] w-[34px] items-center justify-center rounded-full text-ink">
             <Camera className="h-4 w-4" strokeWidth={2} />
           </span>

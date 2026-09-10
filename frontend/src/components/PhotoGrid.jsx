@@ -96,7 +96,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
       <div className="grid grid-cols-2 gap-3">
         {main ? (
           <div className="relative aspect-square overflow-hidden rounded-[20px] bg-surface2" data-testid="photo-tile-0">
-            <UserPhoto src={main} name="" className="h-full w-full" />
+            <UserPhoto src={main} name="" size="md" className="h-full w-full" />
             <RemoveBadge url={main} i={0} />
           </div>
         ) : (
@@ -121,7 +121,7 @@ export const PhotoGrid = ({ photos = [], onChange, max = 6 }) => {
         <div className="mt-3 grid grid-cols-3 gap-3">
           {rest.map((url, i) => (
             <button key={url} type="button" onClick={() => makeMain(url)} className="relative aspect-square overflow-hidden rounded-[16px] bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue" title="Set as main photo" data-testid={`photo-tile-${i + 1}`}>
-              <UserPhoto src={url} name="" className="h-full w-full" />
+              <UserPhoto src={url} name="" size="sm" className="h-full w-full" />
               <RemoveBadge url={url} i={i + 1} />
             </button>
           ))}

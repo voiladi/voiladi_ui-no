@@ -129,7 +129,7 @@ export default function AdminVerify() {
           items.map((row) => (
             <SoftCard key={row.user_id} className="p-4" testId="admin-verify-row">
               <div className="flex items-center gap-3">
-                <UserPhoto src={row.photos?.[0]} name={row.name} className="h-12 w-12 rounded-full text-base" />
+                <UserPhoto src={row.photos?.[0]} name={row.name} size="xs" className="h-12 w-12 rounded-full text-base" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[17px] font-bold text-ink">
                     {row.name}

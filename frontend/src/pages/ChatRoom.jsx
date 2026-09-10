@@ -29,7 +29,7 @@ const ReactionBubble = ({ m, mine, otherName }) => {
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} data-testid="chat-reaction-message">
       {r.type === "photo" ? (
         <div className="relative overflow-hidden rounded-[18px] bg-surface">
-          <UserPhoto src={r.photo} name={mine ? otherName : ""} className="h-48 w-40 text-3xl" />
+          <UserPhoto src={r.photo} name={mine ? otherName : ""} size="xs" className="h-48 w-40 text-3xl" />
           <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white text-red shadow-action">
             <Heart className="h-4 w-4" fill="currentColor" strokeWidth={2} />
           </span>
@@ -265,7 +265,7 @@ export default function ChatRoom() {
         {other ? (
           <button type="button" className="flex min-w-0 flex-1 items-center gap-3 rounded-full px-1 py-1 text-left active:opacity-70" onClick={() => setSheet(true)} data-testid="chat-header-profile">
             <span className="relative">
-              <UserPhoto src={other.photos?.[0]} name={other.name} className="h-9 w-9 rounded-full text-sm" />
+              <UserPhoto src={other.photos?.[0]} name={other.name} size="xs" className="h-9 w-9 rounded-full text-sm" />
               {match.online && <span className="vo-dot-online h-2.5 w-2.5" />}
             </span>
             <span className="min-w-0">
@@ -322,8 +322,8 @@ export default function ChatRoom() {
             {other && (
               <div className="mb-6 flex flex-col items-center text-center" data-testid="chat-intro">
                 <div className="flex items-center">
-                  <UserPhoto src={user?.photos?.[0]} name={user?.name} className="h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
-                  <UserPhoto src={other.photos?.[0]} name={other.name} className="-ml-4 h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
+                  <UserPhoto src={user?.photos?.[0]} name={user?.name} size="xs" className="h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
+                  <UserPhoto src={other.photos?.[0]} name={other.name} size="xs" className="-ml-4 h-16 w-16 rounded-full border-[3px] border-bg text-lg" />
                 </div>
                 <p className="mt-3 text-[13px] text-mute">
                   You matched with <span className="font-semibold text-ink">{other.name}</span> {timeAgo(match.created_at) === "now" ? "just now" : `${timeAgo(match.created_at)} ago`}

@@ -187,7 +187,7 @@ export default function Likes() {
               <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="vo-soft-row gap-1 pr-2" data-testid="likes-row">
                 <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-visible:outline-none" onClick={() => setSheet(l)} data-testid="likes-row-open">
                   <span className="relative shrink-0">
-                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[56px] w-[56px] rounded-full text-xl" />
+                    <UserPhoto src={p.photos?.[0]} name={p.name} size="sm" className="h-[56px] w-[56px] rounded-full text-xl" />
                     <span className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-bg ${l.superlike ? "bg-blue" : "bg-red"} text-white`}>
                       {l.superlike ? <Star className="h-3 w-3" fill="currentColor" /> : <Heart className="h-3 w-3" fill="currentColor" />}
                     </span>

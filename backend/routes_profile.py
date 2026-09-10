@@ -238,7 +238,10 @@ async def delete_photo(url: str, user=Depends(get_current_user)):
     photos.remove(url)
     if url.startswith("/api/uploads/"):
         try:
-            (UPLOAD_DIR / Path(url).name).unlink(missing_ok=True)
+            name = Path(url).name
+            (UPLOAD_DIR / name).unlink(missing_ok=True)
+            for w in THUMB_WIDTHS:
+                (UPLOAD_DIR / "_thumbs" / f"w{w}_{name}").unlink(missing_ok=True)
         except Exception:
             pass
     merged = {**user, "photos": photos}
@@ -255,12 +258,45 @@ async def reorder_photos(body: PhotoOrderIn, user=Depends(get_current_user)):
     return {"photos": body.photos}
 
 
+THUMB_WIDTHS = (240, 480, 800)  # grid tiles / list rows+cards / large cards; the original (<=1280) stays for full-screen
+THUMB_DIR = UPLOAD_DIR / "_thumbs"
+
+
+def _make_variant(src: Path, dst: Path, width: int) -> None:
+    """Downscale an already-processed upload to `width` px wide (never upscales). Runs in a thread."""
+    with Image.open(src) as img:
+        img = ImageOps.exif_transpose(img)
+        if img.width > width:
+            img = img.resize((width, max(1, round(img.height * width / img.width))), Image.LANCZOS)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dst.with_suffix(dst.suffix + ".tmp")
+        if dst.suffix.lower() == ".webp":
+            img.convert("RGBA").save(tmp, format="WEBP", quality=PHOTO_QUALITY, method=4)
+        else:
+            img.convert("RGB").save(tmp, format="JPEG", quality=82, optimize=True, progressive=True)
+        tmp.replace(dst)
+
+
 @router.get("/uploads/{fname}")
-async def get_upload(fname: str):
-    p = UPLOAD_DIR / Path(fname).name
+async def get_upload(fname: str, w: Optional[int] = None):
+    """
+    Serve an upload. `?w=240|480|800` returns a resized variant (created on first request, then kept on disk);
+    filenames are unique per upload so everything is immutable and cacheable at the browser and the CDN edge.
+    """
+    safe = Path(fname).name
+    p = UPLOAD_DIR / safe
     if not p.exists():
         raise HTTPException(status_code=404, detail="Not found")
-    return FileResponse(p, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+    headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+    if w in THUMB_WIDTHS:
+        variant = THUMB_DIR / f"w{w}_{safe}"
+        if not variant.exists():
+            try:
+                await asyncio.to_thread(_make_variant, p, variant, w)
+            except Exception:  # unreadable file: fall back to the original
+                return FileResponse(p, headers=headers)
+        return FileResponse(variant, headers=headers)
+    return FileResponse(p, headers=headers)
 
 
 @router.get("/preferences")
