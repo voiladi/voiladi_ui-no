@@ -79,8 +79,9 @@
         --soft-art-back-lo: #E6E6EA;
         --soft-art-dot: #A6A6AB;
         --soft-art-shadow: #111111;
-        --nav-h: 68px;
+        --nav-h: 70px;
         --nav-gap: 12px;
+        --nav-idle: #7C7C82;
     }
 
     .dark {
@@ -109,6 +110,7 @@
         --neu-light: rgba(255, 255, 255, 0.04);
         --neu-dark: rgba(0, 0, 0, 0.65);
         --neu-dark-2: rgba(0, 0, 0, 0.75);
+        --nav-idle: #8E8E93;
         --soft-bg: #1A1A1D;
         --soft-bg-2: #0F0F11;
         --soft-shadow: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
@@ -996,10 +998,35 @@
         font-weight: 600;
     }
 
-    /* floating bottom nav */
+    /* floating bottom nav: white pill, soft shadow below (as photographed) */
     .vo-float-nav {
-        background: var(--neu-surface);
-        box-shadow: -8px -8px 20px var(--neu-light), 8px 12px 28px var(--neu-dark);
+        background: var(--soft-bg);
+        box-shadow: 0 10px 30px rgba(28, 28, 38, 0.10), 0 2px 8px rgba(28, 28, 38, 0.05);
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .dark .vo-float-nav {
+        background: var(--soft-bg);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* the nav lens: invisible at rest, glass when it slides / is held */
+    .vo-gseg-thumb-nav {
+        border-radius: 26px;
+        background: var(--glass-lens);
+        -webkit-backdrop-filter: blur(10px) saturate(170%) brightness(1.04);
+        backdrop-filter: blur(10px) saturate(170%) brightness(1.04);
+        box-shadow: 0 6px 18px rgba(28, 28, 38, 0.10), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(28, 28, 38, 0.05);
+    }
+
+    .vo-gseg-nav.is-lifted .vo-gseg-thumb-nav {
+        box-shadow: var(--glass-lens-shadow);
+    }
+
+    .vo-gseg-nav .vo-gseg-thumb::after {
+        opacity: 1;
     }
 
     /* ---------- misc ---------- */

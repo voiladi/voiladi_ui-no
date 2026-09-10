@@ -243,6 +243,8 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Discover.jsx + SwipeCard: title/subtitle, raised deck card holding photo card (1/6 counter, "Name, Age", job, distance; caption opens profile)
   + 3 raised round actions; "Better matches ahead" card while profile incomplete. All tabs width-only fluid scaling.
 - Tests iteration_17: backend 58/58, frontend 100%. Deployed api + web; prod reseeded (jobs).
+- BottomNav pass: iPhone look (solid front square Discover icon, black bold active, grey outline idle, white pill w/ soft shadow) +
+  liquid-glass lens (fades in, glides on tap, press-hold-drag with lift/haptics, snap navigates). Deployed web.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
