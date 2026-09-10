@@ -224,7 +224,9 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
   BubblesArt (SVG) / CardsArt. CSS: --soft-* tokens, .vo-soft*, .vo-seg-lg, .vo-float-nav, .vo-art-card*. --nav-h/--nav-gap drive page bottom padding.
 - Chats: Messages title, tabs All/Matches(no msgs)/Unread, search toggle button, compose drawer, raised rows, empty card + "Find people" -> /explore.
 - Likes: "..." menu (Newest/Oldest, Super Likes only), heart-count pill, tabs, raised rows, empty card + "Explore people" -> /explore.
-- BottomNav floating (inset 12px, 66px, raised) on all tabs; Discover/Explore/Profile paddings updated. Tests iteration_16 100%. Deployed web.
+- BottomNav floating (inset 12px, 68px, raised) on all tabs; Discover/Explore/Profile paddings updated. Tests iteration_16 100%.
+- Pass 2 (user: 'not same, box line, glass effect'): removed all 1px inset highlights (they aliased into a dashed line under fit-scale), widened SVG filter regions
+  (shadow was clipping to a rectangle = the 'box'), wider/softer neumorphic shadows, CardsArt -> SVG, 34px card radius, 22px title, art 220x198. Deployed web.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.

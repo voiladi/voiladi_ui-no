@@ -57,16 +57,17 @@
         --glass-edge: rgba(255, 255, 255, 0.5);
 
         /* soft UI (Likes / Messages reference): raised light surfaces on the canvas */
-        --soft-bg: #FBFBFC;
+        --soft-bg: #FAFAFB;
         --soft-bg-2: #F3F3F5;
-        --soft-shadow: 0 10px 28px rgba(17, 17, 17, 0.06), 0 2px 6px rgba(17, 17, 17, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        --soft-shadow-lg: 0 18px 44px rgba(17, 17, 17, 0.08), 0 4px 10px rgba(17, 17, 17, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        --soft-shadow: 0 10px 30px rgba(17, 17, 17, 0.05), 0 2px 8px rgba(17, 17, 17, 0.025);
+        --soft-shadow-lg: 0 24px 64px rgba(17, 17, 17, 0.06), 0 6px 18px rgba(17, 17, 17, 0.03);
         --soft-art-hi: #FFFFFF;
-        --soft-art-lo: #ECECEF;
-        --soft-art-dot: #B9B9BE;
-        --soft-art-edge: rgba(255, 255, 255, 0.95);
-        --soft-art-edge-2: rgba(255, 255, 255, 0.9);
-        --nav-h: 66px;
+        --soft-art-lo: #EFEFF2;
+        --soft-art-back-hi: #F6F6F8;
+        --soft-art-back-lo: #E6E6EA;
+        --soft-art-dot: #A6A6AB;
+        --soft-art-shadow: #111111;
+        --nav-h: 68px;
         --nav-gap: 12px;
     }
 
@@ -92,13 +93,14 @@
         --glass-edge: rgba(255, 255, 255, 0.12);
         --soft-bg: #161618;
         --soft-bg-2: #1F1F22;
-        --soft-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        --soft-shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.6), 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        --soft-art-hi: #2C2C2E;
-        --soft-art-lo: #1C1C1E;
+        --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
+        --soft-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.35);
+        --soft-art-hi: #2E2E31;
+        --soft-art-lo: #1E1E21;
+        --soft-art-back-hi: #262629;
+        --soft-art-back-lo: #191a1c;
         --soft-art-dot: #6E6E73;
-        --soft-art-edge: rgba(255, 255, 255, 0.10);
-        --soft-art-edge-2: rgba(255, 255, 255, 0.06);
+        --soft-art-shadow: #000000;
         --on-ink: #000000;
         --backdrop: #0A0A0A;
         --overlay: rgba(0, 0, 0, 0.6);
@@ -815,47 +817,23 @@
     /* larger segmented control (45px) */
     .vo-seg-lg {
         padding: 4px;
-        background: var(--surface);
+        background: var(--soft-bg-2);
     }
 
     .vo-seg-lg .vo-seg-item {
-        height: 37px;
-        font-size: 17px;
+        height: 38px;
+        font-size: 16px;
         letter-spacing: -0.01em;
     }
 
     .vo-seg-lg .vo-seg-on {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 14px rgba(17, 17, 17, 0.06), 0 1px 3px rgba(17, 17, 17, 0.04);
     }
 
     /* floating bottom nav */
     .vo-float-nav {
         background: var(--soft-bg);
         box-shadow: var(--soft-shadow-lg);
-    }
-
-    /* 3D-ish art: two stacked cards with a heart */
-    .vo-art-card {
-        position: absolute;
-        width: 156px;
-        height: 156px;
-        border-radius: 30px;
-        background: linear-gradient(160deg, var(--soft-art-hi) 0%, var(--soft-art-lo) 100%);
-        box-shadow: 0 22px 40px rgba(17, 17, 17, 0.10), 0 6px 12px rgba(17, 17, 17, 0.05), inset 0 2px 0 var(--soft-art-edge), inset 0 -6px 12px rgba(0, 0, 0, 0.03);
-    }
-
-    .vo-art-card-back {
-        left: 4px;
-        top: 0;
-        transform: rotate(-14deg);
-        background: linear-gradient(160deg, var(--soft-art-lo) 0%, var(--soft-art-hi) 100%);
-        box-shadow: 0 16px 30px rgba(17, 17, 17, 0.06), inset 0 1px 0 var(--soft-art-edge-2);
-    }
-
-    .vo-art-card-front {
-        right: 4px;
-        bottom: 0;
-        transform: rotate(6deg);
     }
 
     /* ---------- misc ---------- */
