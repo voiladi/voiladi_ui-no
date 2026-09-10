@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMatchesQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
 import { SkeletonList } from "@/components/EmptyState";
-import { Segmented } from "@/components/Chip";
+import { GlassSegmented } from "@/components/GlassSegmented";
 import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, BubblesArt } from "@/components/SoftUI";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
@@ -72,7 +72,7 @@ export default function Chats() {
           }
         />
         <SoftTitle title="Messages" subtitle="Your conversations" testId="chats-title" />
-        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="chats-tab" className="vo-seg-lg mt-4" />
+        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="chats-tab" className="mt-4" />
         {searching && (
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base)} className="vo-soft relative mt-3 flex h-[48px] items-center rounded-full">
             <Search className="pointer-events-none absolute left-4 h-5 w-5 text-mute" strokeWidth={2} />

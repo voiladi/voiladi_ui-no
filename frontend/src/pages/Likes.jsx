@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
 import { useLikesQuery, useLikesSentQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
-import { Segmented } from "@/components/Chip";
+import { GlassSegmented } from "@/components/GlassSegmented";
 import { SkeletonList, Skeleton } from "@/components/EmptyState";
 import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, CardsArt } from "@/components/SoftUI";
 import { ProfileSheet } from "@/components/ProfileSheet";
@@ -148,7 +148,7 @@ export default function Likes() {
             </span>
           }
         />
-        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="vo-seg-lg mt-4" />
+        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-4" />
       </header>
 
       {loading ? (
