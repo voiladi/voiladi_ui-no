@@ -259,6 +259,8 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Frontend: Profile shows @username under the name; Edit Profile "Username" row with debounced live check (spinner / check / red X + hint), Done disabled
   when invalid/taken; ProfileSheet shows @username; Explore search matches @handles. Deployed api + web; prod reseeded.
 - Fix: Popular interests horizontal scroller clipped chip shadows into a rectangle -> scroller gets pt-4 pb-7 pr-8 with negative margins.
+- Search: GET /api/search?q= across ALL accounts (@username exact/prefix > name prefix > contains; excludes blocked; followed/matched/is_me flags) + communities.
+  Explore search is debounced server-side; rows show @handle · job, "You" / "Following" / "Matched" pills. Native search cancel button hidden.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.

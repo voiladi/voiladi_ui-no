@@ -1,4 +1,5 @@
 """Discovery feed, explore grid, swipes, likes and matching."""
+import re
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional, List, Tuple
@@ -251,6 +252,67 @@ async def _topic_rows(user: dict):
         })
     topics.sort(key=lambda t: (-t["members"], INTERESTS.index(t["name"])))
     return topics
+
+
+@router.get("/search")
+async def search(q: str, limit: int = 20, user=Depends(get_current_user)):
+    """
+    Instagram-style search across EVERY account (not just your Discover candidates): @username prefix first,
+    then name matches, then anything containing the term. Also returns matching communities.
+    """
+    term = (q or "").strip().lstrip("@").lower()
+    if not term:
+        return {"q": term, "profiles": [], "topics": []}
+    limit = max(1, min(limit, 40))
+    rx = re.escape(term)
+
+    blocks = await db.blocks.find({"$or": [{"from_id": user["id"]}, {"to_id": user["id"]}]}, {"_id": 0}).to_list(None)
+    hidden = set()
+    for b in blocks:
+        hidden.add(b["from_id"])
+        hidden.add(b["to_id"])
+    hidden.discard(user["id"])
+
+    rows = await db.users.find(
+        {"onboarded": True, "id": {"$nin": list(hidden)},
+         "$or": [{"username": {"$regex": rx}}, {"name": {"$regex": rx, "$options": "i"}}]},
+        {"_id": 0},
+    ).limit(120).to_list(None)
+
+    def rank(u):
+        un = (u.get("username") or "").lower()
+        nm = (u.get("name") or "").lower()
+        if un == term:
+            return 0
+        if un.startswith(term):
+            return 1
+        if nm.startswith(term):
+            return 2
+        if term in un:
+            return 3
+        return 4
+
+    rows.sort(key=lambda u: (rank(u), (u.get("username") or ""), (u.get("name") or "")))
+    rows = rows[:limit]
+
+    ids = [u["id"] for u in rows]
+    liked = set(s["to_id"] for s in await db.swipes.find(
+        {"from_id": user["id"], "to_id": {"$in": ids}, "action": {"$in": ["like", "superlike"]}}, {"_id": 0, "to_id": 1}).to_list(None))
+    matched = set()
+    for m in await db.matches.find({"users": user["id"], "active": True}, {"_id": 0, "users": 1}).to_list(None):
+        for uid in m.get("users", []):
+            matched.add(uid)
+
+    profiles = []
+    for u in rows:
+        p = public_profile(u, user)
+        p["is_me"] = u["id"] == user["id"]
+        p["followed"] = u["id"] in liked
+        p["matched"] = u["id"] in matched
+        profiles.append(p)
+
+    topics = [t for t in await _topic_rows(user) if term in t["name"].lower()][:6]
+    return {"q": term, "profiles": profiles, "topics": topics}
 
 
 @router.get("/explore/topics")

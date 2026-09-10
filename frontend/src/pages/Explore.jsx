@@ -68,7 +68,7 @@ const TopicTile = ({ topic, onOpen, testId = "explore-topic-tile", className = "
 );
 
 /* Person row: avatar, name, what they do, Follow. */
-const PersonRow = ({ p, sub, onOpen, onFollow, followed, last = false, testId = "explore-person-row" }) => (
+const PersonRow = ({ p, sub, onOpen, onFollow, followed, followedLabel = "Following", isMe = false, last = false, testId = "explore-person-row" }) => (
   <div className={`flex items-center gap-4 py-3 ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
     <button type="button" className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none" onClick={() => onOpen(p)} data-testid={`${testId}-open`}>
       <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
@@ -77,9 +77,15 @@ const PersonRow = ({ p, sub, onOpen, onFollow, followed, last = false, testId = 
         <span className="mt-0.5 block truncate text-[15px] leading-[19px] text-mute">{sub}</span>
       </span>
     </button>
-    <SoftPill active={followed} onClick={() => !followed && onFollow(p)} testId={`${testId}-follow`} aria-pressed={followed} className="h-[44px] min-w-[clamp(92px,27cqi,112px)] px-[clamp(14px,4cqi,20px)] text-[clamp(15px,4.3cqi,17px)]">
-      {followed ? "Following" : "Follow"}
-    </SoftPill>
+    {isMe ? (
+      <SoftPill active onClick={() => onOpen(p)} testId={`${testId}-me`} className="h-[44px] min-w-[clamp(80px,22cqi,96px)] px-[clamp(14px,4cqi,20px)] text-[clamp(15px,4.3cqi,17px)]">
+        You
+      </SoftPill>
+    ) : (
+      <SoftPill active={followed} onClick={() => !followed && onFollow(p)} testId={`${testId}-follow`} aria-pressed={followed} className="h-[44px] min-w-[clamp(92px,27cqi,112px)] px-[clamp(14px,4cqi,20px)] text-[clamp(15px,4.3cqi,17px)]">
+        {followed ? followedLabel : "Follow"}
+      </SoftPill>
+    )}
   </div>
 );
 
@@ -131,9 +137,23 @@ export default function Explore() {
 
   const list = useMemo(() => (people.data?.profiles || []).filter((p) => !gone.has(p.id)), [people.data, gone]);
   const s = q.trim().toLowerCase();
-  const q0 = s.replace(/^@/, "");
-  const searchPeople = useMemo(() => (s ? list.filter((p) => p.name.toLowerCase().includes(s) || (p.username || "").includes(q0) || (p.job || "").toLowerCase().includes(s) || (p.city || "").toLowerCase().includes(s)) : []), [list, s, q0]);
-  const searchTopics = useMemo(() => (s ? (topics.data?.topics || []).filter((t) => t.name.toLowerCase().includes(s)) : []), [topics.data, s]);
+
+  /* Instagram-style search: debounced, server-side, across every account (@username first, then names) + communities */
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(s), 220);
+    return () => clearTimeout(t);
+  }, [s]);
+  const search = useQuery({
+    queryKey: ["search", term],
+    queryFn: async () => (await api.get("/search", { params: { q: term, limit: 30 } })).data,
+    enabled: term.length > 0,
+    staleTime: 15_000,
+    keepPreviousData: true,
+  });
+  const searching = s.length > 0 && (search.isLoading || term !== s);
+  const searchPeople = useMemo(() => (search.data?.profiles || []).filter((p) => !gone.has(p.id)), [search.data, gone]);
+  const searchTopics = search.data?.topics || [];
 
   const remove = (id) => setGone((g) => new Set([...g, id]));
 
@@ -261,18 +281,29 @@ export default function Explore() {
                 </div>
               </SoftCard>
             )}
-            {people.isLoading ? (
+            {searching && searchPeople.length === 0 ? (
               <SoftCard className="px-5 py-2">
                 <RowSkeleton />
               </SoftCard>
             ) : searchPeople.length > 0 ? (
               <SoftCard className="px-5 pt-4 pb-1" testId="explore-search-people">
                 <SectionHead title="People" />
-                {searchPeople.slice(0, 12).map((p, i) => (
-                  <PersonRow key={p.id} p={p} sub={whatTheyDo(p)} onOpen={setSheet} onFollow={follow} followed={followed.has(p.id)} last={i === Math.min(searchPeople.length, 12) - 1} />
+                {searchPeople.map((p, i) => (
+                  <PersonRow
+                    key={p.id}
+                    p={p}
+                    sub={`@${p.username || "-"}${p.job ? ` · ${p.job}` : ""}`}
+                    onOpen={(pp) => (pp.is_me ? navigate("/profile") : setSheet(pp))}
+                    onFollow={follow}
+                    followed={followed.has(p.id) || p.followed || p.matched}
+                    followedLabel={p.matched ? "Matched" : "Following"}
+                    isMe={p.is_me}
+                    last={i === searchPeople.length - 1}
+                    testId="explore-search-row"
+                  />
                 ))}
               </SoftCard>
-            ) : searchTopics.length === 0 ? (
+            ) : !searching && searchTopics.length === 0 ? (
               <p className="pt-6 text-center text-[16px] text-mute" data-testid="explore-no-results">
                 No results for "{q.trim()}".
               </p>
