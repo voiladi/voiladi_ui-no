@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Camera, RefreshCw, Check, ShieldCheck } from "lucide-react";
-import { ModalHeader } from "@/components/EmptyState";
+import { Camera, RefreshCw, Check, ShieldCheck } from "lucide-react";
 import { Spinner } from "@/components/Loading";
-import { SoftCard, SoftPill } from "@/components/SoftUI";
+import { SoftCard, SoftPill, SoftPageHeader } from "@/components/SoftUI";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -108,24 +107,16 @@ export default function Verify() {
     }
   };
 
-  const Header = (
-    <ModalHeader
-      left={
-        <button type="button" className="-ml-2 flex items-center text-[16px] text-ink" onClick={() => navigate("/profile")} data-testid="verify-back-button">
-          <ChevronLeft className="h-5 w-5" strokeWidth={2} /> Back
-        </button>
-      }
-      title="Verify profile"
-    />
-  );
+  const back = () => navigate("/settings/verification");
+  const Header = <SoftPageHeader title="Get verified" onBack={back} backTestId="verify-back-button" />;
 
   /* already verified / in review */
   if (status === "approved" || status === "pending" || done) {
     const approved = status === "approved";
     return (
-      <div className="vo-neu-page flex min-h-full flex-col" data-testid="verify-page">
+      <div className="vo-neu-page flex min-h-full flex-col px-4" data-testid="verify-page">
         {Header}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center px-2 pb-16 text-center">
           <span className={`inline-flex h-20 w-20 items-center justify-center rounded-full ${approved ? "bg-ink text-onink" : "vo-soft text-ink"}`}>
             {approved ? <Check className="h-10 w-10" strokeWidth={3} /> : <ShieldCheck className="h-9 w-9" strokeWidth={1.8} />}
           </span>
@@ -135,8 +126,8 @@ export default function Verify() {
           <p className="mt-2 max-w-[300px] text-[16px] leading-[22px] text-mute">
             {approved ? "The black tick now shows on your profile, and you can message your matches." : "We're reviewing it by hand - usually within a day. You'll get a notification when it's done."}
           </p>
-          <SoftPill className="mt-8 h-[50px] px-8" onClick={() => navigate("/profile")} testId="verify-done-button">
-            Back to profile
+          <SoftPill className="mt-8 h-[50px] px-8" onClick={back} testId="verify-done-button">
+            Done
           </SoftPill>
         </div>
       </div>
@@ -144,9 +135,9 @@ export default function Verify() {
   }
 
   return (
-    <div className="vo-neu-page flex min-h-full flex-col" data-testid="verify-page">
+    <div className="vo-neu-page flex min-h-full flex-col px-4" data-testid="verify-page">
       {Header}
-      <div className="flex flex-1 flex-col px-5 pb-8">
+      <div className="flex flex-1 flex-col px-1 pb-8">
         <p className="mt-1 text-[16px] leading-[22px] text-mute">
           {status === "rejected" ? (
             <>

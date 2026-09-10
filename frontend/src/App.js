@@ -23,6 +23,9 @@ import Profile from "@/pages/Profile";
 import EditProfile from "@/pages/EditProfile";
 import Filters from "@/pages/Filters";
 import Settings from "@/pages/Settings";
+import VerificationSettings from "@/pages/settings/Verification";
+import ChangeEmail from "@/pages/settings/ChangeEmail";
+import ChangePhone from "@/pages/settings/ChangePhone";
 import Notifications from "@/pages/Notifications";
 import Legal from "@/pages/Legal";
 import Verify from "@/pages/Verify";
@@ -115,6 +118,9 @@ function App() {
                   <Route path="/filters" element={<Filters />} />
                   <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/verification" element={<VerificationSettings />} />
+                  <Route path="/settings/email" element={<ChangeEmail />} />
+                  <Route path="/settings/phone" element={<ChangePhone />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/verify" element={<Verify />} />
                 </Route>

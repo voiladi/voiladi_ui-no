@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Brand } from "@/components/Logo";
 import { rise } from "@/lib/motion";
 
@@ -56,6 +57,46 @@ export const SoftEmpty = ({ art, title, description, actionIcon: ActionIcon, act
     {footer && <p className="mt-[clamp(12px,2.8dvh,24px)] shrink-0 text-[16px] leading-[20px] text-mute">{footer}</p>}
   </motion.section>
 );
+
+/* Sub-page header on the soft canvas (Settings / Verification / Email...): back chevron + big bold title, as on Notifications. */
+export const SoftPageHeader = ({ title, onBack, backTestId = "page-back-button", right }) => (
+  <header className="flex h-14 shrink-0 items-center gap-2 pt-1" data-testid="soft-page-header">
+    <button type="button" className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={onBack} aria-label="Back" data-testid={backTestId}>
+      <ChevronLeft className="h-7 w-7" strokeWidth={2.4} />
+    </button>
+    <h1 className="min-w-0 flex-1 truncate text-[clamp(24px,7cqi,28px)] font-bold leading-none tracking-[-0.02em] text-ink">{title}</h1>
+    {right}
+  </header>
+);
+
+/* "ACCOUNT" / "SUPPORT": small caps label above a grouped card. */
+export const SoftSectionLabel = ({ children, className = "" }) => (
+  <p className={`mb-2 px-4 text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-mute ${className}`}>{children}</p>
+);
+
+/*
+ * Grouped list row inside a SoftCard (Settings): icon | label | value | chevron (or a custom `right`, e.g. a Switch).
+ * Rows are separated by a hairline; pass `last` on the final row.
+ */
+export const SoftRow = ({ icon: Icon, label, value, onClick, right, testId, last = false, danger = false }) => {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag type={onClick ? "button" : undefined} onClick={onClick} className={`flex min-h-[52px] w-full items-center gap-2.5 px-3.5 py-1.5 text-left focus-visible:outline-none ${onClick ? "active:opacity-80" : ""} ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
+      {Icon && (
+        <span className={`flex w-[36px] shrink-0 items-center justify-center ${danger ? "text-red" : "text-ink"}`}>
+          <Icon className="h-[23px] w-[23px]" strokeWidth={1.75} />
+        </span>
+      )}
+      <span className={`min-w-0 flex-1 truncate text-[17px] font-semibold tracking-[-0.01em] ${danger ? "text-red" : "text-ink"}`}>{label}</span>
+      {value !== undefined && value !== null && (
+        <span className="flex min-w-0 max-w-[48%] shrink items-center gap-1.5 truncate text-[15px] tracking-[-0.01em] text-mute" data-testid={testId ? `${testId}-value` : undefined}>
+          {value}
+        </span>
+      )}
+      {right !== undefined ? right : onClick ? <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} /> : null}
+    </Tag>
+  );
+};
 
 /* Raised section card (Trending now / Suggested for you / profile cards). */
 export const SoftCard = ({ className = "", children, testId, as: Tag = "section", ...rest }) => (

@@ -171,6 +171,119 @@ class VoiladiTester:
         self.token = old_token
         print(f"  ✓ Bad token rejected (401)")
 
+    # ========== CHANGE EMAIL TESTS (NEW) ==========
+    def test_auth_change_email_no_auth(self):
+        """Test PUT /auth/email without token returns 401"""
+        old_token = self.token
+        self.token = None
+        status, data = self.req('PUT', '/auth/email', 401, json={'email': 'new@example.com'})
+        self.token = old_token
+        print(f"  ✓ Change email without auth rejected (401)")
+
+    def test_auth_change_email_no_password(self):
+        """Test PUT /auth/email for password account without password returns 400"""
+        # Use email account token
+        old_token = self.token
+        self.token = self.email_token
+        
+        status, data = self.req('PUT', '/auth/email', 400, json={'email': 'newemail@example.com'})
+        assert 'password' in data.get('detail', '').lower(), "Should mention password required"
+        print(f"  ✓ Change email without password rejected: {data.get('detail')}")
+        
+        self.token = old_token
+
+    def test_auth_change_email_wrong_password(self):
+        """Test PUT /auth/email with wrong password returns 400"""
+        old_token = self.token
+        self.token = self.email_token
+        
+        status, data = self.req('PUT', '/auth/email', 400, json={'email': 'newemail@example.com', 'password': 'wrongpass'})
+        assert 'incorrect' in data.get('detail', '').lower(), "Should mention incorrect password"
+        print(f"  ✓ Change email with wrong password rejected: {data.get('detail')}")
+        
+        self.token = old_token
+
+    def test_auth_change_email_same_email(self):
+        """Test PUT /auth/email with same email returns 400"""
+        old_token = self.token
+        self.token = self.email_token
+        
+        status, data = self.req('PUT', '/auth/email', 400, json={'email': self.test_email, 'password': self.test_password})
+        assert 'already' in data.get('detail', '').lower(), "Should mention already your email"
+        print(f"  ✓ Change to same email rejected: {data.get('detail')}")
+        
+        self.token = old_token
+
+    def test_auth_change_email_duplicate(self):
+        """Test PUT /auth/email with email already used by another account returns 400"""
+        # Create another account
+        import random
+        other_email = f"other{int(time.time())}{random.randint(100,999)}@example.com"
+        status, data = self.req('POST', '/auth/register', 200, json={'email': other_email, 'password': 'secret123'})
+        
+        # Try to change email account to other_email
+        old_token = self.token
+        self.token = self.email_token
+        
+        status, data = self.req('PUT', '/auth/email', 400, json={'email': other_email, 'password': self.test_password})
+        assert 'already exists' in data.get('detail', '').lower() or 'already' in data.get('detail', '').lower(), "Should mention email already exists"
+        print(f"  ✓ Change to duplicate email rejected: {data.get('detail')}")
+        
+        self.token = old_token
+
+    def test_auth_change_email_valid(self):
+        """Test PUT /auth/email with valid data returns profile with new email"""
+        old_token = self.token
+        self.token = self.email_token
+        
+        import random
+        new_email = f"updated{int(time.time())}{random.randint(100,999)}@example.com"
+        status, data = self.req('PUT', '/auth/email', 200, json={'email': new_email, 'password': self.test_password})
+        assert data['email'] == new_email, f"Email not updated, expected {new_email}, got {data['email']}"
+        print(f"  ✓ Email changed successfully to {new_email}")
+        
+        # Update test_email for future tests
+        self.test_email = new_email
+        self.token = old_token
+
+    # ========== CHANGE PHONE TESTS (NEW) ==========
+    def test_auth_change_phone_duplicate(self):
+        """Test POST /auth/verify-phone with phone already linked to another account returns 400"""
+        # Use email account token and try to attach the phone account's phone
+        old_token = self.token
+        self.token = self.email_token
+        
+        # Request OTP for the phone account's phone
+        status, data = self.req('POST', '/auth/request-otp', 200, json={'phone': self.phone})
+        dev_code = data['dev_code']
+        
+        # Try to verify - should fail because phone is already linked to another account
+        status, data = self.req('POST', '/auth/verify-phone', 400, json={'phone': self.phone, 'code': dev_code})
+        assert 'already linked' in data.get('detail', '').lower() or 'another account' in data.get('detail', '').lower(), "Should mention already linked"
+        print(f"  ✓ Change to duplicate phone rejected: {data.get('detail')}")
+        
+        self.token = old_token
+
+    def test_auth_change_phone_valid(self):
+        """Test POST /auth/verify-phone with new phone updates the phone"""
+        # Use phone account token and change to a new phone
+        old_token = self.token
+        self.token = self.token  # phone account
+        
+        # Request OTP for a new phone
+        new_phone = f"+1999222{int(time.time()) % 10000:04d}"
+        status, data = self.req('POST', '/auth/request-otp', 200, json={'phone': new_phone})
+        dev_code = data['dev_code']
+        
+        # Verify and attach new phone
+        status, data = self.req('POST', '/auth/verify-phone', 200, json={'phone': new_phone, 'code': dev_code})
+        assert data['phone'] == new_phone, f"Phone not updated, expected {new_phone}, got {data['phone']}"
+        print(f"  ✓ Phone changed successfully to {new_phone}")
+        
+        # Update self.phone for future tests
+        self.phone = new_phone
+        self.token = old_token
+
     # ========== PROFILE TESTS ==========
     def test_profile_update_name_too_long(self):
         """Test PUT /profile with name > 30 chars returns 400"""
@@ -791,6 +904,18 @@ def main():
     tester.test("Auth: Verify phone (attach to email)", tester.test_auth_verify_phone)
     tester.test("Auth: GET /auth/me", tester.test_auth_me)
     tester.test("Auth: Bad token (401)", tester.test_auth_me_bad_token)
+    
+    # Change email tests (NEW)
+    tester.test("Auth: Change email without auth (401)", tester.test_auth_change_email_no_auth)
+    tester.test("Auth: Change email without password (400)", tester.test_auth_change_email_no_password)
+    tester.test("Auth: Change email wrong password (400)", tester.test_auth_change_email_wrong_password)
+    tester.test("Auth: Change email same email (400)", tester.test_auth_change_email_same_email)
+    tester.test("Auth: Change email duplicate (400)", tester.test_auth_change_email_duplicate)
+    tester.test("Auth: Change email valid", tester.test_auth_change_email_valid)
+    
+    # Change phone tests (NEW)
+    tester.test("Auth: Change phone duplicate (400)", tester.test_auth_change_phone_duplicate)
+    tester.test("Auth: Change phone valid", tester.test_auth_change_phone_valid)
     
     # Profile tests
     tester.test("Profile: Name > 30 chars", tester.test_profile_update_name_too_long)

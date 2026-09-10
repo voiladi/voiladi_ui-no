@@ -4,6 +4,7 @@ import secrets
 import uuid
 import logging
 from datetime import timedelta, datetime
+from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
@@ -236,6 +237,30 @@ async def verify_phone(body: VerifyIn, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="This number is already linked to another account")
     await _check_otp(phone, body.code)
     await db.users.update_one({"id": user["id"]}, {"$set": {"phone": phone, "phone_verified_at": now_iso(), "last_active": now_iso()}})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    return own_profile(fresh)
+
+
+class ChangeEmailIn(BaseModel):
+    email: str
+    password: Optional[str] = None
+
+
+@router.put("/email")
+async def change_email(body: ChangeEmailIn, user=Depends(get_current_user)):
+    """Settings > Account > Email. Accounts with a password must confirm it; phone-only accounts can just add/replace their email."""
+    email = normalize_email(body.email)
+    if user.get("password_hash"):
+        if not body.password:
+            raise HTTPException(status_code=400, detail="Enter your password to change your email")
+        if not verify_password(body.password, user.get("password_hash"), user.get("password_salt")):
+            raise HTTPException(status_code=400, detail="Incorrect password")
+    if email == (user.get("email") or ""):
+        raise HTTPException(status_code=400, detail="That's already your email")
+    other = await db.users.find_one({"email": email, "id": {"$ne": user["id"]}}, {"_id": 0, "id": 1})
+    if other:
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"email": email, "updated_at": now_iso(), "last_active": now_iso()}})
     fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     return own_profile(fresh)
 

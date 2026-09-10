@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp, ShieldCheck } from "lucide-react";
+import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -175,6 +175,14 @@ export default function Profile() {
               @{user.username}
             </p>
           )}
+          {!user.verified && (
+            <div>
+              <button type="button" onClick={() => navigate("/settings/verification")} className="mt-0.5 inline-flex items-center gap-0.5 text-[13px] leading-[16px] tracking-[-0.01em] text-mute active:opacity-60 focus-visible:outline-none" data-testid="profile-not-verified-link" data-status={vstatus}>
+                {vstatus === "pending" ? "Verification in review" : "Not verified"}
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.2} />
+              </button>
+            </div>
+          )}
           <SoftPill className="mt-2.5 h-[40px] px-5 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
             Edit profile
           </SoftPill>
@@ -188,30 +196,6 @@ export default function Profile() {
           </div>
         </div>
       </section>
-
-      {/* verification */}
-      {!user.verified && (
-        <section className="mx-4 mt-3.5">
-          <SoftCard as="button" type="button" className="flex w-full items-center gap-3.5 p-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/verify")} testId="profile-verify-card" data-status={vstatus}>
-            <span className="vo-soft-tile h-[50px] w-[50px] rounded-[16px]">
-              <ShieldCheck className="h-6 w-6" strokeWidth={1.8} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[17px] font-bold leading-[21px] tracking-[-0.01em] text-ink">
-                {vstatus === "pending" ? "Verification in review" : vstatus === "rejected" ? "Verification didn't go through" : "Verify your profile"}
-              </span>
-              <span className="mt-0.5 block text-[13.5px] leading-[18px] text-mute">
-                {vstatus === "pending" ? "We're checking your selfie - usually within a day." : vstatus === "rejected" ? "Take a clearer selfie and try again." : "Get the black tick and unlock messaging with a quick selfie."}
-              </span>
-            </span>
-            {vstatus === "pending" ? (
-              <span className="vo-soft inline-flex h-[32px] shrink-0 items-center rounded-full px-3 text-[13px] font-semibold text-mute">Pending</span>
-            ) : (
-              <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} />
-            )}
-          </SoftCard>
-        </section>
-      )}
 
       {/* profile completion */}
       <section className="mx-4 mt-3.5">

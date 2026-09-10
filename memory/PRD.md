@@ -75,3 +75,7 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Phase 19 (2026-09-10): Removed fit-to-canvas transform scaling; shell fully responsive (clamp/cqi units, flex scroll areas). iteration_18 100%. Deployed web.
 - Phase 20 (2026-09-10): Usernames (@handle) - unique, auto-generated for existing users, editable with live availability, shown on Profile/public profiles, searchable in Explore. Deployed.
 - Phase 21 (2026-09-10): Profile verification - live selfie -> human review at /admin/verify (ADMIN_API_KEY) -> black tick "Verified Profile"; unverified can't send messages. Deployed.
+- Phase 22 (2026-09-10): Verification moved out of Profile into Settings (IG "Meta Verified" style). Profile shows only a small grey "Not verified >" link under @username
+  -> /settings/verification (status card + how-it-works + Get verified -> /verify). Settings restyled to Soft UI with grouped sections; new ACCOUNT rows:
+  Email (/settings/email, PUT /api/auth/email - password accounts must confirm password), Phone (/settings/phone, request-otp + verify-phone), Verification.
+  New shared pieces: SoftPageHeader / SoftSectionLabel / SoftRow (SoftUI.jsx), lib/phone.js (splitPhone/formatPhone). Tests iteration_20 100%. NOT yet redeployed to Railway.

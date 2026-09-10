@@ -25,10 +25,10 @@ export const guessCountry = () => {
 /* Phone field as photographed: [flag +91 v] | number. `cc` is the dial code.
    The visible trigger is styled; a transparent native <select> sits on top so the picker is the OS-native one on
    phones (iOS wheel / Android sheet) and works reliably with keyboard + automation. */
-export const PhoneField = ({ cc, onCc, number, onNumber, onEnter, autoFocus = true, error = false }) => {
+export const PhoneField = ({ cc, onCc, number, onNumber, onEnter, autoFocus = true, error = false, className = "bg-surface" }) => {
   const iso = (COUNTRIES.find((c) => c[0] === cc) || COUNTRIES[0])[1];
   return (
-    <div className={`flex h-12 items-center rounded-[12px] bg-surface ${error ? "ring-1.5 ring-red" : ""}`} data-testid="auth-phone-field">
+    <div className={`flex h-12 items-center rounded-[12px] ${className} ${error ? "ring-1.5 ring-red" : ""}`} data-testid="auth-phone-field">
       <div className="relative flex h-12 shrink-0 items-center gap-1 rounded-l-[12px] px-3 text-[16px] font-medium text-ink" data-testid="auth-country-trigger">
         <span className="text-[18px] leading-none" aria-hidden="true">{flagOf(iso)}</span>
         <span data-testid="auth-country-code">{cc}</span>

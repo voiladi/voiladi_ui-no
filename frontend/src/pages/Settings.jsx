@@ -1,72 +1,85 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, User, Shield, Bell, SlidersHorizontal, Globe, Moon, CircleHelp, FileText, Info } from "lucide-react";
+import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, Moon, CircleHelp, FileText, Info, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
-import { ModalHeader } from "@/components/EmptyState";
+import { SoftPageHeader, SoftSectionLabel, SoftCard, SoftRow } from "@/components/SoftUI";
 import { ConfirmDialog } from "@/components/Dialogs";
+import { formatPhone } from "@/lib/phone";
 
-const Row = ({ icon: Icon, label, value, onClick, right, testId }) => {
-  const inner = (
-    <>
-      <Icon className="h-[22px] w-[22px] shrink-0 text-ink" strokeWidth={1.75} />
-      <span className="flex-1">{label}</span>
-      {value && <span className="text-[14px] font-normal text-mute">{value}</span>}
-      {right !== undefined ? right : <ChevronRight className="h-[18px] w-[18px] text-mute" strokeWidth={2} />}
-    </>
-  );
-  if (!onClick) {
-    return (
-      <div className="vo-row hover:bg-surface active:bg-surface" data-testid={testId}>
-        {inner}
-      </div>
-    );
-  }
-  return (
-    <button type="button" onClick={onClick} className="vo-row" data-testid={testId}>
-      {inner}
-    </button>
-  );
+/* Settings, Instagram-style grouped lists on the soft canvas. Account details (email / phone / verification) live at the top. */
+
+export const verificationLabel = (user) => {
+  if (user?.verified) return "Verified";
+  const s = user?.verification?.status || "none";
+  if (s === "pending") return "In review";
+  if (s === "rejected") return "Not approved";
+  return "Not verified";
 };
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { dark, setDark } = useTheme();
   const [confirm, setConfirm] = useState(false);
 
+  const verifiedValue = user?.verified ? (
+    <>
+      <span className="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full bg-ink text-onink" aria-hidden="true">
+        <Check className="h-[10px] w-[10px]" strokeWidth={3.4} />
+      </span>
+      Verified
+    </>
+  ) : (
+    verificationLabel(user)
+  );
+
   return (
-    <div className="flex min-h-full flex-col" data-testid="settings-page">
-      <ModalHeader
-        left={
-          <button type="button" className="-ml-2 flex items-center text-[16px] text-ink" onClick={() => navigate("/profile")} data-testid="settings-back-button">
-            <ChevronLeft className="h-5 w-5" strokeWidth={2} /> Back
-          </button>
-        }
-        title="Settings"
-      />
+    <div className="vo-neu-page flex min-h-full flex-col px-4 pb-10" data-testid="settings-page">
+      <SoftPageHeader title="Settings" onBack={() => navigate("/profile")} backTestId="settings-back-button" />
 
-      <div className="flex-1 space-y-4 px-4 pb-10 pt-2">
-        <div className="vo-card overflow-hidden">
-          <Row icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
-          <Row icon={Shield} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="settings-privacy-row" />
-          <Row icon={Bell} label="Notifications" onClick={() => navigate("/legal/notifications")} testId="settings-notifications-row" />
-          <Row icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="settings-preferences-row" />
-          <Row icon={Globe} label="Language" value="English" testId="settings-language-row" />
-          <Row icon={Moon} label="Dark Mode" right={<Switch checked={dark} onCheckedChange={setDark} aria-label="Dark mode" data-testid="settings-dark-mode-switch" className="data-[state=checked]:bg-ink" />} testId="settings-dark-mode-row" />
-        </div>
+      <div className="mt-3 space-y-5">
+        <section>
+          <SoftSectionLabel>Account</SoftSectionLabel>
+          <SoftCard className="overflow-hidden" testId="settings-account-card">
+            <SoftRow icon={Mail} label="Email" value={user?.email || "Add"} onClick={() => navigate("/settings/email")} testId="settings-email-row" />
+            <SoftRow icon={Phone} label="Phone" value={user?.phone ? formatPhone(user.phone) : "Add"} onClick={() => navigate("/settings/phone")} testId="settings-phone-row" />
+            <SoftRow icon={BadgeCheck} label="Verification" value={verifiedValue} onClick={() => navigate("/settings/verification")} testId="settings-verification-row" last />
+          </SoftCard>
+        </section>
 
-        <div className="vo-card overflow-hidden">
-          <Row icon={CircleHelp} label="Help & Support" onClick={() => navigate("/legal/help")} testId="settings-help-row" />
-          <Row icon={FileText} label="Terms of Service" onClick={() => navigate("/legal/terms")} testId="settings-terms-row" />
-          <Row icon={Info} label="About VOILADI" onClick={() => navigate("/legal/about")} testId="settings-about-row" />
-        </div>
+        <section>
+          <SoftSectionLabel>Profile</SoftSectionLabel>
+          <SoftCard className="overflow-hidden" testId="settings-profile-card">
+            <SoftRow icon={User} label="Edit profile" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
+            <SoftRow icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="settings-preferences-row" />
+            <SoftRow icon={Bell} label="Notifications" onClick={() => navigate("/legal/notifications")} testId="settings-notifications-row" />
+            <SoftRow icon={Lock} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="settings-privacy-row" last />
+          </SoftCard>
+        </section>
 
-        <div className="pt-6">
-          <button type="button" className="vo-card flex h-[52px] w-full items-center justify-center text-[15px] font-semibold text-red active:bg-surface2" onClick={() => setConfirm(true)} data-testid="profile-logout-button">
+        <section>
+          <SoftSectionLabel>App</SoftSectionLabel>
+          <SoftCard className="overflow-hidden" testId="settings-app-card">
+            <SoftRow icon={Globe} label="Language" value="English" testId="settings-language-row" />
+            <SoftRow icon={Moon} label="Dark Mode" right={<Switch checked={dark} onCheckedChange={setDark} aria-label="Dark mode" data-testid="settings-dark-mode-switch" className="data-[state=checked]:bg-ink" />} testId="settings-dark-mode-row" last />
+          </SoftCard>
+        </section>
+
+        <section>
+          <SoftSectionLabel>Support</SoftSectionLabel>
+          <SoftCard className="overflow-hidden" testId="settings-support-card">
+            <SoftRow icon={CircleHelp} label="Help & Support" onClick={() => navigate("/legal/help")} testId="settings-help-row" />
+            <SoftRow icon={FileText} label="Terms of Service" onClick={() => navigate("/legal/terms")} testId="settings-terms-row" />
+            <SoftRow icon={Info} label="About VOILADI" onClick={() => navigate("/legal/about")} testId="settings-about-row" last />
+          </SoftCard>
+        </section>
+
+        <div className="pt-2">
+          <SoftCard as="button" type="button" className="flex h-[54px] w-full items-center justify-center text-[17px] font-semibold text-red focus-visible:outline-none active:opacity-80" onClick={() => setConfirm(true)} testId="profile-logout-button">
             Log Out
-          </button>
+          </SoftCard>
         </div>
       </div>
 
