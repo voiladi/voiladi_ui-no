@@ -57,10 +57,19 @@
         --glass-edge: rgba(255, 255, 255, 0.5);
 
         /* soft UI (Likes / Messages reference): raised light surfaces on the canvas */
-        --soft-bg: #FAFAFB;
-        --soft-bg-2: #F3F3F5;
-        --soft-shadow: 0 10px 30px rgba(17, 17, 17, 0.05), 0 2px 8px rgba(17, 17, 17, 0.025);
-        --soft-shadow-lg: 0 24px 64px rgba(17, 17, 17, 0.06), 0 6px 18px rgba(17, 17, 17, 0.03);
+        /* neumorphism: light source top-left (white), shadow bottom-right (soft black) */
+        --neu-canvas: #F3F3F6;
+        --neu-surface: linear-gradient(145deg, #FDFDFE 0%, #F1F1F4 100%);
+        --neu-pill: linear-gradient(145deg, #FFFFFF 0%, #F7F7F9 100%);
+        --neu-light: rgba(255, 255, 255, 0.95);
+        --neu-dark: rgba(28, 28, 38, 0.10);
+        --soft-bg: #F8F8FA;
+        --soft-bg-2: #ECECF0;
+        --soft-shadow: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
+        --soft-shadow-btn: -8px -8px 18px var(--neu-light), 10px 10px 24px var(--neu-dark);
+        --soft-shadow-lg: -16px -16px 36px var(--neu-light), 20px 20px 48px var(--neu-dark);
+        --neu-inset: inset 5px 5px 12px rgba(28, 28, 38, 0.06), inset -5px -5px 12px rgba(255, 255, 255, 0.95);
+        --neu-seg-on: -3px -3px 8px rgba(255, 255, 255, 0.9), 4px 4px 12px rgba(28, 28, 38, 0.10);
         --soft-art-hi: #FFFFFF;
         --soft-art-lo: #EFEFF2;
         --soft-art-back-hi: #F6F6F8;
@@ -91,10 +100,18 @@
         --glass-press: rgba(255, 255, 255, 0.08);
         --glass-field: rgba(118, 118, 128, 0.24);
         --glass-edge: rgba(255, 255, 255, 0.12);
-        --soft-bg: #161618;
-        --soft-bg-2: #1F1F22;
-        --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
-        --soft-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.35);
+        --neu-canvas: #131315;
+        --neu-surface: linear-gradient(145deg, #202024 0%, #151517 100%);
+        --neu-pill: linear-gradient(145deg, #2A2A2E 0%, #1E1E22 100%);
+        --neu-light: rgba(255, 255, 255, 0.04);
+        --neu-dark: rgba(0, 0, 0, 0.65);
+        --soft-bg: #1A1A1D;
+        --soft-bg-2: #0F0F11;
+        --soft-shadow: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
+        --soft-shadow-btn: -8px -8px 18px var(--neu-light), 10px 10px 24px var(--neu-dark);
+        --soft-shadow-lg: -16px -16px 36px var(--neu-light), 20px 20px 48px var(--neu-dark);
+        --neu-inset: inset 5px 5px 12px rgba(0, 0, 0, 0.6), inset -5px -5px 12px rgba(255, 255, 255, 0.03);
+        --neu-seg-on: -3px -3px 8px rgba(255, 255, 255, 0.03), 4px 4px 12px rgba(0, 0, 0, 0.6);
         --soft-art-hi: #2E2E31;
         --soft-art-lo: #1E1E21;
         --soft-art-back-hi: #262629;
@@ -136,7 +153,8 @@
     body {
         pointer-events: auto !important;
         margin: 0;
-        font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Helvetica Neue", Arial, sans-serif;
+        font-optical-sizing: auto;
         font-size: 15px;
         line-height: 1.45;
         letter-spacing: -0.005em;
@@ -760,20 +778,24 @@
     }
 
     /* ---------- soft UI (Likes / Messages) ---------- */
+    .vo-neu-page {
+        background: var(--neu-canvas);
+    }
+
     .vo-soft {
-        background: var(--soft-bg);
+        background: var(--neu-surface);
         box-shadow: var(--soft-shadow);
     }
 
     .vo-soft-lg {
-        background: var(--soft-bg);
+        background: var(--neu-surface);
         box-shadow: var(--soft-shadow-lg);
     }
 
     /* round 44px icon button, raised */
     .vo-soft-icon {
         @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40;
-        background: var(--soft-bg);
+        background: var(--neu-surface);
         box-shadow: var(--soft-shadow);
         transition-property: transform, opacity;
         transition-duration: 150ms;
@@ -788,8 +810,8 @@
     .vo-soft-btn {
         @apply inline-flex h-[54px] w-full items-center justify-center gap-3 rounded-full px-6 text-[18px] font-semibold text-ink select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
         letter-spacing: -0.01em;
-        background: var(--soft-bg);
-        box-shadow: var(--soft-shadow);
+        background: var(--neu-surface);
+        box-shadow: var(--soft-shadow-btn);
         transition-property: transform, opacity;
         transition-duration: 150ms;
         transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -803,7 +825,7 @@
     /* list row as a raised card */
     .vo-soft-row {
         @apply flex w-full items-center gap-3.5 rounded-[22px] p-3 text-left focus-visible:outline-none;
-        background: var(--soft-bg);
+        background: var(--neu-surface);
         box-shadow: var(--soft-shadow);
         transition-property: transform, opacity;
         transition-duration: 150ms;
@@ -818,6 +840,7 @@
     .vo-seg-lg {
         padding: 4px;
         background: var(--soft-bg-2);
+        box-shadow: var(--neu-inset);
     }
 
     .vo-seg-lg .vo-seg-item {
@@ -827,13 +850,14 @@
     }
 
     .vo-seg-lg .vo-seg-on {
-        box-shadow: 0 4px 14px rgba(17, 17, 17, 0.06), 0 1px 3px rgba(17, 17, 17, 0.04);
+        background: var(--neu-pill);
+        box-shadow: var(--neu-seg-on);
     }
 
     /* floating bottom nav */
     .vo-float-nav {
-        background: var(--soft-bg);
-        box-shadow: var(--soft-shadow-lg);
+        background: var(--neu-surface);
+        box-shadow: -10px -10px 24px var(--neu-light), 12px 12px 32px var(--neu-dark);
     }
 
     /* ---------- misc ---------- */

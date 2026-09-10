@@ -61,7 +61,7 @@ export default function Chats() {
   }[tab];
 
   return (
-    <div className="flex min-h-full flex-col bg-canvas" style={{ paddingBottom: NAV_PAD }} data-testid="chats-page">
+    <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: NAV_PAD }} data-testid="chats-page">
       <header className="px-5 pt-1">
         <SoftHeader
           right={

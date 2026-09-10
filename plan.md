@@ -226,7 +226,9 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Likes: "..." menu (Newest/Oldest, Super Likes only), heart-count pill, tabs, raised rows, empty card + "Explore people" -> /explore.
 - BottomNav floating (inset 12px, 68px, raised) on all tabs; Discover/Explore/Profile paddings updated. Tests iteration_16 100%.
 - Pass 2 (user: 'not same, box line, glass effect'): removed all 1px inset highlights (they aliased into a dashed line under fit-scale), widened SVG filter regions
-  (shadow was clipping to a rectangle = the 'box'), wider/softer neumorphic shadows, CardsArt -> SVG, 34px card radius, 22px title, art 220x198. Deployed web.
+  (shadow was clipping to a rectangle = the 'box'), wider/softer neumorphic shadows, CardsArt -> SVG, 34px card radius, 22px title, art 220x198.
+- Pass 3 (user: 'iPhone glass effect, white + shades of black, fonts'): true neumorphism tokens (--neu-*: top-left white light, bottom-right dark shadow,
+  gradient surfaces, inset segment track, bevelled SVG art). Font stack now -apple-system/SF Pro first (real SF on iPhone), Inter variable w/ opsz for Android. Deployed web.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.

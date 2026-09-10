@@ -65,12 +65,14 @@ export const BubblesArt = () => (
         <stop offset="0" style={{ stopColor: "var(--soft-art-back-hi)" }} />
         <stop offset="1" style={{ stopColor: "var(--soft-art-back-lo)" }} />
       </linearGradient>
-      <filter id="vo-bub-shadow" x="-60%" y="-60%" width="220%" height="240%" colorInterpolationFilters="sRGB">
-        <feDropShadow dx="0" dy="12" stdDeviation="10" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.10" />
-        <feDropShadow dx="0" dy="2" stdDeviation="2" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.04" />
+      <filter id="vo-bub-shadow" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
+        <feDropShadow dx="-7" dy="-7" stdDeviation="7" floodColor="#ffffff" floodOpacity="1" />
+        <feDropShadow dx="12" dy="14" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.14" />
+        <feDropShadow dx="3" dy="4" stdDeviation="3" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.05" />
       </filter>
-      <filter id="vo-bub-shadow-soft" x="-60%" y="-60%" width="220%" height="240%" colorInterpolationFilters="sRGB">
-        <feDropShadow dx="0" dy="8" stdDeviation="8" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.06" />
+      <filter id="vo-bub-shadow-soft" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
+        <feDropShadow dx="-5" dy="-5" stdDeviation="6" floodColor="#ffffff" floodOpacity="0.9" />
+        <feDropShadow dx="8" dy="10" stdDeviation="10" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.09" />
       </filter>
     </defs>
     {/* back bubble (upper right), tail bottom-right */}
@@ -79,7 +81,7 @@ export const BubblesArt = () => (
     </g>
     {/* front bubble (lower left), tail bottom-left */}
     <g filter="url(#vo-bub-shadow)">
-      <path d="M78 54C115 54 144 78 144 108C144 138 115 162 78 162C66 162 55 160 45 155L24 170L34 148C20 138 12 124 12 108C12 78 41 54 78 54Z" fill="url(#vo-bub-front)" />
+      <path d="M78 54C115 54 144 78 144 108C144 138 115 162 78 162C66 162 55 160 45 155L24 170L34 148C20 138 12 124 12 108C12 78 41 54 78 54Z" fill="url(#vo-bub-front)" stroke="#ffffff" strokeOpacity="0.8" strokeWidth="1.2" />
     </g>
     <circle cx="58" cy="108" r="6" fill="var(--soft-art-dot)" />
     <circle cx="78" cy="108" r="6" fill="var(--soft-art-dot)" />
@@ -103,19 +105,21 @@ export const CardsArt = () => (
         <stop offset="0" stopColor="#B4B4B9" />
         <stop offset="1" stopColor="#6F6F74" />
       </linearGradient>
-      <filter id="vo-card-shadow" x="-60%" y="-60%" width="220%" height="240%" colorInterpolationFilters="sRGB">
-        <feDropShadow dx="0" dy="12" stdDeviation="10" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.10" />
-        <feDropShadow dx="0" dy="2" stdDeviation="2" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.04" />
+      <filter id="vo-card-shadow" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
+        <feDropShadow dx="-7" dy="-7" stdDeviation="7" floodColor="#ffffff" floodOpacity="1" />
+        <feDropShadow dx="12" dy="14" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.14" />
+        <feDropShadow dx="3" dy="4" stdDeviation="3" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.05" />
       </filter>
-      <filter id="vo-card-shadow-soft" x="-60%" y="-60%" width="220%" height="240%" colorInterpolationFilters="sRGB">
-        <feDropShadow dx="0" dy="8" stdDeviation="8" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.06" />
+      <filter id="vo-card-shadow-soft" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
+        <feDropShadow dx="-5" dy="-5" stdDeviation="6" floodColor="#ffffff" floodOpacity="0.9" />
+        <feDropShadow dx="8" dy="10" stdDeviation="10" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.09" />
       </filter>
     </defs>
     <g filter="url(#vo-card-shadow-soft)" transform="rotate(-14 84 76)">
       <rect x="26" y="18" width="116" height="116" rx="26" fill="url(#vo-card-back)" />
     </g>
     <g filter="url(#vo-card-shadow)" transform="rotate(6 112 100)">
-      <rect x="50" y="38" width="124" height="124" rx="28" fill="url(#vo-card-front)" />
+      <rect x="50" y="38" width="124" height="124" rx="28" fill="url(#vo-card-front)" stroke="#ffffff" strokeOpacity="0.8" strokeWidth="1.2" />
       <g transform="translate(112 100) scale(2.4) translate(-12 -11)">
         <path d="M12 21s-1.2-.9-2.8-2.2C5.2 15.5 1 12.2 1 7.6 1 4.4 3.5 2 6.6 2c1.9 0 3.7.9 4.9 2.4L12 5l.5-.6C13.7 2.9 15.5 2 17.4 2 20.5 2 23 4.4 23 7.6c0 4.6-4.2 7.9-8.2 11.2C13.2 20.1 12 21 12 21z" fill="url(#vo-heart-grad)" />
       </g>

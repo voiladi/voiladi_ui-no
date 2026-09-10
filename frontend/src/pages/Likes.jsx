@@ -111,7 +111,7 @@ export default function Likes() {
   const isReceived = sheet?.direction === "received";
 
   return (
-    <div className="flex min-h-full flex-col bg-canvas" style={{ paddingBottom: NAV_PAD }} data-testid="likes-page">
+    <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: NAV_PAD }} data-testid="likes-page">
       <header className="px-5 pt-1">
         <SoftHeader
           right={
