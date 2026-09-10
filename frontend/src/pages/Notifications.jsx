@@ -113,7 +113,7 @@ export default function Notifications() {
         <h1 className="text-[28px] font-bold leading-none tracking-[-0.02em] text-ink">Notifications</h1>
       </header>
 
-      <Segmented options={TABS} value={tab} onChange={setTab} render={(k) => TAB_LABEL[k]} testIdPrefix="notifications-tab" className="mt-3 [&>button]:px-0 [&>button]:text-[13.5px]" />
+      <Segmented options={TABS} value={tab} onChange={setTab} render={(k) => TAB_LABEL[k]} testIdPrefix="notifications-tab" fit className="mt-3 vo-seg-lg" />
 
       {isLoading ? (
         <div className="vo-pcard mt-6 px-3">

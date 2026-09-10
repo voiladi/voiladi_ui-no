@@ -444,6 +444,23 @@
         transition-duration: 150ms;
     }
 
+    /*
+     * Content-fit variant (many / uneven labels, e.g. Notifications): items size to their text and the leftover
+     * space is shared equally, so every label gets the same breathing room instead of equal-width columns.
+     */
+    .vo-seg-fit {
+        display: flex;
+    }
+
+    .vo-seg-fit .vo-seg-item,
+    .vo-seg-lg.vo-seg-fit .vo-seg-item {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 0 10px;
+        white-space: nowrap;
+        font-size: clamp(13px, 3.8cqi, 15.5px);
+    }
+
     .vo-seg-on {
         @apply bg-bg text-ink font-semibold shadow-seg;
     }

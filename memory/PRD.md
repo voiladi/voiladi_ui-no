@@ -79,3 +79,4 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   -> /settings/verification (status card + how-it-works + Get verified -> /verify). Settings restyled to Soft UI with grouped sections; new ACCOUNT rows:
   Email (/settings/email, PUT /api/auth/email - password accounts must confirm password), Phone (/settings/phone, request-otp + verify-phone), Verification.
   New shared pieces: SoftPageHeader / SoftSectionLabel / SoftRow (SoftUI.jsx), lib/phone.js (splitPhone/formatPhone). Tests iteration_20 100%. Deployed to Railway 2026-09-10 11:55 UTC (api + web).
+- 2026-09-10 13:24 UTC: Notifications tabs - Segmented gained `fit` prop (.vo-seg-fit: flex, items size to text, leftover space shared equally -> equal gaps between labels); Notifications uses fit + vo-seg-lg. Deployed web.

@@ -14,8 +14,13 @@ export const Tag = ({ children, tone = "surface", className = "" }) => {
 };
 
 /* Segmented control. `dark` = active segment is ink (Filters "Show me"); default = white pill with shadow (Likes tabs). */
-export const Segmented = ({ options, value, onChange, render, testIdPrefix = "segment", dark = false, className = "" }) => (
-  <div className={`vo-seg ${className}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} role="tablist">
+export const Segmented = ({ options, value, onChange, render, testIdPrefix = "segment", dark = false, fit = false, className = "" }) => (
+  <div
+    className={`vo-seg ${fit ? "vo-seg-fit" : ""} ${className}`}
+    style={fit ? undefined : { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    role="tablist"
+    data-testid={`${testIdPrefix}-track`}
+  >
     {options.map((o) => {
       const key = typeof o === "string" ? o : o.value;
       const label = render ? render(o) : typeof o === "string" ? o : o.label;
