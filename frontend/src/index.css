@@ -226,6 +226,7 @@
     /* ---------- shell ---------- */
     .vo-backdrop {
         position: relative;
+        height: 100vh;
         height: 100dvh;
         overflow: hidden;
         background: var(--bg);
@@ -237,16 +238,21 @@
         }
     }
 
+    /* Responsive shell: full device width (max 430px), full dynamic height, screens scroll inside .vo-scroll.
+       It is an inline-size container so type and spacing can use cqi (percent of the shell width) via clamp(). */
     .vo-shell {
         position: relative;
         margin: 0 auto;
         width: 100%;
         max-width: 430px;
+        height: 100vh;
         height: 100dvh;
         display: flex;
         flex-direction: column;
         background: var(--bg);
         overflow: hidden;
+        container-type: inline-size;
+        container-name: shell;
     }
 
     @media (min-width: 1024px) {

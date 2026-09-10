@@ -62,7 +62,7 @@ export default function Chats() {
 
   return (
     <div className={`vo-neu-page flex flex-col ${rows.length ? "min-h-full" : "h-full"}`} style={{ paddingBottom: NAV_PAD }} data-testid="chats-page">
-      <header className="shrink-0 px-5 pt-1">
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
         <SoftHeader
           right={
             <>
@@ -94,7 +94,7 @@ export default function Chats() {
           <SoftEmpty art={<BubblesArt />} title={empty.title} description={empty.description} actionIcon={Search} actionLabel="Find people" onAction={() => navigate("/explore")} actionTestId="chats-find-people-button" footer={empty.footer} />
         )
       ) : (
-        <ul className="mt-5 flex flex-col gap-3 px-5" data-testid="chats-list">
+        <ul className="mt-5 flex flex-col gap-3 px-[clamp(14px,5cqi,20px)]" data-testid="chats-list">
           {rows.map((m, i) => (
             <motion.li key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)}>
               <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-soft-row" data-testid="chats-list-row">

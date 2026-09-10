@@ -91,7 +91,7 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen }, ref) => {
         data-testid="discover-card-open-profile"
       >
         <span className="flex items-center gap-2">
-          <h2 className="text-[28px] font-bold leading-[32px] tracking-[-0.02em]" data-testid="discover-card-name">
+          <h2 className="text-[clamp(23px,7cqi,28px)] font-bold leading-[1.15] tracking-[-0.02em]" data-testid="discover-card-name">
             {profile.name}
             {profile.age ? `, ${profile.age}` : ""}
           </h2>

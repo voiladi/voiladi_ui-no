@@ -59,7 +59,7 @@ const TopicTile = ({ topic, onOpen, testId = "explore-topic-tile", className = "
     )}
     <span className="vo-tile-fade absolute inset-x-0 bottom-0 h-[70%]" />
     <span className="absolute inset-x-3.5 bottom-3 text-white">
-      <span className="block truncate text-[20px] font-bold leading-[24px] tracking-[-0.01em]">{topic.name}</span>
+      <span className="block truncate text-[clamp(16px,5cqi,20px)] font-bold leading-[1.2] tracking-[-0.01em]">{topic.name}</span>
       <span className="block text-[13px] leading-[17px] text-white/90" data-testid={`${testId}-members`}>
         {topic.members_label}
       </span>
@@ -73,11 +73,11 @@ const PersonRow = ({ p, sub, onOpen, onFollow, followed, last = false, testId = 
     <button type="button" className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none" onClick={() => onOpen(p)} data-testid={`${testId}-open`}>
       <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[18px] font-bold leading-[22px] tracking-[-0.01em] text-ink">{p.name}</span>
+        <span className="block truncate text-[clamp(16px,4.6cqi,18px)] font-bold leading-[1.22] tracking-[-0.01em] text-ink">{p.name}</span>
         <span className="mt-0.5 block truncate text-[15px] leading-[19px] text-mute">{sub}</span>
       </span>
     </button>
-    <SoftPill active={followed} onClick={() => !followed && onFollow(p)} testId={`${testId}-follow`} aria-pressed={followed} className="h-[44px] min-w-[112px] px-5">
+    <SoftPill active={followed} onClick={() => !followed && onFollow(p)} testId={`${testId}-follow`} aria-pressed={followed} className="h-[44px] min-w-[clamp(92px,27cqi,112px)] px-[clamp(14px,4cqi,20px)] text-[clamp(15px,4.3cqi,17px)]">
       {followed ? "Following" : "Follow"}
     </SoftPill>
   </div>
@@ -231,7 +231,7 @@ export default function Explore() {
 
   return (
     <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: NAV_PAD }} data-testid="explore-page">
-      <header className="shrink-0 px-5 pt-1">
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
         <SoftHeader
           right={
             <>
@@ -247,7 +247,7 @@ export default function Explore() {
         {!s && <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="explore-tab" className="mt-4" />}
       </header>
 
-      <div className="mt-4 flex flex-col gap-4 px-5">
+      <div className="mt-4 flex flex-col gap-4 px-[clamp(14px,5cqi,20px)]">
         {s ? (
           <>
             {searchTopics.length > 0 && (
@@ -310,7 +310,7 @@ export default function Explore() {
             {/* Popular interests */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, 0.1)} data-testid="explore-popular">
               <SectionHead title="Popular interests" action="See all" onAction={() => setTab("topics")} actionTestId="explore-popular-see-all" />
-              <div className="no-scrollbar -mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-2">
+              <div className="no-scrollbar -mx-[clamp(14px,5cqi,20px)] mt-3 flex gap-3 overflow-x-auto px-[clamp(14px,5cqi,20px)] pb-2">
                 {topics.isLoading
                   ? [0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[44px] w-24 shrink-0 rounded-full" />)
                   : (topics.data?.popular || []).map((t) => (

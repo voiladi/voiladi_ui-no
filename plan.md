@@ -246,6 +246,13 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - BottomNav pass: iPhone look (solid front square Discover icon, black bold active, grey outline idle, white pill w/ soft shadow) +
   liquid-glass lens (fades in, glides on tap, press-hold-drag with lift/haptics, snap navigates). Deployed web.
 
+## Phase 19 — Fully responsive shell (no transform scaling) (P0) — COMPLETED 2026-09-10
+- Deleted hooks/useFitScale.js; AppShell renders .vo-shell with no inline style/transform. Shell = 100% width (max 430), 100dvh, flex column,
+  container-type: inline-size so type/gutters use clamp(min, Ncqi, max). Screens scroll inside #vo-main.
+- SoftTitle / SectionHead / SoftEmpty / Profile name+stats / Discover caption + actions / Explore tiles use clamp(); Discover deck min-h 320 + flex-1,
+  page min-h-full (scrolls on short phones). GlassSegmented/BottomNav no longer read data-fit-scale.
+- Verified 0 horizontal overflow on 9 routes x 320/360/393/412/430/1280 widths. Tests iteration_18 100%. Deployed web.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

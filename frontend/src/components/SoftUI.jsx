@@ -10,7 +10,7 @@ import { rise } from "@/lib/motion";
 
 /* Header: 40px brand tile + wordmark on the left, round raised icon buttons on the right. */
 export const SoftHeader = ({ right }) => (
-  <div className="flex h-[56px] items-center justify-between">
+  <div className="flex h-[clamp(48px,14cqi,56px)] items-center justify-between">
     <Brand size={40} />
     {right && <div className="flex items-center gap-3">{right}</div>}
   </div>
@@ -26,10 +26,10 @@ export const SoftIconButton = ({ icon: Icon, label, onClick, testId, active = fa
 export const SoftTitle = ({ title, subtitle, right, testId }) => (
   <div className="mt-2 flex items-center justify-between gap-3">
     <div className="min-w-0">
-      <h1 className="text-[34px] font-bold leading-[38px] tracking-[-0.025em] text-ink" data-testid={testId}>
+      <h1 className="text-[clamp(27px,8.6cqi,34px)] font-bold leading-[1.12] tracking-[-0.025em] text-ink" data-testid={testId}>
         {title}
       </h1>
-      <p className="mt-1 text-[17px] leading-[22px] tracking-[-0.01em] text-mute">{subtitle}</p>
+      <p className="mt-1 text-[clamp(14px,4.3cqi,17px)] leading-[1.3] tracking-[-0.01em] text-mute">{subtitle}</p>
     </div>
     {right}
   </div>
@@ -41,12 +41,12 @@ export const SoftTitle = ({ title, subtitle, right, testId }) => (
  * clamp(...dvh) so the whole screen fits any phone height without scrolling.
  */
 export const SoftEmpty = ({ art, title, description, actionIcon: ActionIcon, actionLabel, onAction, footer, actionTestId, testId = "empty-state" }) => (
-  <motion.section {...rise} className="vo-soft-lg mx-5 mt-4 flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-[34px] px-5 py-[clamp(18px,3.4dvh,32px)] text-center" data-testid={testId}>
+  <motion.section {...rise} className="vo-soft-lg mx-[clamp(14px,5cqi,20px)] mt-4 flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-[34px] px-5 py-[clamp(18px,3.4dvh,32px)] text-center" data-testid={testId}>
     <div className="relative w-auto" style={{ flex: "0 1 198px", minHeight: 92, aspectRatio: "200 / 180" }} aria-hidden="true">
       {art}
     </div>
-    <h2 className="mt-[clamp(12px,3.2dvh,28px)] shrink-0 text-[22px] font-bold leading-[28px] tracking-[-0.02em] text-ink">{title}</h2>
-    <p className="mt-1.5 max-w-[280px] shrink-0 text-[17px] leading-[23px] tracking-[-0.01em] text-mute">{description}</p>
+    <h2 className="mt-[clamp(12px,3.2dvh,28px)] shrink-0 text-[clamp(19px,5.6cqi,22px)] font-bold leading-[1.27] tracking-[-0.02em] text-ink">{title}</h2>
+    <p className="mt-1.5 max-w-[280px] shrink-0 text-[clamp(15px,4.3cqi,17px)] leading-[1.35] tracking-[-0.01em] text-mute">{description}</p>
     {actionLabel && (
       <button type="button" className="vo-soft-btn mt-[clamp(14px,3.6dvh,32px)] max-w-[330px] shrink-0" onClick={onAction} data-testid={actionTestId}>
         {ActionIcon && <ActionIcon className="h-6 w-6" strokeWidth={2.2} />}
@@ -67,7 +67,7 @@ export const SoftCard = ({ className = "", children, testId, as: Tag = "section"
 /* "Trending now ........ See all" */
 export const SectionHead = ({ title, action, onAction, actionTestId, className = "" }) => (
   <div className={`flex items-center justify-between ${className}`}>
-    <h2 className="text-[22px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{title}</h2>
+    <h2 className="text-[clamp(19px,5.6cqi,22px)] font-bold leading-[1.2] tracking-[-0.02em] text-ink">{title}</h2>
     {action && (
       <button type="button" className="text-[15px] font-medium text-mute active:opacity-60" onClick={onAction} data-testid={actionTestId}>
         {action}

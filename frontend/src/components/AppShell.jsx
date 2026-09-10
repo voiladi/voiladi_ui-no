@@ -6,7 +6,6 @@ import { FeedbackLayer } from "@/components/Feedback";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { useFitScale, shellStyle } from "@/hooks/useFitScale";
 import { OfflineBanner } from "@/components/Offline";
 
 /* Tap-to-open banners for realtime events (new match, new message). */
@@ -98,17 +97,18 @@ class ScreenErrorBoundary extends React.Component {
  */
 const TAB_PATHS = ["/discover", "/explore", "/likes", "/chats", "/profile"];
 const isTab = (path) => TAB_PATHS.includes(path);
-/* Tab screens stretch/scroll to the device height: scale by width only (see useFitScale). */
-const FLUID_PATHS = TAB_PATHS;
 
 export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const tab = isTab(pathname);
-  const fit = useFitScale(FLUID_PATHS.includes(pathname));
+  /*
+   * Fully responsive shell: fills the device width (max 430px, centred on wide screens) and the full dynamic viewport
+   * height; each screen lays itself out with flex/grid and scrolls inside <main>. No transform scaling.
+   */
   return (
     <div className="vo-backdrop">
-      <div className="vo-shell" style={shellStyle(fit)} data-fit-scale={fit.scale} data-testid="app-shell">
+      <div className="vo-shell" data-testid="app-shell">
         <main key={pathname} className={`vo-scroll relative ${tab ? "vo-page-fade" : "vo-page-push"}`} id="vo-main">
           <ScreenErrorBoundary key={pathname}>
             <Outlet />

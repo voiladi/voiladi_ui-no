@@ -13,12 +13,6 @@ const PAD = 4; // track padding (matches .vo-seg-lg)
 const SNAP = { type: "spring", stiffness: 520, damping: 40, mass: 0.9 };
 const JELLY = { type: "spring", stiffness: 420, damping: 16, mass: 0.8 };
 
-const shellScale = () => {
-  const el = typeof document !== "undefined" ? document.querySelector("[data-fit-scale]") : null;
-  const s = el ? parseFloat(el.getAttribute("data-fit-scale")) : 1;
-  return Number.isFinite(s) && s > 0 ? s : 1;
-};
-
 const haptic = () => {
   try {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(6);
@@ -80,8 +74,7 @@ export const GlassSegmented = ({ options, value, onChange, testIdPrefix = "segme
     if (!segW || e.button > 0) return;
     const el = trackRef.current;
     el.setPointerCapture?.(e.pointerId);
-    const s = shellScale();
-    drag.current = { id: e.pointerId, startX: e.clientX, startPill: x.get(), scale: s, moved: false };
+    drag.current = { id: e.pointerId, startX: e.clientX, startPill: x.get(), scale: 1, moved: false };
     setLifted(true);
     animate(scale, 1.08, { type: "spring", stiffness: 500, damping: 30 });
     haptic();

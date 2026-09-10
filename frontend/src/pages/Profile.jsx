@@ -14,11 +14,11 @@ import { Skeleton } from "@/components/Loading";
 /* ---------- profile screen, transcribed from the neumorphic reference (393 x 852 canvas) ---------- */
 
 const Stat = ({ label, value, testId }) => (
-  <div className="flex min-w-0 flex-1 flex-col items-center">
-    <span className="flex h-[24px] items-center text-[20px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
+  <div className="flex min-w-0 flex-1 flex-col items-center px-0.5">
+    <span className="flex h-[24px] items-center text-[clamp(17px,5cqi,20px)] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
       {value ?? <Skeleton className="h-4 w-7 rounded-full" />}
     </span>
-    <span className="mt-1 whitespace-nowrap text-[13px] leading-none text-mute">{label}</span>
+    <span className="mt-1 text-center text-[clamp(11px,3.3cqi,13px)] leading-[1.1] text-mute">{label}</span>
   </div>
 );
 
@@ -153,16 +153,16 @@ export default function Profile() {
       </header>
 
       {/* avatar + name / edit / stats */}
-      <section className="mt-3 flex items-start gap-4 px-4" data-testid="profile-summary-card">
-        <button type="button" className="vo-soft relative flex h-[96px] w-[96px] shrink-0 items-center justify-center rounded-full" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
-          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[76px] w-[76px] rounded-[22px] text-[30px]" />
+      <section className="mt-3 flex items-start gap-[clamp(12px,4cqi,16px)] px-4" data-testid="profile-summary-card">
+        <button type="button" className="vo-soft relative flex h-[clamp(84px,24cqi,96px)] w-[clamp(84px,24cqi,96px)] shrink-0 items-center justify-center rounded-full" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
+          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[79%] w-[79%] rounded-[22px] text-[30px]" />
           <span className="vo-soft absolute -bottom-0.5 right-0 flex h-[34px] w-[34px] items-center justify-center rounded-full text-ink">
             <Camera className="h-4 w-4" strokeWidth={2} />
           </span>
         </button>
 
         <div className="min-w-0 flex-1 pt-1">
-          <h1 className="truncate text-[28px] font-bold leading-[32px] tracking-[-0.02em] text-ink" data-testid="profile-name">
+          <h1 className="truncate text-[clamp(23px,7cqi,28px)] font-bold leading-[1.15] tracking-[-0.02em] text-ink" data-testid="profile-name">
             {user.name}
           </h1>
           <SoftPill className="mt-2 h-[40px] px-5 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
@@ -184,7 +184,7 @@ export default function Profile() {
         <SoftCard as="button" type="button" className="w-full px-4 py-3 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="profile-completion-card">
           <span className="block text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-mute">Profile completion</span>
           <div className="mt-2.5 flex items-center justify-between gap-3">
-            <span className="truncate text-[21px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{complete ? "Your profile is complete" : "You're almost there"}</span>
+            <span className="min-w-0 text-[clamp(18px,5.3cqi,21px)] font-bold leading-[1.2] tracking-[-0.02em] text-ink">{complete ? "Your profile is complete" : "You're almost there"}</span>
             <span className="vo-soft flex h-[38px] shrink-0 items-center gap-1.5 rounded-full pl-3.5 pr-2.5">
               <span className="text-[19px] font-bold leading-none tracking-[-0.02em] text-ink" data-testid="profile-strength">
                 {pct}%

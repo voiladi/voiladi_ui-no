@@ -171,15 +171,16 @@ export default function Discover() {
   };
 
   return (
-    <div className="vo-neu-page flex h-full flex-col" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))" }} data-testid="discover-page">
+    <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))" }} data-testid="discover-page">
       <header className="shrink-0 px-5 pt-1">
         <SoftHeader right={<SoftIconButton icon={SlidersHorizontal} label="Filters" onClick={() => navigate("/filters")} testId="filters-open-button" />} />
         <SoftTitle title="Discover" subtitle="Find people who vibe with you" testId="discover-title" />
       </header>
 
       {/* photo card + the three round actions live on one raised surface */}
-      <SoftCard className="mx-4 mt-4 flex min-h-0 flex-1 flex-col p-2.5 pb-4" testId="discover-deck">
-        <div className="relative min-h-0 flex-1" data-testid="discover-card-stack">
+      <SoftCard className="mx-[clamp(12px,4cqi,16px)] mt-4 flex min-h-0 flex-1 flex-col p-2.5 pb-4" testId="discover-deck">
+        {/* the photo grows to fill the room between title and actions; never shorter than 320px (page scrolls instead) */}
+        <div className="relative min-h-[320px] flex-1" data-testid="discover-card-stack">
           {loading && queue.length === 0 ? (
             <Skeleton className="absolute inset-0 rounded-[26px]" />
           ) : error ? (
@@ -194,21 +195,21 @@ export default function Discover() {
           )}
         </div>
 
-        <div className="mt-4 flex shrink-0 items-center justify-center gap-[34px]" data-testid="discover-action-dock">
-          <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Pass" data-testid="discover-pass-button">
+        <div className="mt-4 flex shrink-0 items-center justify-center gap-[clamp(18px,8cqi,34px)]" data-testid="discover-action-dock">
+          <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-soft-round h-[clamp(62px,18cqi,76px)] w-[clamp(62px,18cqi,76px)]" aria-label="Pass" data-testid="discover-pass-button">
             <X className="h-8 w-8" strokeWidth={2.4} />
           </button>
-          <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Like" data-testid="discover-like-button">
+          <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-soft-round h-[clamp(62px,18cqi,76px)] w-[clamp(62px,18cqi,76px)]" aria-label="Like" data-testid="discover-like-button">
             <Heart className="h-[34px] w-[34px]" fill="currentColor" strokeWidth={2} />
           </button>
-          <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Super Like" data-testid="discover-voila-button">
+          <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-soft-round h-[clamp(62px,18cqi,76px)] w-[clamp(62px,18cqi,76px)]" aria-label="Super Like" data-testid="discover-voila-button">
             <Star className="h-8 w-8" strokeWidth={2.2} />
           </button>
         </div>
       </SoftCard>
 
       {tipCard && (
-        <SoftCard as="button" type="button" className="mx-4 mt-4 flex shrink-0 items-center gap-4 p-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="discover-tip-card">
+        <SoftCard as="button" type="button" className="mx-[clamp(12px,4cqi,16px)] mt-4 flex shrink-0 items-center gap-4 p-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="discover-tip-card">
           <span className="vo-soft-tile h-[60px] w-[60px] rounded-[18px]">
             <Sparkles className="h-7 w-7" strokeWidth={1.8} />
           </span>

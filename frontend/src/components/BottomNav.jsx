@@ -33,12 +33,6 @@ const PAD = 4;
 const SNAP = { type: "spring", stiffness: 520, damping: 40, mass: 0.9 };
 const JELLY = { type: "spring", stiffness: 420, damping: 16, mass: 0.8 };
 
-const shellScale = () => {
-  const el = typeof document !== "undefined" ? document.querySelector("[data-fit-scale]") : null;
-  const s = el ? parseFloat(el.getAttribute("data-fit-scale")) : 1;
-  return Number.isFinite(s) && s > 0 ? s : 1;
-};
-
 const haptic = () => {
   try {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(6);
@@ -101,7 +95,7 @@ export const BottomNav = () => {
   const onPointerDown = (e) => {
     if (!segW || e.button > 0) return;
     barRef.current.setPointerCapture?.(e.pointerId);
-    drag.current = { id: e.pointerId, startX: e.clientX, startPill: x.get(), scale: shellScale(), moved: false, t: Date.now() };
+    drag.current = { id: e.pointerId, startX: e.clientX, startPill: x.get(), scale: 1, moved: false, t: Date.now() };
     // press: bring the lens under the finger's tab right away
     const rect = barRef.current.getBoundingClientRect();
     const local = (e.clientX - rect.left) / drag.current.scale - PAD;

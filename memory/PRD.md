@@ -72,3 +72,4 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   Chats tabs All/Matches/Unread + search toggle, Likes "..." sort/filter menu + heart count pill. Tests iteration_16 100%. Deployed voiladi-web.
 - Phase 18 (2026-09-10): Explore/Profile/Discover rebuilt to neumorphic mockups; Explore communities (topics API), Follow, search, Nearby/Creators.
   Tests iteration_17 100%. Deployed voiladi-api + voiladi-web.
+- Phase 19 (2026-09-10): Removed fit-to-canvas transform scaling; shell fully responsive (clamp/cqi units, flex scroll areas). iteration_18 100%. Deployed web.

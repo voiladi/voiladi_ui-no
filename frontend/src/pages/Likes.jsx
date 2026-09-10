@@ -112,7 +112,7 @@ export default function Likes() {
 
   return (
     <div className={`vo-neu-page flex flex-col ${rows.length ? "min-h-full" : "h-full"}`} style={{ paddingBottom: NAV_PAD }} data-testid="likes-page">
-      <header className="shrink-0 px-5 pt-1">
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
         <SoftHeader
           right={
             <DropdownMenu>
@@ -178,7 +178,7 @@ export default function Likes() {
           footer="New connections are waiting"
         />
       ) : (
-        <ul className="mt-5 flex flex-col gap-3 px-5" data-testid="likes-list">
+        <ul className="mt-5 flex flex-col gap-3 px-[clamp(14px,5cqi,20px)]" data-testid="likes-list">
           {rows.map((l, i) => {
             const p = l.user;
             const mine = l.direction === "sent";
