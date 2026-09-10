@@ -35,7 +35,7 @@ export const EmailPasswordForm = ({ mode }) => {
 
   return (
     <div className="flex min-h-full flex-col px-5 pb-6 pt-3" data-testid={signup ? "signup-page" : "login-page"}>
-      <button type="button" onClick={() => navigate("/welcome")} className="vo-icon-plain -ml-2" aria-label="Back" data-testid="auth-back-button">
+      <button type="button" onClick={() => navigate("/login")} className="vo-icon-plain -ml-2" aria-label="Back" data-testid="auth-back-button">
         <ArrowLeft className="h-6 w-6" strokeWidth={2} />
       </button>
 
@@ -96,7 +96,7 @@ export const EmailPasswordForm = ({ mode }) => {
         </div>
         <p className="mt-8 text-center text-[15px] text-mute">
           {signup ? "Already have an account? " : "Don't have an account? "}
-          <button type="button" className="vo-link text-[15px]" onClick={() => navigate(signup ? "/login" : "/signup")} data-testid={signup ? "auth-go-login-link" : "auth-go-signup-link"}>
+          <button type="button" className="vo-link text-[15px]" onClick={() => navigate(signup ? "/login/email" : "/signup")} data-testid={signup ? "auth-go-login-link" : "auth-go-signup-link"}>
             {signup ? "Log in" : "Create one"}
           </button>
         </p>

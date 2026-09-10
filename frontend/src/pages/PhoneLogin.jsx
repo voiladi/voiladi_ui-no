@@ -71,7 +71,7 @@ export default function PhoneLogin() {
 
   return (
     <div className="flex min-h-full flex-col px-5 pb-6 pt-3" data-testid="auth-page">
-      <button type="button" onClick={() => (step === "otp" ? setStep("phone") : navigate("/login"))} className="vo-icon-plain -ml-2" aria-label="Back" data-testid="auth-back-button">
+      <button type="button" onClick={() => (step === "otp" ? setStep("phone") : navigate("/login/email"))} className="vo-icon-plain -ml-2" aria-label="Back" data-testid="auth-back-button">
         <ArrowLeft className="h-6 w-6" strokeWidth={2} />
       </button>
 

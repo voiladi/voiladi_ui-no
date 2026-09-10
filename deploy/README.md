@@ -1,7 +1,7 @@
 # Voiladi — Railway deployment runbook
 
 Live:
-- Web  https://voiladi-web-production.up.railway.app
+- Web  https://www.voiladi.com  (root `/` = public glass landing page for signed-out browsers; `/login` = app entry, `/welcome` redirects)
 - API  https://voiladi-api-production.up.railway.app  (health: /api/health)
 
 Railway project **Voiladi** (workspace "My Projects", account tyleralexisbrown@gmail.com)

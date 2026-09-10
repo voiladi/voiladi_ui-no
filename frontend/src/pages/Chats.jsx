@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MessageCircle, Search, SquarePen, X } from "lucide-react";
+import { MessageCircle, Search, SquarePen, X, Image as ImageIcon, Film } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useAuth } from "@/context/AuthContext";
 import { useMatchesQuery } from "@/hooks/useBadges";
@@ -64,6 +64,16 @@ export default function Chats() {
       return "New match. Say hi!";
     }
     const mine = m.last_message.sender_id === user?.id;
+    if (m.last_message.kind === "image" || m.last_message.kind === "video") {
+      const Icon = m.last_message.kind === "video" ? Film : ImageIcon;
+      return (
+        <>
+          {mine ? "You: " : ""}
+          <Icon className="mr-1 inline h-[15px] w-[15px] -translate-y-px" strokeWidth={2} />
+          {m.last_message.text || (m.last_message.kind === "video" ? "Video" : "Photo")}
+        </>
+      );
+    }
     if (m.last_message.kind === "reaction") return mine ? m.last_message.text.replace("Liked your", "You liked their") : m.last_message.text;
     const base = `${mine ? "You: " : ""}${m.last_message.text}`;
     return m.kind === "dm" && m.status === "request" && mine ? `${base} · Request sent` : base;

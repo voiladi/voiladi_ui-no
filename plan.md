@@ -12,6 +12,7 @@
   - **Filters** (age/distance/show-me)
   - **Manual selfie verification** (human review) → **black tick** + unlock messaging
   - **Direct messages (DM Requests)**: **verified users can message any profile**; recipient sees it under **Requests** until they reply/accept
+  - **Chat media**: **image + video sharing** in chat, with quality caps (720p now; 1080p for Plus later)
 - **STRICTLY NO AI RELATED FEATURES** in UX/UI, copy, or flows.
 - **Top priority**: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
   - No “AI generated” look, no creative liberties.
@@ -22,9 +23,11 @@
   - Lazy route loading with professional loaders
   - Thumbnail photo delivery + edge caching
   - Reduce India latency where possible (region migration if approved)
+  - Media delivery that is CDN-cacheable and supports Range streaming
 - Security target: strong server + client hardening.
   - **Do not rotate JWT secret yet** (keep sessions) (user decision)
   - Protect against abuse (rate limiting, lockouts), lock down WebView and release signing
+  - Secure media access (short-lived signed URLs, view-once deletion)
 
 ---
 
@@ -213,7 +216,7 @@
 - Recipient sees the conversation under **Requests** until they reply/accept.
 
 **Backend (implemented)**
-- DM threads are stored in **`db.matches`** (no new collection), with:
+- DM threads stored in **`db.matches`**:
   - `kind: 'dm' | 'match'` (legacy rows treated as `match`)
   - `status: 'request' | 'active'`
   - `requested_by`, `accepted_at`
@@ -241,7 +244,7 @@
   - Both: Report / Block
 
 ### 23.3 Testing
-- Test report: `/app/test_reports/iteration_23.json` (post-fix: ended threads 404).
+- Test report: `/app/test_reports/iteration_23.json`.
 
 ---
 
@@ -253,7 +256,7 @@
 - `security.py` middlewares:
   - **Rate limiting** keyed by `CF-Connecting-IP` / `X-Forwarded-For`
   - **Security headers** on API JSON responses (HSTS, nosniff, frame deny, CSP, no-store)
-  - **Body size cap**:  > 12MB → `413`
+  - **Body size cap**: > 12MB → `413`
 - Brute force guard:
   - **Account lockout** after **8 wrong passwords in 15 min** → `429`
 - Production hygiene:
@@ -265,11 +268,8 @@
 ### 24.2 Web security (nginx)
 **Implemented**
 - Security headers for the SPA, including CSP + HSTS.
-- Implemented as `security-headers.inc.template` **included per location** (nginx drops server-level add_header if location adds its own).
-
-**Outage lesson (recorded)**
-- `/docker-entrypoint.d/*.envsh` must be **executable** and end with `.envsh` so nginx entrypoint sources it.
-  - Otherwise nginx may crash with `unknown "ws_backend_url" variable`.
+- Implemented as `security-headers.inc.template` **included per location**.
+- `WS_BACKEND_URL` derived during container start for CSP connect-src.
 
 ### 24.3 APK hardening (Android)
 **Implemented**
@@ -288,14 +288,138 @@
 
 ---
 
+## Phase 25 — Chat Media (Images + Video) (P0)
+**Status: IN PROGRESS (planned; not implemented yet)**
+
+### 25.1 Binding decisions (user, 2026-09-10)
+- **Chat only** (no profile video in this phase).
+- **Quality caps:**
+  - Everyone: **720p** max
+  - Later: **1080p** for Plus members
+  - Build as **per-user cap** (e.g. `media_quality_max: 720|1080`) so Plus is just a switch.
+- **Video duration:** up to **5 minutes**.
+- **Storage:** keep on **Railway disk** for now (`UPLOAD_DIR/media`).
+- **Modes:** both
+  - **Permanent** media messages
+  - **View once** media messages
+
+### 25.2 Constraints to design around
+- **Cloudflare Free upload limit** (request body ~100MB): use **chunked uploads**.
+- Must support **HTTP Range** for streaming video in iOS Safari.
+- Must integrate with existing chat rules:
+  - sender must be verified
+  - blocks prevent sending
+  - unsend deletes media
+  - requests flow should still work (first media message creates a request thread)
+
+### 25.3 Backend (FastAPI) — implementation plan
+1) **Schema extensions**
+   - `users`: add `media_quality_max` (default 720)
+   - `messages`: add `kind: 'text'|'reaction'|'media'` and `media` object
+     - `media.type: 'image'|'video'`
+     - `media.url`, `media.thumb_url`, `media.duration_s`, `media.width`, `media.height`, `media.view_once`, `media.status: 'processing'|'ready'|'failed'`
+     - `media.size_bytes`, `media.codec` (video)
+
+2) **Chunked upload endpoints**
+   - `POST /api/media/init` → returns `upload_id`, chunk size, max bytes
+   - `POST /api/media/chunk` → `{upload_id, index}` + binary chunk
+   - `POST /api/media/complete` → validates and schedules processing, returns `media_id`
+   - Enforce rate limits and auth (verified users only).
+
+3) **Processing pipeline**
+   - **Images:** PIL re-encode and downscale to cap, JPEG/WebP output, EXIF stripped.
+   - **Videos:** async **ffmpeg** transcode to MP4 H.264/AAC:
+     - 720p cap now
+     - 1080p cap later based on user cap
+     - `-movflags +faststart` for instant streaming start
+     - generate poster frame thumbnail
+   - Background job runner:
+     - initial: asyncio task queue in the API process
+     - later: move to a proper worker if needed
+
+4) **Message lifecycle**
+   - Create a chat message with `media.status='processing'` immediately.
+   - When ready/failed, emit WS event `message_updated` (or reuse `message` with same id) so UI updates.
+
+5) **Secure serving**
+   - Media served via an API endpoint that supports Range:
+     - `GET /api/media/{id}` (checks match membership + view-once rules)
+     - `GET /api/media/{id}/thumb`
+   - **View-once**:
+     - Open via **signed short-lived token** (e.g. 60s) → first successful open marks consumed and schedules deletion
+   - **Permanent**:
+     - cacheable at edge (immutable URLs) where allowed
+
+6) **Deletion rules**
+   - Unsend removes the message and deletes the associated files (and thumbs).
+   - Deleting a thread deletes any view-once not yet consumed (optional cleanup job).
+
+7) **Rate limiting**
+   - Add rules for:
+     - media init/chunk/complete
+     - video processing concurrency
+
+8) **Dependencies / build**
+   - Add **ffmpeg** to the backend Docker image.
+
+### 25.4 Frontend (React) — implementation plan
+1) **Composer**
+   - Add attach button in ChatRoom.
+   - Bottom sheet: pick **Photo** / **Video**, preview, toggle **View once**.
+
+2) **Upload UX**
+   - Chunked uploader (progress bar, cancel).
+   - Send shows a temporary bubble with progress / “Processing…” state.
+
+3) **Rendering**
+   - Image bubble: soft tile preview, tap → full-screen viewer (zoom).
+   - Video bubble: poster + duration badge, tap → full-screen player (streaming Range).
+   - View-once bubble: shows “View once” pill; after viewing it becomes “Opened” and media is unavailable.
+
+4) **Inbox preview text**
+   - Chats list preview shows: “Photo” / “Video” / “View once photo” / “View once video”.
+
+5) **Socket events**
+   - Handle `message_updated` to swap processing → ready.
+
+### 25.5 Testing plan
+- Backend: chunked upload happy path, oversized chunk rejection, Range streaming, view-once consumption, unsend deletes.
+- Frontend: upload progress, rendering, view-once behaviour, request thread integration.
+
+---
+
+## Phase 26 — voiladi.com Web Landing Page (Apple glass) + /login rename (P0)
+**Status: COMPLETED (2026-09-10)**
+
+### 26.1 Binding decisions (user)
+- Exact replica of the reference mock: pale glass canvas, glass hamburger, "A more human internet." hero,
+  frosted App Store / Google Play pills, fanned 3-phone carousel (drag / arrows / dots) with caption + counter,
+  frosted right-side menu (About, Features, Safety & Privacy, Help Center, Log in, store pills, footer).
+- `voiladi.com/welcome` -> `voiladi.com/login` (old link redirects).
+- No creative liberties; no AI features.
+
+### 26.2 Implementation
+- `frontend/src/pages/Landing.jsx` + `components/landing/PhoneScreens.jsx` (static Explore / Messages / Likes / Profile replicas).
+- `index.css`: `.vo-landing`, `.vo-glass-pill`, `.vo-glass-icon`, `.vo-landing-next`, `.vo-phone*`, `.vo-landing-menu/backdrop` (+ `.dark` variants).
+- Routing (`App.js`): `/` = Landing for signed-out browsers (Android shell -> `/login`; signed-in -> app);
+  `/login` = Welcome chooser; `/login/email` = email form; `/login/phone` unchanged; `/welcome` -> `/login`; `/auth` -> `/login/email`.
+- `Legal.jsx`: added `guidelines` page (Community Guidelines).
+- Backend housekeeping: chat-media in-flight chunks now go to the OS temp dir (`MEDIA_TMP_DIR`, default `/tmp/voiladi_media_tmp`);
+  finished media still on the Railway volume (`UPLOAD_DIR/media`).
+
+### 26.3 Testing
+- Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
+
+---
+
 ## 3) Next Actions
 1) **Change Password (Settings → Account)**
-   - Add UI row + backend endpoint to change password (with re-auth). 
-2) **Move servers to Singapore (Asia)** (optional but biggest speed gain for India)
+   - Add UI row + backend endpoint to change password (with re-auth).
+3) **Move servers to Singapore (Asia)** (optional but biggest speed gain for India)
    - Requires explicit approval + maintenance window to migrate volumes (db + uploads).
-3) **Cloudflare WAF / Bot protection rules**
+4) **Cloudflare WAF / Bot protection rules**
    - Requires a Cloudflare token with additional permissions (Zone Settings/Rules) beyond DNS.
-4) **Google Play ready**
+5) **Google Play ready**
    - Produce a signed **AAB** (and/or Play App Signing) pipeline; align versioning.
 
 ---
@@ -306,6 +430,9 @@
   - Verified user can message any profile → recipient sees in Requests until accepted.
 - Chat feels professional:
   - typing + seen + unsend + safety actions
+- Chat media works end-to-end:
+  - photo + video send, stream, progress, processing state, view-once consumption, unsend delete
+  - 720p cap enforced now; design supports 1080p cap later (Plus)
 - App loads fast on Indian networks:
   - thumbnails + edge caching + reduced first paint
 - Security hardened:
@@ -319,6 +446,8 @@
 - Phase 22: **COMPLETED** (Settings verification, loading/offline/perf, Cloudflare/Jio fix)
 - Phase 23: **COMPLETED** (DM Requests + Requests tab + Chat polish)
 - Phase 24: **COMPLETED** (Security hardening server + web + APK)
+- Phase 25: **COMPLETED** (Chat media: images + videos, view-once)
+- Phase 26: **COMPLETED** (voiladi.com glass landing page + /login rename)
 
 ---
 

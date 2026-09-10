@@ -37,6 +37,18 @@ def _other(match: dict, uid: str) -> str:
     return [u for u in match["users"] if u != uid][0]
 
 
+def media_preview_text(kind: str, view_once: bool) -> str:
+    """Inbox preview for photo/video messages."""
+    base = "Photo" if kind == "image" else "Video"
+    return f"{base} (view once)" if view_once else base
+
+
+def _message_preview(m: dict) -> str:
+    if m.get("media"):
+        return media_preview_text(m["media"].get("kind", "image"), bool(m["media"].get("view_once")))
+    return m.get("text") or ""
+
+
 def _kind(match: dict) -> str:
     return match.get("kind") or "match"
 
@@ -226,13 +238,16 @@ async def unsend_message(match_id: str, message_id: str, user=Depends(get_curren
     if msg["sender_id"] != user["id"]:
         raise HTTPException(status_code=403, detail="You can only unsend your own messages")
     await db.messages.delete_one({"id": message_id})
+    if msg.get("media"):
+        from routes_media import _delete_media_files  # local import: routes_media imports helpers from this module
+        await _delete_media_files(msg)
     other = _other(match, user["id"])
     # keep the inbox preview and unread count honest
     latest = await db.messages.find({"match_id": match_id}, {"_id": 0}).sort("created_at", -1).to_list(1)
     sets = {}
     if latest:
         last = latest[0]
-        sets = {"last_message": {"text": last.get("text") or "", "sender_id": last["sender_id"], "created_at": last["created_at"], "kind": last.get("kind")},
+        sets = {"last_message": {"text": _message_preview(last), "sender_id": last["sender_id"], "created_at": last["created_at"], "kind": last.get("kind")},
                 "last_message_at": last["created_at"]}
     else:
         sets = {"last_message": None, "last_message_at": None}

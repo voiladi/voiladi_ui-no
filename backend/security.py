@@ -43,6 +43,8 @@ RULES: List[Tuple[str, Optional[str], re.Pattern, int, int]] = [
     ("send_msg",    "POST",   re.compile(r"^/api/matches/[^/]+/messages$"),          60,  60),
     ("report",      "POST",   re.compile(r"^/api/users/[^/]+/report$"),              10, 3600),
     ("upload",      "POST",   re.compile(r"^/api/(profile/photos|verification/selfie)$"), 30, 3600),
+    ("media_send",  "POST",   re.compile(r"^/api/media/(init|[^/]+/complete)$"),      80, 3600),
+    ("media_chunk", "PUT",    re.compile(r"^/api/media/[^/]+/chunk$"),             1500, 3600),
     ("search",      "GET",    re.compile(r"^/api/explore/search"),                   90,  60),
     ("admin",       None,     re.compile(r"^/api/admin/"),                          120,  60),
     ("api",         None,     re.compile(r"^/api/"),                                600,  60),
@@ -139,7 +141,8 @@ MAX_BODY = int(os.environ.get("MAX_BODY_BYTES", str(12 * 1024 * 1024)))  # photo
 class BodySizeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         cl = request.headers.get("content-length")
-        if cl and cl.isdigit() and int(cl) > MAX_BODY:
+        # chat media arrives in 8MB chunks (own cap inside routes_media); everything else is capped here
+        if cl and cl.isdigit() and int(cl) > MAX_BODY and not request.url.path.startswith("/api/media/"):
             return JSONResponse({"detail": "That file is too large"}, status_code=413)
         return await call_next(request)
 

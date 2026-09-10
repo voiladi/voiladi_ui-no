@@ -1,22 +1,22 @@
 [
   {
-    "content": "Shrink logo-mark.png (361KB→~15KB) + cache headers for images at nginx root",
+    "content": "Explore App.js / AppShell.jsx routing and existing Landing.jsx + PhoneScreens.jsx",
     "status": "completed"
   },
   {
-    "content": "index.html: async platform script, preconnect to API, preload logo",
+    "content": "Route / to Landing (web, unauthenticated), rename /welcome -> /login with redirect",
     "status": "completed"
   },
   {
-    "content": "Backend: on-demand resized photo variants (?w=240/480/800) with immutable cache, edge-cacheable",
-    "status": "in_progress"
+    "content": "Build check (esbuild) + screenshots of landing, carousel, hamburger side login",
+    "status": "completed"
   },
   {
-    "content": "Frontend: UserPhoto size prop; thumbnails in grids/lists/avatars, full only for swipe card/profile sheet",
-    "status": "pending"
+    "content": "Frontend regression test via testing agent",
+    "status": "completed"
   },
   {
-    "content": "Test, deploy web+api, verify cf-cache HIT + sizes",
-    "status": "pending"
+    "content": "Update plan.md and deploy",
+    "status": "completed"
   }
 ]

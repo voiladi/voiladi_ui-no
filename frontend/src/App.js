@@ -1,4 +1,4 @@
-import React, { lazy, useEffect } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -7,7 +7,8 @@ import { AppShell } from "@/components/AppShell";
 import { LogoMark } from "@/components/Logo";
 import { Spinner } from "@/components/Loading";
 import { OfflineScreen } from "@/components/Offline";
-import { nativeReady } from "@/lib/native";
+import { nativeReady, isNativeApp } from "@/lib/native";
+import { FeedbackLayer } from "@/components/Feedback";
 import { getToken } from "@/lib/api";
 
 /*
@@ -32,6 +33,7 @@ const screen = (load) =>
         throw e;
       }),
   );
+const Landing = screen(() => import("@/pages/Landing"));
 const Welcome = screen(() => import("@/pages/Welcome"));
 const Signup = screen(() => import("@/pages/Signup"));
 const Login = screen(() => import("@/pages/Login"));
@@ -84,7 +86,7 @@ const Gate = ({ need }) => {
     if (user) return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
     return <Outlet />;
   }
-  if (!user) return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (need === "onboarding") {
     if (complete) return <Navigate to="/discover" replace />;
     return <Outlet />;
@@ -93,11 +95,24 @@ const Gate = ({ need }) => {
   return <Outlet />;
 };
 
+/*
+ * voiladi.com root. Signed-out visitors in a browser get the public landing page (full-width web layout, outside the
+ * phone shell); the Android shell skips straight to /login. Signed-in people go to the app.
+ */
+const LandingRoute = () => (
+  <Suspense fallback={<Splash />}>
+    <Landing />
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[300] mx-auto w-full max-w-[560px] [&>*]:pointer-events-auto">
+      <FeedbackLayer />
+    </div>
+  </Suspense>
+);
+
 const Home = () => {
   const { user, loading, netError, refresh } = useAuth();
   if (loading) return <Splash />;
   if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
-  if (!user) return <Navigate to="/welcome" replace />;
+  if (!user) return isNativeApp() ? <Navigate to="/login" replace /> : <LandingRoute />;
   return <Navigate to={user.onboarded ? "/discover" : "/onboarding"} replace />;
 };
 
@@ -111,11 +126,12 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route element={<Gate need="guest" />}>
                 <Route element={<AppShell nav={false} />}>
-                  <Route path="/welcome" element={<Welcome />} />
+                  <Route path="/login" element={<Welcome />} />
+                  <Route path="/welcome" element={<Navigate to="/login" replace />} />
                   <Route path="/signup" element={<Signup />} />
-                  <Route path="/login" element={<Login />} />
+                  <Route path="/login/email" element={<Login />} />
                   <Route path="/login/phone" element={<PhoneLogin />} />
-                  <Route path="/auth" element={<Navigate to="/login" replace />} />
+                  <Route path="/auth" element={<Navigate to="/login/email" replace />} />
                 </Route>
               </Route>
               <Route element={<AppShell nav={false} />}>

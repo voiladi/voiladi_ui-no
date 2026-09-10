@@ -42,6 +42,16 @@ const PAGES = {
       "Want to start fresh? You can delete your account from Privacy & Safety.",
     ],
   },
+  guidelines: {
+    title: "Community Guidelines",
+    body: [
+      "Be real. Use your own recent photos and your real first name. Impersonation and catfishing lead to removal.",
+      "Be respectful. No harassment, hate speech, threats or unsolicited explicit content. A no is a no.",
+      "Keep it personal, not commercial. No promotion, spam, scams or asking for money.",
+      "Protect privacy. Never share someone else's photos, messages or personal details without their consent.",
+      "Adults only. Voiladi is for people aged 18 and over. Report anyone who appears underage.",
+    ],
+  },
 };
 
 const Body = ({ page }) => (
@@ -63,7 +73,7 @@ const Safety = () => {
     try {
       await api.delete("/auth/account");
       logout();
-      navigate("/welcome", { replace: true });
+      navigate("/login", { replace: true });
     } catch (e) {
       notice(errMsg(e));
     } finally {

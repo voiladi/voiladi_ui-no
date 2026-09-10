@@ -92,7 +92,7 @@ export default function Settings() {
         danger
         onConfirm={() => {
           logout();
-          navigate("/welcome", { replace: true });
+          navigate("/login", { replace: true });
         }}
         testId="logout-dialog"
       />

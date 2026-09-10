@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, MessageSquareText, Trash2, Copy, Undo2 } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, MessageSquareText, Trash2, Copy, Undo2, ImagePlus } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -18,6 +18,8 @@ import { ReactionPill, reactionLabel } from "@/components/ReactHeart";
 import { Skeleton } from "@/components/EmptyState";
 import { Spinner } from "@/components/Loading";
 import { clockTime, dayLabel, timeAgo, activeLabel } from "@/lib/format";
+import { MediaPreviewSheet, MediaViewer, MediaBubble, ViewOnceBubble } from "@/components/ChatMedia";
+import { uploadChatMedia, probeVideoDuration, isVideoFile, isImageFile, mediaUrl, MEDIA_MAX_VIDEO_SECONDS, MEDIA_MAX_VIDEO_BYTES, MEDIA_MAX_IMAGE_BYTES } from "@/lib/media";
 import { tween } from "@/lib/motion";
 
 /*
@@ -51,6 +53,33 @@ const ReactionBubble = ({ m, mine, otherName }) => {
         </div>
       )}
       <ReactionPill className="mt-1.5">{reactionLabel(r, { mine })}</ReactionPill>
+    </div>
+  );
+};
+
+/** Press-and-hold / right-click wrapper used for own photo & video bubbles. */
+const LongPress = ({ enabled, onFire, children }) => {
+  const timer = useRef(null);
+  const start = () => {
+    if (!enabled) return;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => onFire(), LONG_PRESS_MS);
+  };
+  const cancel = () => clearTimeout(timer.current);
+  return (
+    <div
+      onPointerDown={start}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onContextMenu={(e) => {
+        if (!enabled) return;
+        e.preventDefault();
+        onFire();
+      }}
+      style={{ WebkitTouchCallout: "none" }}
+    >
+      {children}
     </div>
   );
 };
@@ -119,6 +148,11 @@ export default function ChatRoom() {
   const [report, setReport] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState(null); // message under the Unsend / Copy sheet
+  const [pendingFile, setPendingFile] = useState(null); // picked photo/video awaiting the preview sheet
+  const [pendingDuration, setPendingDuration] = useState(null);
+  const [viewer, setViewer] = useState(null); // full-screen media
+  const [openingId, setOpeningId] = useState(null); // view-once being fetched
+  const fileRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimer = useRef(null);
@@ -198,6 +232,8 @@ export default function ChatRoom() {
           setMessages((prev) => prev.map((m) => (m.sender_id === user?.id && !m.read_at ? { ...m, read_at: ev.read_at } : m)));
         } else if (ev.type === "message_deleted") {
           setMessages((prev) => prev.filter((m) => m.id !== ev.message_id));
+        } else if (ev.type === "message_updated") {
+          setMessages((prev) => prev.map((m) => (m.id === ev.message.id ? { ...ev.message, localUrl: undefined } : m)));
         } else if (ev.type === "dm_accepted") {
           setMatch((m) => (m ? { ...m, status: "active", is_request: false } : m));
         } else if (ev.type === "unmatch") {
@@ -338,6 +374,68 @@ export default function ChatRoom() {
       notice("Copied");
     } catch (e) {
       notice("Couldn't copy");
+    }
+  };
+
+  // ---- photos & videos --------------------------------------------------------------------
+  const pickFile = async (file) => {
+    if (!file) return;
+    if (!isVideoFile(file) && !isImageFile(file)) {
+      notice("Only photos and videos can be shared");
+      return;
+    }
+    if (isVideoFile(file) && file.size > MEDIA_MAX_VIDEO_BYTES) {
+      notice("That video is too large (max 600 MB)");
+      return;
+    }
+    if (isImageFile(file) && file.size > MEDIA_MAX_IMAGE_BYTES) {
+      notice("That photo is too large (max 25 MB)");
+      return;
+    }
+    const d = isVideoFile(file) ? await probeVideoDuration(file) : null;
+    setPendingDuration(d);
+    setPendingFile(file);
+  };
+
+  const patchMessage = (id, patch) => setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+
+  const sendMedia = async ({ viewOnce }) => {
+    const file = pendingFile;
+    const duration = pendingDuration;
+    setPendingFile(null);
+    if (!file) return;
+    const client_id = `m_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const kind = isVideoFile(file) ? "video" : "image";
+    const localUrl = URL.createObjectURL(file);
+    const temp = {
+      id: `tmp_${client_id}`, client_id, match_id: matchId, sender_id: user.id, kind, text: "",
+      media: { kind, view_once: viewOnce, status: "ready" }, created_at: new Date().toISOString(), read_at: null, pending: true, progress: 0, localUrl,
+    };
+    setMessages((prev) => [...prev, temp]);
+    try {
+      const data = await uploadChatMedia({ file, matchId, viewOnce, clientId: client_id, duration, onProgress: (p) => patchMessage(temp.id, { progress: p }) });
+      mergeMessages([{ ...data, localUrl: kind === "video" && data.media?.status === "processing" ? localUrl : undefined }]);
+      if (isRequestForMe) setMatch((m) => ({ ...m, status: "active", is_request: false }));
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    } catch (e) {
+      setMessages((prev) => prev.filter((m) => m.client_id !== client_id));
+      URL.revokeObjectURL(localUrl);
+      notice(errMsg(e, `${kind === "video" ? "Video" : "Photo"} didn't send`));
+    }
+  };
+
+  const openViewOnce = async (m) => {
+    if (openingId) return;
+    setOpeningId(m.id);
+    try {
+      const { data } = await api.post(`/matches/${matchId}/messages/${m.id}/open`);
+      patchMessage(m.id, { media: { ...m.media, opened_at: m.media.opened_at || new Date().toISOString() } });
+      setViewer({ kind: data.kind, url: mediaUrl(data.url), viewOnce: true });
+    } catch (e) {
+      if (e?.response?.status === 410) patchMessage(m.id, { media: { ...m.media, status: "expired" } });
+      notice(errMsg(e, "Couldn't open this"));
+    } finally {
+      setOpeningId(null);
     }
   };
 
@@ -491,6 +589,14 @@ export default function ChatRoom() {
                     <div className={`max-w-[78%] ${r.m.sender_id === user?.id ? "items-end" : "items-start"} flex flex-col`}>
                       {r.m.kind === "reaction" ? (
                         <ReactionBubble m={r.m} mine={r.m.sender_id === user?.id} otherName={other?.name} />
+                      ) : r.m.kind === "image" || r.m.kind === "video" ? (
+                        <LongPress enabled={r.m.sender_id === user?.id && !r.m.pending} onFire={() => setActionMsg(r.m)}>
+                          {r.m.media?.view_once ? (
+                            <ViewOnceBubble m={r.m} mine={r.m.sender_id === user?.id} onOpen={openViewOnce} busy={openingId === r.m.id} />
+                          ) : (
+                            <MediaBubble m={r.m} mine={r.m.sender_id === user?.id} onOpen={(item) => setViewer({ ...item, name: other?.name })} />
+                          )}
+                        </LongPress>
                       ) : (
                         <Bubble m={r.m} mine={r.m.sender_id === user?.id} onActions={setActionMsg} />
                       )}
@@ -568,7 +674,22 @@ export default function ChatRoom() {
           }}
         >
           <div className="flex items-end gap-2">
-            {!isDm && (
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                pickFile(f);
+              }}
+              data-testid="chat-media-input"
+            />
+            <button type="button" className="vo-soft-icon h-[46px] w-[46px] shrink-0" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-attach-button">
+              <ImagePlus className="h-5 w-5" strokeWidth={1.9} />
+            </button>
+            {!isDm && !text && (
               <button type="button" className="vo-soft-icon h-[46px] w-[46px] shrink-0" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
                 <MessageSquareText className="h-5 w-5" strokeWidth={1.9} />
               </button>
@@ -606,13 +727,15 @@ export default function ChatRoom() {
           <div className="px-5 pb-8 pt-3">
             {actionMsg && (
               <p className="vo-soft-sunken mb-4 max-h-[88px] overflow-hidden text-ellipsis whitespace-pre-wrap break-words rounded-[18px] px-4 py-3 text-[14px] leading-[19px] text-ink" data-testid="message-actions-preview">
-                {actionMsg.text}
+                {actionMsg.media ? `${actionMsg.media.kind === "video" ? "Video" : "Photo"}${actionMsg.media.view_once ? " (view once)" : ""}` : actionMsg.text}
               </p>
             )}
             <div className="flex flex-col gap-2.5">
-              <button type="button" className="vo-soft-row min-h-[54px] justify-start text-[16px] font-semibold text-ink" onClick={copyText} data-testid="message-copy-button">
-                <Copy className="h-5 w-5" strokeWidth={2} /> Copy
-              </button>
+              {actionMsg && !actionMsg.media && (
+                <button type="button" className="vo-soft-row min-h-[54px] justify-start text-[16px] font-semibold text-ink" onClick={copyText} data-testid="message-copy-button">
+                  <Copy className="h-5 w-5" strokeWidth={2} /> Copy
+                </button>
+              )}
               <button type="button" className="vo-soft-row min-h-[54px] justify-start text-[16px] font-semibold text-red" onClick={unsend} data-testid="message-unsend-button">
                 <Undo2 className="h-5 w-5" strokeWidth={2} /> Unsend
               </button>
@@ -645,6 +768,9 @@ export default function ChatRoom() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <MediaPreviewSheet file={pendingFile} open={!!pendingFile} onOpenChange={(o) => !o && setPendingFile(null)} onSend={sendMedia} duration={pendingDuration} tooLong={!!pendingDuration && pendingDuration > MEDIA_MAX_VIDEO_SECONDS + 1} />
+      <MediaViewer item={viewer} onClose={() => setViewer(null)} />
 
       <ProfileSheet profile={other} open={sheet} onOpenChange={setSheet} showMessage={false} onBlock={() => { setSheet(false); setConfirm("block"); }} onReport={() => { setSheet(false); setReport(true); }} />
       <ConfirmDialog

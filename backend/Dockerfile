@@ -9,6 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# ffmpeg/ffprobe: chat video transcoding (720p/1080p caps, poster frames)
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.deploy.txt ./
 RUN pip install --no-cache-dir -r requirements.deploy.txt
 

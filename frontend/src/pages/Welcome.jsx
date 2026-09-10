@@ -69,7 +69,7 @@ export default function Welcome() {
         <button
           type="button"
           className="vo-btn mt-3.5 h-[52px] w-full border border-line bg-surface text-[17px] text-ink hover:bg-surface2"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/login/email")}
           data-testid="welcome-login-button"
         >
           Log in
