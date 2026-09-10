@@ -1,32 +1,64 @@
 package com.voiladi.app;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
-/** Voiladi Android shell: a full-screen WebView on the production web app. */
+/**
+ * Voiladi Android shell: full-screen WebView on the production web app with
+ *  - a native splash (logo) shown instantly until the web app reports ready,
+ *  - a native "You're offline" screen instead of the browser error page,
+ *  - a JS bridge (window.VoiladiNative) used by the web app to hand over the session token,
+ *  - background polling (PollService) that posts phone notifications for new likes / matches / messages.
+ */
 public class MainActivity extends Activity {
-    private static final String HOME = "https://www.voiladi.com/";
+    static final String HOME = "https://www.voiladi.com/";
+    static final String PREFS = "voiladi";
     private static final int REQ_FILE = 1;
     private static final int REQ_LOCATION = 2;
+    private static final int REQ_NOTIFICATIONS = 3;
+    static final int RES_ICON = 0x7f010000;
 
+    private FrameLayout root;
     private WebView web;
+    private View splash;
+    private View offline;
+    private TextView offlineTitle;
+    private boolean pageFailed;
+    private boolean webReady;
     private ValueCallback<Uri[]> fileCallback;
     private String geoOrigin;
     private GeolocationPermissions.Callback geoCallback;
@@ -43,7 +75,42 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         w.getDecorView().setSystemUiVisibility(flags);
 
+        root = new FrameLayout(this);
+        root.setBackgroundColor(Color.WHITE);
+
         web = new WebView(this);
+        setupWebView();
+        root.addView(web, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        offline = buildOfflineView();
+        offline.setVisibility(View.GONE);
+        root.addView(offline, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        splash = buildSplashView();
+        root.addView(splash, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        setContentView(root);
+
+        if (savedInstanceState != null) {
+            web.restoreState(savedInstanceState);
+        } else {
+            web.loadUrl(targetUrl(getIntent()));
+        }
+        // safety net: never keep the splash forever
+        root.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                hideSplash();
+            }
+        }, 8000);
+
+        Notifier.ensureChannel(this);
+        PollService.scheduleIfLoggedIn(this);
+    }
+
+    /* ---------------------------------------------------------------- web view */
+
+    private void setupWebView() {
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -58,11 +125,12 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.0");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.1");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setBackgroundColor(Color.WHITE);
+        web.addJavascriptInterface(new Bridge(), "VoiladiNative");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -75,6 +143,37 @@ public class MainActivity extends Activity {
                 } catch (Exception ignored) {
                 }
                 return true;
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                pageFailed = false;
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request.isForMainFrame()) showOffline("You're offline", "Check your connection and try again.");
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 500) {
+                    showOffline("Voiladi is unavailable", "We're having trouble reaching the server. Please try again in a moment.");
+                }
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if (!pageFailed) {
+                    offline.setVisibility(View.GONE);
+                    // the web app calls VoiladiNative.ready() itself; this is the fallback for older builds
+                    root.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            hideSplash();
+                        }
+                    }, 600);
+                }
             }
         });
 
@@ -108,14 +207,174 @@ public class MainActivity extends Activity {
                 request.grant(request.getResources());
             }
         });
+    }
 
-        setContentView(web);
-        if (savedInstanceState != null) {
-            web.restoreState(savedInstanceState);
-        } else {
-            web.loadUrl(HOME);
+    /* URL to open for an intent: notification taps carry a "path" extra (e.g. /chats/123). */
+    private String targetUrl(Intent intent) {
+        String path = intent == null ? null : intent.getStringExtra("path");
+        if (path == null || !path.startsWith("/")) return HOME;
+        return HOME.substring(0, HOME.length() - 1) + path;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String path = intent.getStringExtra("path");
+        if (path != null && web != null) web.loadUrl(targetUrl(intent));
+    }
+
+    /* ---------------------------------------------------------------- splash */
+
+    private View buildSplashView() {
+        FrameLayout f = new FrameLayout(this);
+        f.setBackgroundColor(Color.WHITE);
+        f.setClickable(true);
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(RES_ICON);
+        int size = dp(96);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size);
+        lp.gravity = Gravity.CENTER;
+        f.addView(logo, lp);
+        return f;
+    }
+
+    private void hideSplash() {
+        if (splash == null || splash.getVisibility() != View.VISIBLE || splash.getAlpha() < 1f) return;
+        ObjectAnimator a = ObjectAnimator.ofFloat(splash, "alpha", 1f, 0f);
+        a.setDuration(220);
+        a.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                splash.setVisibility(View.GONE);
+            }
+        });
+        a.start();
+    }
+
+    /* ---------------------------------------------------------------- offline screen */
+
+    private View buildOfflineView() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setBackgroundColor(Color.WHITE);
+        box.setClickable(true);
+        int pad = dp(32);
+        box.setPadding(pad, pad, pad, pad);
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(RES_ICON);
+        box.addView(logo, new LinearLayout.LayoutParams(dp(64), dp(64)));
+
+        offlineTitle = new TextView(this);
+        offlineTitle.setText("You're offline");
+        offlineTitle.setTextColor(Color.parseColor("#111111"));
+        offlineTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+        offlineTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        offlineTitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        tlp.topMargin = dp(28);
+        box.addView(offlineTitle, tlp);
+
+        final TextView sub = new TextView(this);
+        sub.setTag("sub");
+        sub.setText("Check your connection and try again.");
+        sub.setTextColor(Color.parseColor("#8A8A8E"));
+        sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        sub.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(dp(280), LinearLayout.LayoutParams.WRAP_CONTENT);
+        slp.topMargin = dp(8);
+        box.addView(sub, slp);
+
+        Button retry = new Button(this);
+        retry.setText("Try again");
+        retry.setAllCaps(false);
+        retry.setTextColor(Color.WHITE);
+        retry.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        retry.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#111111"));
+        bg.setCornerRadius(dp(999));
+        retry.setBackground(bg);
+        retry.setPadding(dp(28), 0, dp(28), 0);
+        retry.setStateListAnimator(null);
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48));
+        blp.topMargin = dp(28);
+        box.addView(retry, blp);
+        retry.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pageFailed = false;
+                web.loadUrl(targetUrl(getIntent()));
+            }
+        });
+        return box;
+    }
+
+    private void showOffline(String title, String subtitle) {
+        pageFailed = true;
+        offlineTitle.setText(title);
+        View sub = offline.findViewWithTag("sub");
+        if (sub instanceof TextView) ((TextView) sub).setText(subtitle);
+        offline.setVisibility(View.VISIBLE);
+        hideSplash();
+    }
+
+    /* ---------------------------------------------------------------- JS bridge */
+
+    private class Bridge {
+        @JavascriptInterface
+        public void setToken(String token) {
+            SharedPreferences p = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            p.edit().putString("token", token).apply();
+            PollService.schedule(MainActivity.this);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    askNotificationPermission();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void clearToken() {
+            getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove("token").remove("last_notified_at").apply();
+            PollService.cancel(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void ready() {
+            webReady = true;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    hideSplash();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openSettings() {
+            Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            i.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            startActivity(i);
+        }
+
+        @JavascriptInterface
+        public boolean isNative() {
+            return true;
         }
     }
+
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIFICATIONS);
+        }
+    }
+
+    /* ---------------------------------------------------------------- results */
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -139,6 +398,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (offline.getVisibility() == View.VISIBLE) {
+            super.onBackPressed();
+            return;
+        }
         if (web != null && web.canGoBack()) {
             web.goBack();
         } else {
@@ -156,11 +419,18 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (web != null) web.onResume();
+        // the app is open: clear any pending activity notifications
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancelAll();
     }
 
     @Override
     protected void onPause() {
         if (web != null) web.onPause();
         super.onPause();
+    }
+
+    private int dp(int v) {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()));
     }
 }

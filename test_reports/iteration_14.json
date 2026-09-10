@@ -1,0 +1,49 @@
+{
+  "summary": "Completed comprehensive testing of Voiladi offline features and Android APK (v1.1.0). All web offline functionality (banner, screen, 401 handling), native bridge integration (setToken/clearToken/ready), and APK structure validation passed successfully.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "WEB: Offline banner appears/disappears correctly when navigator.onLine changes",
+    "WEB: Offline screen shown when token exists but /api/auth/me fails with network error (not 401)",
+    "WEB: Offline screen retry button works - removes blocking and loads content",
+    "WEB: 401 from /api/auth/me redirects to /welcome (not offline screen)",
+    "WEB: Native bridge window.VoiladiNative.ready() called on app load",
+    "WEB: Native bridge window.VoiladiNative.setToken() called on login with JWT",
+    "WEB: Native bridge window.VoiladiNative.clearToken() called on logout",
+    "WEB: Native bridge works in plain browser without errors (no-op when bridge not present)",
+    "WEB: All pages load without errors (discover, likes, chats, profile, notifications, welcome, signup)",
+    "WEB: No console errors during navigation",
+    "APK: Valid APK structure, package com.voiladi.app",
+    "APK: Version 1.1.0 (versionCode 2), minSdk 24, targetSdk 34",
+    "APK: MainActivity is main activity and exported",
+    "APK: All required permissions present (INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, VIBRATE, ACCESS_FINE_LOCATION, CAMERA)",
+    "APK: PollService present with android.permission.BIND_JOB_SERVICE permission",
+    "APK: All required DEX classes present (MainActivity, PollService, Notifier, MainActivity$Bridge)",
+    "APK: All required DEX strings present (https://www.voiladi.com/, https://api.voiladi.com, VoiladiNative, voiladi)",
+    "APK: Resource 0x7f010000 -> ic_launcher.png (192x192 PNG)",
+    "APK: Resource 0x7f010001 -> ic_notification.png (96x96 PNG with transparency)",
+    "APK: resources.arsc stored (uncompressed) and 4-byte aligned",
+    "APK: Signing verified (v2 + v3 schemes)",
+    "APK: Rebuild successful with build_apk.py"
+  ],
+  "test_report_links": [],
+  "action_item_for_main_agent": "",
+  "updated_files": [],
+  "success_percentage": {
+    "web_offline_features": "100%",
+    "web_native_bridge": "100%",
+    "web_regression": "100%",
+    "apk_structure": "100%",
+    "apk_rebuild": "100%",
+    "overall": "100%"
+  },
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

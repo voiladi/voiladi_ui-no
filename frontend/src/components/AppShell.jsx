@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { UserPhoto } from "@/components/UserPhoto";
 import { useFitScale, shellStyle } from "@/hooks/useFitScale";
+import { OfflineBanner } from "@/components/Offline";
 
 /* Tap-to-open banners for realtime events (new match, new message). */
 const RealtimeToasts = () => {
@@ -134,6 +135,7 @@ export const AppShell = ({ nav = false }) => {
           </ScreenErrorBoundary>
         </main>
         {nav && <BottomNav />}
+        <OfflineBanner />
         {user && <RealtimeToasts />}
       </div>
     </div>

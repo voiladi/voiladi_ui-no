@@ -201,6 +201,15 @@
 - Download: https://www.voiladi.com/voiladi.apk (nginx serves with APK mime + attachment). Copies: frontend/public/voiladi.apk, deploy/android/voiladi-1.0.0.apk.
 - Validated by testing agent (iteration_13: 61/61 structural checks, androguard + pyaxml + apksigner).
 
+
+## Phase 15 — Offline notice, phone notifications, native splash (P1)
+**Status: COMPLETED (2026-09-10)**
+- Web: OfflineBanner (top pill while navigator offline) + OfflineScreen (cold start with token but network error -> no redirect to /welcome; Retry). AuthContext exposes netError.
+- Native bridge (lib/native.js): window.VoiladiNative.setToken/clearToken on login/logout/refresh, ready() after first render (NativeReady in App.js).
+- APK 1.1.0 (versionCode 2): native splash (logo, fades when web calls ready(), 8s safety), native offline view on main-frame errors (Try again), JS bridge, PollService (JobScheduler 15 min, persisted, GET /api/notifications, posts notifications with avatar, deep-links via "path" extra), Notifier channel voiladi_activity, POST_NOTIFICATIONS runtime prompt after login, second mipmap ic_notification (0x7f010001).
+- Tests iteration_14: 100% (web offline, bridge, regression, APK structure, rebuild). Deployed web (serves the new APK). Copies: deploy/android/voiladi-1.1.0.apk.
+- Ops note: pod restarts wipe the railway CLI -> reinstall (see deploy/README.md); java 17 survived, android-build/sdk is in /app.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

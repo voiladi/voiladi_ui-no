@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -7,6 +7,9 @@ import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
 import { LogoMark } from "@/components/Logo";
 import { Spinner } from "@/components/Loading";
+import { OfflineScreen } from "@/components/Offline";
+import { nativeReady } from "@/lib/native";
+import { getToken } from "@/lib/api";
 import Welcome from "@/pages/Welcome";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
@@ -36,10 +39,19 @@ const Splash = () => (
   </div>
 );
 
+/* Tells the Android shell the web app has rendered (hides the native splash). Harmless in browsers. */
+const NativeReady = () => {
+  useEffect(() => {
+    nativeReady();
+  }, []);
+  return null;
+};
+
 const Gate = ({ need }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, netError, refresh } = useAuth();
   const location = useLocation();
   if (loading) return <Splash />;
+  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
   const complete = !!user?.onboarded;
   if (need === "guest") {
     if (user) return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
@@ -55,8 +67,9 @@ const Gate = ({ need }) => {
 };
 
 const Home = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, netError, refresh } = useAuth();
   if (loading) return <Splash />;
+  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
   if (!user) return <Navigate to="/welcome" replace />;
   return <Navigate to={user.onboarded ? "/discover" : "/onboarding"} replace />;
 };
@@ -107,6 +120,7 @@ function App() {
             </Routes>
           </BrowserRouter>
           <Toaster />
+          <NativeReady />
         </SocketProvider>
       </AuthProvider>
     </div>

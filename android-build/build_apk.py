@@ -17,8 +17,8 @@ BT = os.path.join(SDK, "android-14")
 ANDROID_JAR = os.path.join(SDK, "platform", "android-34", "android.jar")
 OUT = os.path.join(ROOT, "out")
 PKG = "com.voiladi.app"
-VERSION_CODE = int(os.environ.get("VERSION_CODE", "1"))
-VERSION_NAME = os.environ.get("VERSION_NAME", "1.0.0")
+VERSION_CODE = int(os.environ.get("VERSION_CODE", "2"))
+VERSION_NAME = os.environ.get("VERSION_NAME", "1.1.0")
 ICON_SRC = os.path.join(ROOT, "..", "frontend", "public", "icon-512.png")
 
 ANDROID_NS = "http://schemas.android.com/apk/res/android"
@@ -27,10 +27,11 @@ ATTR = {  # android:attr resource ids (from android.R.attr)
     "launchMode": 0x0101001d, "screenOrientation": 0x0101001e, "configChanges": 0x0101001f,
     "minSdkVersion": 0x0101020c, "versionCode": 0x0101021b, "versionName": 0x0101021c, "windowSoftInputMode": 0x0101022b,
     "targetSdkVersion": 0x01010270, "allowBackup": 0x01010280, "hardwareAccelerated": 0x010102d3, "supportsRtl": 0x010103af,
-    "usesCleartextTraffic": 0x010104ec, "roundIcon": 0x0101052c,
+    "usesCleartextTraffic": 0x010104ec, "roundIcon": 0x0101052c, "permission": 0x01010006,
 }
 T_REF, T_STR, T_DEC, T_HEX, T_BOOL = 0x01, 0x03, 0x10, 0x11, 0x12
 ICON_ID = 0x7F010000
+SMALL_ICON_ID = 0x7F010001
 THEME_NO_ACTIONBAR = 16974124  # android.R.style.Theme_DeviceDefault_Light_NoActionBar
 
 
@@ -120,7 +121,7 @@ def build_manifest():
     x = Axml()
     x.prepare_attr_names(["versionCode", "versionName", "minSdkVersion", "targetSdkVersion", "name", "label", "icon", "roundIcon", "theme",
                           "allowBackup", "hardwareAccelerated", "supportsRtl", "usesCleartextTraffic", "exported", "launchMode",
-                          "screenOrientation", "configChanges", "windowSoftInputMode"])
+                          "screenOrientation", "configChanges", "windowSoftInputMode", "permission"])
     # pre-register namespace strings so indices are stable
     x.s("android")
     x.s(A)
@@ -135,7 +136,8 @@ def build_manifest():
     x.start("uses-sdk", [(A, "minSdkVersion", (T_DEC, 24)), (A, "targetSdkVersion", (T_DEC, 34))])
     x.end("uses-sdk")
     for perm in ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.ACCESS_FINE_LOCATION",
-                 "android.permission.ACCESS_COARSE_LOCATION", "android.permission.CAMERA", "android.permission.POST_NOTIFICATIONS"]:
+                 "android.permission.ACCESS_COARSE_LOCATION", "android.permission.CAMERA", "android.permission.POST_NOTIFICATIONS",
+                 "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]:
         x.start("uses-permission", [(A, "name", (T_STR, perm))])
         x.end("uses-permission")
     x.start("application", [
@@ -164,6 +166,13 @@ def build_manifest():
     x.end("category")
     x.end("intent-filter")
     x.end("activity")
+    # background poller (JobScheduler binds it with the system-only BIND_JOB_SERVICE permission)
+    x.start("service", [
+        (A, "name", (T_STR, PKG + ".PollService")),
+        (A, "permission", (T_STR, "android.permission.BIND_JOB_SERVICE")),
+        (A, "exported", (T_BOOL, 0xFFFFFFFF)),
+    ])
+    x.end("service")
     x.end("application")
     x.end("manifest")
     x.end_ns("android", A)
@@ -171,21 +180,27 @@ def build_manifest():
 
 
 # ------------------------------------------------------------------ resources.arsc (package 0x7f, type mipmap, entry ic_launcher)
-def build_arsc(icon_path_in_apk):
-    values = string_pool([icon_path_in_apk])            # global value strings
+def build_arsc(entries):
+    """entries: list of (name, path_in_apk) for type mipmap -> ids 0x7f0100NN in order."""
+    values = string_pool([p for _, p in entries])       # global value strings
     type_strings = string_pool(["mipmap"])              # type names (id 1)
-    key_strings = string_pool(["ic_launcher"])          # entry names
+    key_strings = string_pool([n for n, _ in entries])  # entry names
+    n = len(entries)
 
     # ResTable_typeSpec: header 16, one u32 flag per entry
-    type_spec = struct.pack("<HHIBBHI", 0x0202, 16, 16 + 4, 1, 0, 0, 1) + struct.pack("<I", 0)
+    type_spec = struct.pack("<HHIBBHI", 0x0202, 16, 16 + 4 * n, 1, 0, 0, n) + b"".join(struct.pack("<I", 0) for _ in range(n))
 
     # ResTable_type: default configuration (size 64, all zero)
     config = struct.pack("<I", 64) + b"\x00" * 60
-    entry = struct.pack("<HHI", 8, 0, 0) + struct.pack("<HBBI", 8, 0, T_STR, 0)  # key 0, value = string 0
+    entry_blob = b""
+    offsets = []
+    for i in range(n):
+        offsets.append(len(entry_blob))
+        entry_blob += struct.pack("<HHI", 8, 0, i) + struct.pack("<HBBI", 8, 0, T_STR, i)  # key i, value = string i
     header_size = 20 + len(config)
-    entries_start = header_size + 4 * 1
-    type_chunk = struct.pack("<HHIBBHII", 0x0201, header_size, entries_start + len(entry), 1, 0, 0, 1, entries_start) + config \
-        + struct.pack("<I", 0) + entry
+    entries_start = header_size + 4 * n
+    type_chunk = struct.pack("<HHIBBHII", 0x0201, header_size, entries_start + len(entry_blob), 1, 0, 0, n, entries_start) + config \
+        + b"".join(struct.pack("<I", o) for o in offsets) + entry_blob
 
     pkg_header_size = 288
     name = PKG.encode("utf-16-le")
@@ -211,23 +226,26 @@ def main():
     os.makedirs(classes, exist_ok=True)
 
     # 1) java -> class -> dex
-    run(["javac", "-source", "8", "-target", "8", "-nowarn", "-bootclasspath", ANDROID_JAR, "-d", classes,
-         os.path.join(ROOT, "src", "com", "voiladi", "app", "MainActivity.java")])
+    sources = [os.path.join(dp, f) for dp, _, fs in os.walk(os.path.join(ROOT, "src")) for f in fs if f.endswith(".java")]
+    run(["javac", "-source", "8", "-target", "8", "-nowarn", "-bootclasspath", ANDROID_JAR, "-d", classes] + sources)
     class_files = [os.path.join(dp, f) for dp, _, fs in os.walk(classes) for f in fs if f.endswith(".class")]
     run(["java", "-cp", os.path.join(BT, "lib", "d8.jar"), "com.android.tools.r8.D8", "--release", "--min-api", "24",
          "--lib", ANDROID_JAR, "--output", OUT] + class_files)
 
-    # 2) icon
+    # 2) icons: launcher (full colour) + status-bar silhouette (white V on transparent, alpha only is used by Android)
     icon_rel = "res/mipmap/ic_launcher.png"
+    small_rel = "res/mipmap/ic_notification.png"
     Image.open(ICON_SRC).convert("RGBA").resize((192, 192), Image.LANCZOS).save(os.path.join(OUT, "ic_launcher.png"))
+    make_small_icon(os.path.join(OUT, "ic_notification.png"))
 
     # 3) assemble unsigned apk
     unsigned = os.path.join(OUT, "voiladi-unsigned.apk")
     with zipfile.ZipFile(unsigned, "w") as z:
         z.writestr(zipfile.ZipInfo("AndroidManifest.xml"), build_manifest(), compress_type=zipfile.ZIP_DEFLATED)
-        z.writestr(zipfile.ZipInfo("resources.arsc"), build_arsc(icon_rel), compress_type=zipfile.ZIP_STORED)
+        z.writestr(zipfile.ZipInfo("resources.arsc"), build_arsc([("ic_launcher", icon_rel), ("ic_notification", small_rel)]), compress_type=zipfile.ZIP_STORED)
         z.write(os.path.join(OUT, "classes.dex"), "classes.dex", compress_type=zipfile.ZIP_DEFLATED)
         z.write(os.path.join(OUT, "ic_launcher.png"), icon_rel, compress_type=zipfile.ZIP_STORED)
+        z.write(os.path.join(OUT, "ic_notification.png"), small_rel, compress_type=zipfile.ZIP_STORED)
 
     # 4) align + sign (debug key, generated once and kept in the repo build dir)
     aligned = os.path.join(OUT, "voiladi-aligned.apk")
@@ -241,6 +259,25 @@ def main():
          "--key-pass", "pass:voiladi123", "--ks-key-alias", "voiladi", "--min-sdk-version", "24", "--out", final, aligned])
     run(["java", "-jar", os.path.join(BT, "lib", "apksigner.jar"), "verify", "--verbose", final])
     print("APK:", final, os.path.getsize(final), "bytes")
+
+
+def make_small_icon(path, size=96):
+    """Status-bar icon: the two V strokes in white on a transparent canvas (Android tints by alpha)."""
+    from PIL import ImageDraw
+    S = size * 4
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    def stroke(p1, p2, w, a):
+        (x1, y1), (x2, y2) = [(p[0] * S / 100, p[1] * S / 100) for p in (p1, p2)]
+        w = w * S / 100
+        d.line((x1, y1, x2, y2), fill=(255, 255, 255, a), width=int(w))
+        for (x, y) in ((x1, y1), (x2, y2)):
+            d.ellipse((x - w / 2, y - w / 2, x + w / 2, y + w / 2), fill=(255, 255, 255, a))
+
+    stroke((78, 18), (56, 66), 15, 150)
+    stroke((22, 18), (47, 80), 19, 255)
+    img.resize((size, size), Image.LANCZOS).save(path)
 
 
 def zipalign_py(src, dst):

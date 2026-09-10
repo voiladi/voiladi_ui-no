@@ -22,6 +22,7 @@ Optional: OTP_PROVIDER=dev|twilio_verify|twilio_sms (default auto-detect), TWILI
 
 ## Redeploy (from this repo)
 ```bash
+# If `railway` is missing after a pod restart: curl -fsSL https://railway.com/install.sh | sh ; export PATH="$HOME/.railway/bin:$PATH"
 source /app/deploy/.env.railway && export RAILWAY_API_TOKEN RAILWAY_NO_TELEMETRY=1
 cd /app
 railway up ./backend  --path-as-root --service voiladi-api --detach

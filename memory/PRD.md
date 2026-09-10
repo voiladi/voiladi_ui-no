@@ -64,3 +64,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   (routes_notifications.py; New/Earlier split via notifications_seen_at; tabs). Tests iteration_11/12 green. Deployed api + web.
 - Phase 14 (2026-09-09): Android APK (WebView shell) built without Gradle (hand-encoded AXML/ARSC + javac/d8/apksigner) in /app/android-build;
   download https://www.voiladi.com/voiladi.apk. Validated iteration_13 (61/61). Bump VERSION_CODE/VERSION_NAME env when rebuilding.
+- Phase 15 (2026-09-10): Offline banner/screen (web) + native offline view, Android background notifications (JobScheduler polling, no FCM),
+  native splash, JS bridge window.VoiladiNative. APK 1.1.0 at https://www.voiladi.com/voiladi.apk. Tests iteration_14 100%.
