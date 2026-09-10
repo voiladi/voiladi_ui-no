@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, X, ChevronRight, MoreHorizontal, UserRound, ShieldAlert, Ban, MessageCircle, Star } from "lucide-react";
+import { Heart, X, ChevronRight, MoreHorizontal, UserRound, ShieldAlert, Ban, MessageCircle, Star, Copy, ArrowDownWideNarrow, ArrowUpNarrowWide, Check } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -9,10 +9,10 @@ import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
 import { useLikesQuery, useLikesSentQuery } from "@/hooks/useBadges";
-import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Segmented } from "@/components/Chip";
-import { EmptyState, SkeletonList, Skeleton } from "@/components/EmptyState";
+import { SkeletonList, Skeleton } from "@/components/EmptyState";
+import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, CardsArt } from "@/components/SoftUI";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
@@ -25,6 +25,8 @@ const TABS = [
   { value: "sent", label: "You liked" },
 ];
 
+const NAV_PAD = "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))";
+
 export default function Likes() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -33,6 +35,8 @@ export default function Likes() {
   const received = useLikesQuery();
   const sent = useLikesSentQuery();
   const [tab, setTab] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [superOnly, setSuperOnly] = useState(false);
   const [sheet, setSheet] = useState(null);
   const [match, setMatch] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -43,9 +47,10 @@ export default function Likes() {
   const rows = useMemo(() => {
     const r = received.data?.likes || [];
     const s = (sent.data?.likes || []).filter((l) => !l.match_id);
-    const list = tab === "received" ? r : tab === "sent" ? s : [...r, ...s];
-    return list.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-  }, [received.data, sent.data, tab]);
+    let list = tab === "received" ? r : tab === "sent" ? s : [...r, ...s];
+    if (superOnly) list = list.filter((l) => l.superlike);
+    return list.sort((a, b) => (a.created_at < b.created_at ? 1 : -1) * (sort === "newest" ? 1 : -1));
+  }, [received.data, sent.data, tab, sort, superOnly]);
 
   const loading = received.isLoading || sent.isLoading;
   const total = (received.data?.count || 0) + (sent.data?.likes || []).filter((l) => !l.match_id).length;
@@ -106,76 +111,96 @@ export default function Likes() {
   const isReceived = sheet?.direction === "received";
 
   return (
-    <div className="min-h-full pb-24" data-testid="likes-page">
-      <header className="px-4 pt-1">
-        <div className="flex h-14 items-center">
-          <Brand size={30} />
-        </div>
-        <div className="mt-2 flex items-center justify-between">
-          <h1 className="vo-title">Likes</h1>
-          <span className="flex h-7 items-center text-[24px] font-semibold tracking-[-0.01em] text-ink" data-testid="likes-count">
-            {loading ? <Skeleton className="h-4 w-6 rounded-full" /> : total}
-          </span>
-        </div>
-        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-5" />
+    <div className="flex min-h-full flex-col bg-canvas" style={{ paddingBottom: NAV_PAD }} data-testid="likes-page">
+      <header className="px-5 pt-1">
+        <SoftHeader
+          right={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SoftIconButton icon={MoreHorizontal} label="More options" testId="likes-more-button" active={superOnly || sort !== "newest"} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-[18px] border-0 bg-bg p-1.5 shadow-modal" data-testid="likes-more-menu">
+                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("newest")} data-testid="likes-sort-newest">
+                  <ArrowDownWideNarrow className="mr-2 h-4 w-4" /> Newest first
+                  {sort === "newest" && <Check className="ml-auto h-4 w-4" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("oldest")} data-testid="likes-sort-oldest">
+                  <ArrowUpNarrowWide className="mr-2 h-4 w-4" /> Oldest first
+                  {sort === "oldest" && <Check className="ml-auto h-4 w-4" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSuperOnly((v) => !v)} data-testid="likes-filter-super">
+                  <Star className="mr-2 h-4 w-4" /> Super Likes only
+                  {superOnly && <Check className="ml-auto h-4 w-4" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
+        />
+        <SoftTitle
+          title="Likes"
+          subtitle="People who liked you"
+          testId="likes-title"
+          right={
+            <span className="vo-soft inline-flex h-[48px] shrink-0 items-center gap-2 rounded-full px-5 text-[22px] font-semibold tabular-nums tracking-[-0.02em] text-ink" data-testid="likes-count">
+              <Heart className="h-[22px] w-[22px] text-mute" fill="currentColor" strokeWidth={0} />
+              {loading ? <Skeleton className="h-4 w-5 rounded-full" /> : total}
+            </span>
+          }
+        />
+        <Segmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="vo-seg-lg mt-5" />
       </header>
 
       {loading ? (
-        <SkeletonList rows={6} avatar={64} className="mt-1 px-4" />
+        <SkeletonList rows={6} avatar={56} className="mt-5 px-5" />
       ) : received.isError || sent.isError ? (
-        <EmptyState
-          icon={Heart}
+        <SoftEmpty
+          art={<CardsArt />}
           title="Couldn't load likes"
           description="Check your connection and try again."
+          actionLabel="Try again"
+          onAction={() => {
+            received.refetch();
+            sent.refetch();
+          }}
+          actionTestId="likes-retry-button"
           testId="error-alert"
-          action={
-            <button
-              type="button"
-              className="vo-btn-primary w-full"
-              onClick={() => {
-                received.refetch();
-                sent.refetch();
-              }}
-            >
-              Try again
-            </button>
-          }
         />
       ) : rows.length === 0 ? (
-        <EmptyState
-          icon={Heart}
-          title={tab === "sent" ? "You haven't liked anyone yet" : "No likes yet"}
-          description={tab === "sent" ? "People you like show up here until they like you back." : "When someone likes you, they'll show up here and you can like them back."}
-          action={
-            <button type="button" className="vo-btn-primary w-full" onClick={() => navigate("/discover")} data-testid="likes-go-discover-button">
-              Go to Discover
-            </button>
-          }
+        <SoftEmpty
+          art={<CardsArt />}
+          title={superOnly ? "No Super Likes yet" : tab === "sent" ? "You haven't liked anyone yet" : "No likes yet"}
+          description={superOnly ? "Super Likes you send or receive will show up here." : tab === "sent" ? "People you like show up here until they like you back." : "When someone likes you, they'll show up here."}
+          actionIcon={Copy}
+          actionLabel="Explore people"
+          onAction={() => navigate("/explore")}
+          actionTestId="likes-go-explore-button"
+          footer="New connections are waiting"
         />
       ) : (
-        <ul className="mt-1 px-4" data-testid="likes-list">
+        <ul className="mt-5 flex flex-col gap-3 px-5" data-testid="likes-list">
           {rows.map((l, i) => {
             const p = l.user;
             const mine = l.direction === "sent";
             return (
-              <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="flex items-center gap-2 border-b border-line py-3.5" data-testid="likes-row">
-                <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setSheet(l)} data-testid="likes-row-open">
+              <motion.li key={`${l.direction}-${p.id}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="vo-soft-row gap-1 pr-2" data-testid="likes-row">
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-visible:outline-none" onClick={() => setSheet(l)} data-testid="likes-row-open">
                   <span className="relative shrink-0">
-                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-16 w-16 rounded-full text-xl" />
+                    <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[56px] w-[56px] rounded-full text-xl" />
                     <span className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-bg ${l.superlike ? "bg-blue" : "bg-red"} text-white`}>
                       {l.superlike ? <Star className="h-3 w-3" fill="currentColor" /> : <Heart className="h-3 w-3" fill="currentColor" />}
                     </span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[18px] font-semibold tracking-[-0.01em] text-ink">
+                    <span className="block truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">
                       {p.name} <span className="font-normal">{p.age}</span>
                     </span>
-                    <span className="mt-1 flex items-center gap-1.5 text-[15px] text-mute" data-testid="likes-row-sub">
+                    <span className="mt-0.5 flex items-center gap-1.5 text-[14px] text-mute" data-testid="likes-row-sub">
                       <span className={`h-1.5 w-1.5 rounded-full ${mine ? "bg-mute" : "bg-red"}`} />
                       {mine ? "You liked" : l.superlike ? "Super Liked you" : "Liked you"} {agoLabel(l.created_at)}
                     </span>
                   </span>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-mute" />
+                  <ChevronRight className="h-5 w-5 shrink-0 text-mute" strokeWidth={2} />
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -183,7 +208,7 @@ export default function Likes() {
                       <MoreHorizontal className="h-6 w-6" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">
+                  <DropdownMenuContent align="end" className="w-48 rounded-[18px] border-0 bg-bg p-1.5 shadow-modal">
                     <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setSheet(l)}>
                       <UserRound className="mr-2 h-4 w-4" /> View profile
                     </DropdownMenuItem>

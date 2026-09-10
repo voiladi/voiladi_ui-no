@@ -202,7 +202,7 @@ export default function Discover() {
       </div>
 
       {/* Three round actions */}
-      <div className="flex items-center justify-center gap-7 pt-4" style={{ paddingBottom: "calc(78px + env(safe-area-inset-bottom))" }} data-testid="discover-action-dock">
+      <div className="flex items-center justify-center gap-7 pt-4" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 12px + env(safe-area-inset-bottom, 0px))" }} data-testid="discover-action-dock">
         <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-action h-16 w-16" aria-label="Pass" data-testid="discover-pass-button">
           <X className="h-7 w-7" strokeWidth={2.5} />
         </button>

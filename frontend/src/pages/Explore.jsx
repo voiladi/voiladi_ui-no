@@ -103,7 +103,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="min-h-full pb-24" data-testid="explore-page">
+    <div className="min-h-full" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))" }} data-testid="explore-page">
       <header className="px-4 pt-1">
         <div className="flex h-14 items-center justify-between">
           <Brand size={30} />

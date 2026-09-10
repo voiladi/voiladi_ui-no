@@ -68,3 +68,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   native splash, JS bridge window.VoiladiNative. APK 1.1.0 at https://www.voiladi.com/voiladi.apk. Tests iteration_14 100%.
 - Phase 16 (2026-09-10): Toasts removed app-wide. Successes are inline (no popup); errors use a glass notice bar (lib/feedback.js, components/Feedback.jsx);
   confirmations are iOS glass action sheets (components/Dialogs.jsx). VOILADI+ shows a "Soon" pill. Tests iteration_15 17/17. NOT yet redeployed to Railway.
+- Phase 17 (2026-09-10): Likes + Messages tabs rebuilt 1:1 from soft-UI mockups (components/SoftUI.jsx), floating rounded bottom nav app-wide,
+  Chats tabs All/Matches/Unread + search toggle, Likes "..." sort/filter menu + heart count pill. Tests iteration_16 100%. Deployed voiladi-web.

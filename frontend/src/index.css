@@ -55,6 +55,19 @@
         --glass-press: rgba(0, 0, 0, 0.06);
         --glass-field: rgba(118, 118, 128, 0.12);
         --glass-edge: rgba(255, 255, 255, 0.5);
+
+        /* soft UI (Likes / Messages reference): raised light surfaces on the canvas */
+        --soft-bg: #FBFBFC;
+        --soft-bg-2: #F3F3F5;
+        --soft-shadow: 0 10px 28px rgba(17, 17, 17, 0.06), 0 2px 6px rgba(17, 17, 17, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        --soft-shadow-lg: 0 18px 44px rgba(17, 17, 17, 0.08), 0 4px 10px rgba(17, 17, 17, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        --soft-art-hi: #FFFFFF;
+        --soft-art-lo: #ECECEF;
+        --soft-art-dot: #B9B9BE;
+        --soft-art-edge: rgba(255, 255, 255, 0.95);
+        --soft-art-edge-2: rgba(255, 255, 255, 0.9);
+        --nav-h: 66px;
+        --nav-gap: 12px;
     }
 
     .dark {
@@ -77,6 +90,15 @@
         --glass-press: rgba(255, 255, 255, 0.08);
         --glass-field: rgba(118, 118, 128, 0.24);
         --glass-edge: rgba(255, 255, 255, 0.12);
+        --soft-bg: #161618;
+        --soft-bg-2: #1F1F22;
+        --soft-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        --soft-shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.6), 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        --soft-art-hi: #2C2C2E;
+        --soft-art-lo: #1C1C1E;
+        --soft-art-dot: #6E6E73;
+        --soft-art-edge: rgba(255, 255, 255, 0.10);
+        --soft-art-edge-2: rgba(255, 255, 255, 0.06);
         --on-ink: #000000;
         --backdrop: #0A0A0A;
         --overlay: rgba(0, 0, 0, 0.6);
@@ -509,7 +531,7 @@
     }
 
     .vo-notice-nav {
-        bottom: calc(62px + 1px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--nav-h) + var(--nav-gap) + 8px + env(safe-area-inset-bottom, 0px));
     }
 
     /* iOS notification banner (new match / new message). Tap to open, swipe up to dismiss. */
@@ -733,6 +755,107 @@
     @keyframes vo-sheet-out {
         from { transform: translate(-50%, 0); }
         to { transform: translate(-50%, 100%); }
+    }
+
+    /* ---------- soft UI (Likes / Messages) ---------- */
+    .vo-soft {
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow);
+    }
+
+    .vo-soft-lg {
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow-lg);
+    }
+
+    /* round 44px icon button, raised */
+    .vo-soft-icon {
+        @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40;
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow);
+        transition-property: transform, opacity;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .vo-soft-icon:active {
+        transform: scale(0.94);
+    }
+
+    /* full-width raised pill button inside the empty card */
+    .vo-soft-btn {
+        @apply inline-flex h-[54px] w-full items-center justify-center gap-3 rounded-full px-6 text-[18px] font-semibold text-ink select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue;
+        letter-spacing: -0.01em;
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow);
+        transition-property: transform, opacity;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .vo-soft-btn:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    /* list row as a raised card */
+    .vo-soft-row {
+        @apply flex w-full items-center gap-3.5 rounded-[22px] p-3 text-left focus-visible:outline-none;
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow);
+        transition-property: transform, opacity;
+        transition-duration: 150ms;
+    }
+
+    .vo-soft-row:active {
+        transform: scale(0.99);
+        opacity: 0.92;
+    }
+
+    /* larger segmented control (45px) */
+    .vo-seg-lg {
+        padding: 4px;
+        background: var(--surface);
+    }
+
+    .vo-seg-lg .vo-seg-item {
+        height: 37px;
+        font-size: 17px;
+        letter-spacing: -0.01em;
+    }
+
+    .vo-seg-lg .vo-seg-on {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* floating bottom nav */
+    .vo-float-nav {
+        background: var(--soft-bg);
+        box-shadow: var(--soft-shadow-lg);
+    }
+
+    /* 3D-ish art: two stacked cards with a heart */
+    .vo-art-card {
+        position: absolute;
+        width: 156px;
+        height: 156px;
+        border-radius: 30px;
+        background: linear-gradient(160deg, var(--soft-art-hi) 0%, var(--soft-art-lo) 100%);
+        box-shadow: 0 22px 40px rgba(17, 17, 17, 0.10), 0 6px 12px rgba(17, 17, 17, 0.05), inset 0 2px 0 var(--soft-art-edge), inset 0 -6px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .vo-art-card-back {
+        left: 4px;
+        top: 0;
+        transform: rotate(-14deg);
+        background: linear-gradient(160deg, var(--soft-art-lo) 0%, var(--soft-art-hi) 100%);
+        box-shadow: 0 16px 30px rgba(17, 17, 17, 0.06), inset 0 1px 0 var(--soft-art-edge-2);
+    }
+
+    .vo-art-card-front {
+        right: 4px;
+        bottom: 0;
+        transform: rotate(6deg);
     }
 
     /* ---------- misc ---------- */

@@ -12,13 +12,13 @@ const TABS = [
   { to: "/profile", label: "Profile", icon: User, id: "profile", fill: true },
 ];
 
-/* Five tabs, white bar, hairline on top. Active tab: filled ink icon + semibold label. New activity: plain red dot. */
+/* Floating rounded bar, inset 12px from the edges, raised on the canvas. Active tab: filled ink icon + semibold label. */
 export const BottomNav = () => {
   const { pathname } = useLocation();
   const { likes, unread } = useBadges();
   return (
-    <nav data-testid="bottom-nav" className="vo-bar absolute inset-x-0 bottom-0 z-30 border-t border-line" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <ul className="flex h-[62px] items-stretch">
+    <nav data-testid="bottom-nav" className="absolute inset-x-3 z-30" style={{ bottom: "calc(var(--nav-gap) + env(safe-area-inset-bottom, 0px))" }}>
+      <ul className="vo-float-nav flex items-stretch rounded-[32px] px-1" style={{ height: "var(--nav-h)" }}>
         {TABS.map((t) => {
           const active = pathname.startsWith(t.to);
           const Icon = t.icon;
@@ -30,12 +30,12 @@ export const BottomNav = () => {
                 data-testid={`bottom-nav-${t.id}`}
                 aria-label={badge > 0 ? `${t.label}, ${badge} new` : t.label}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex h-full flex-col items-center justify-center gap-[5px] transition-colors duration-150 focus-visible:outline-none active:opacity-60 ${
+                className={`relative flex h-full flex-col items-center justify-center gap-[5px] rounded-[26px] transition-colors duration-150 focus-visible:outline-none active:opacity-60 ${
                   active ? "text-ink" : "text-mute hover:text-ink2"
                 }`}
               >
                 <span className="relative">
-                  <Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.1 : 1.7} fill={active && t.fill ? "currentColor" : "none"} />
+                  <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.1 : 1.7} fill={active && t.fill ? "currentColor" : "none"} />
                   {badge > 0 && <span data-testid={`bottom-nav-${t.id}-badge`} className="absolute -right-1 -top-0.5 h-[9px] w-[9px] rounded-full bg-red ring-2 ring-bg" />}
                 </span>
                 <span className={`text-[13px] leading-none tracking-[-0.01em] ${active ? "font-semibold" : "font-medium"}`}>{t.label}</span>

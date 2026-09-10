@@ -138,7 +138,7 @@ export default function Profile() {
   const boostPill = !stats ? <Skeleton className="h-3 w-8 rounded-full" /> : stats.boost_active ? hhmmss(boostLeft) : stats.boost_next_at ? "Tomorrow" : "Start";
 
   return (
-    <div className="flex min-h-full flex-col bg-canvas pb-[74px]" data-testid="profile-page">
+    <div className="flex min-h-full flex-col bg-canvas" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 8px + env(safe-area-inset-bottom, 0px))" }} data-testid="profile-page">
       {/* header: brand left, bell (red dot when there is something new) + gear right */}
       <header className="flex h-[52px] items-center justify-between px-3 pt-1">
         <Brand size={34} />

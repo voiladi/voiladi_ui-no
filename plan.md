@@ -219,6 +219,13 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
   interests limit -> red counter flash via hooks/useFlash.js; notifications switch disabled when blocked). Apple font stack + glass tokens in index.css.
 - Tests iteration_15: 17/17 pass. Dev hook window.__voFeedback (non-production only).
 
+## Phase 17 — Likes + Messages tabs 1:1 from soft-UI mockups, floating nav app-wide (P0) — COMPLETED 2026-09-10
+- components/SoftUI.jsx: SoftHeader (40px brand), SoftIconButton (44px raised), SoftTitle (34px + subtitle + right slot), SoftEmpty (fills to nav),
+  BubblesArt (SVG) / CardsArt. CSS: --soft-* tokens, .vo-soft*, .vo-seg-lg, .vo-float-nav, .vo-art-card*. --nav-h/--nav-gap drive page bottom padding.
+- Chats: Messages title, tabs All/Matches(no msgs)/Unread, search toggle button, compose drawer, raised rows, empty card + "Find people" -> /explore.
+- Likes: "..." menu (Newest/Oldest, Super Likes only), heart-count pill, tabs, raised rows, empty card + "Explore people" -> /explore.
+- BottomNav floating (inset 12px, 66px, raised) on all tabs; Discover/Explore/Profile paddings updated. Tests iteration_16 100%. Deployed web.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:
