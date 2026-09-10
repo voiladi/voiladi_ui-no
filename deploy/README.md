@@ -77,3 +77,14 @@ If you ever want voiladi.com to be served directly by Railway (no redirect hop),
 ## Photo uploads (2026-09-09)
 Uploads are optimised server-side (backend/routes_profile.py optimize_image): EXIF orientation fixed, downscaled to max 1280px,
 re-encoded JPEG q84 (WEBP when transparent), HEIC decoded via pillow-heif. Existing files on the volume are untouched.
+
+### Cloudflare in front of the domain (2026-09-10 16:15 UTC) - fixes Jio (India) blocking of *.up.railway.app
+Jio's DNS refuses to resolve *.up.railway.app, so CNAMEs to Railway were dead for every Jio user (web AND the Android app).
+DNS for voiladi.com now lives at Cloudflare (Free plan, zone 1ec504b048b74b878f55e2525bfca6a1, NS piper/terry.ns.cloudflare.com).
+Records (all Proxied / orange cloud, so clients only ever see Cloudflare IPs):
+  CNAME @    -> kt4522tf.up.railway.app   (root served directly by Railway now; GoDaddy forwarding A records removed)
+  CNAME www  -> 79o52nmh.up.railway.app
+  CNAME api  -> jbpsrl5b.up.railway.app   (WebSocket /api/ws verified through Cloudflare)
+  email / _domainconnect CNAMEs + MX/SPF/DMARC/SRV kept, DNS-only.
+SSL mode is Full (verified by 200s end to end; token has no Zone Settings permission to read/change it).
+API token (Edit zone DNS only) in deploy/.env.cloudflare (gitignored). Verify: curl -sD- https://www.voiladi.com/ | grep -i cf-ray
