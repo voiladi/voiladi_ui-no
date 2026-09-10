@@ -262,6 +262,16 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Search: GET /api/search?q= across ALL accounts (@username exact/prefix > name prefix > contains; excludes blocked; followed/matched/is_me flags) + communities.
   Explore search is debounced server-side; rows show @handle · job, "You" / "Following" / "Matched" pills. Native search cancel button hidden.
 
+## Phase 21 — Profile verification (live selfie, human review, black tick) (P1) — COMPLETED 2026-09-10
+- Backend routes_verification.py: GET /verification, POST /verification/selfie (private upload -> pending), admin GET /admin/verifications?status=,
+  POST /admin/verifications/{id}/approve|reject {note} (x-admin-key); WS event "verification"; notification items. is_verified = approved selfie
+  (was: has phone). Messaging: POST /matches/{id}/messages -> 403 until verified. Seed: even-index sample people approved.
+- Frontend: components/VerifiedBadge.jsx (black tick, popover "Verified Profile"), pages/Verify.jsx (front camera + oval guide, capture/retake/submit,
+  file fallback, pending/approved states), pages/AdminVerify.jsx (/admin/verify, key in sessionStorage, selfie vs profile photo, approve/reject + note),
+  Profile verify card (none/pending/rejected), ChatRoom composer replaced by verify gate for unverified users, ticks on Discover/Explore/Likes/Chats/
+  chat header/profile sheet, realtime banner + refresh on review. Tests iteration_19: backend 70/71 (wording), admin UI 100%; badges verified manually.
+- Deployed api + web; prod reseeded.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

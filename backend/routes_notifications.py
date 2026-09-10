@@ -99,6 +99,18 @@ async def list_notifications(user=Depends(get_current_user)):
                 "href": f"/chats/{m['id']}",
             })
 
+    # verification result
+    v = user.get("verification") or {}
+    if v.get("status") in ("approved", "rejected") and v.get("reviewed_at"):
+        ok = v["status"] == "approved"
+        items.append({"id": f"verify:{v['reviewed_at']}", "type": "verification", "icon": "badge-check" if ok else "shield-alert",
+                      "title": "You're verified" if ok else "We couldn't verify your selfie",
+                      "sub": "The black tick now shows on your profile." if ok else (v.get("note") or "Take a clearer selfie and try again."),
+                      "created_at": v["reviewed_at"], "href": "/profile" if ok else "/verify"})
+    elif v.get("status") == "pending" and v.get("submitted_at"):
+        items.append({"id": f"verify:pending", "type": "verification", "icon": "badge-check", "title": "Selfie received",
+                      "sub": "We're reviewing it by hand - usually within a day.", "created_at": v["submitted_at"], "href": "/profile"})
+
     # system notices, timed from account creation
     created = user.get("created_at") or now_iso()
     try:

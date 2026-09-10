@@ -9,6 +9,7 @@ import { UserPhoto } from "@/components/UserPhoto";
 import { SkeletonList } from "@/components/EmptyState";
 import { GlassSegmented } from "@/components/GlassSegmented";
 import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, BubblesArt } from "@/components/SoftUI";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
 
@@ -103,7 +104,10 @@ export default function Chats() {
                   {m.online && <span className="vo-dot-online" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">{m.user.name}</span>
+                  <span className="flex items-center gap-1.5 text-[17px] font-semibold tracking-[-0.01em] text-ink">
+                    <span className="truncate">{m.user.name}</span>
+                    {m.user.verified && <VerifiedBadge size={17} testId="chats-row-verified" />}
+                  </span>
                   <span className={`mt-0.5 block truncate text-[15px] ${m.unread ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
                     {preview(m)}
                   </span>

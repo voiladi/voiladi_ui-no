@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import { BadgeCheck, Briefcase, MapPin, ShieldAlert, Ban } from "lucide-react";
+import { Briefcase, MapPin, ShieldAlert, Ban } from "lucide-react";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Tag } from "@/components/Chip";
@@ -106,7 +107,7 @@ export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, on
                 {profile.name}
               </h2>
               {profile.age ? <span className="text-[22px] font-medium leading-none text-ink">{profile.age}</span> : null}
-              {profile.verified && <BadgeCheck className="h-5 w-5 text-blue" fill="currentColor" stroke="white" />}
+              {profile.verified && <VerifiedBadge size={22} onPhoto testId="profile-sheet-verified" />}
             </div>
             {profile.username && (
               <p className="mt-1.5 text-[15px] leading-none text-mute" data-testid="profile-sheet-username">

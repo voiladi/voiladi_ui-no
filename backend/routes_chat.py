@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from core import db, now_iso, get_current_user, public_profile
+from core import is_verified, db, now_iso, get_current_user, public_profile
 from ws_manager import manager
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -95,6 +95,8 @@ async def send_message(match_id: str, body: MessageIn, user=Depends(get_current_
     match = await _get_match(match_id, user["id"])
     if not match.get("active", True):
         raise HTTPException(status_code=400, detail="This chat has ended")
+    if not is_verified(user):
+        raise HTTPException(status_code=403, detail="Verify your profile to send messages")
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Message can't be empty")

@@ -11,7 +11,7 @@ import { OfflineBanner } from "@/components/Offline";
 /* Tap-to-open banners for realtime events (new match, new message). */
 const RealtimeToasts = () => {
   const { subscribe } = useSocket();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,12 +48,21 @@ const RealtimeToasts = () => {
             testId: "toast-new-message",
           });
         }
+      } else if (ev.type === "verification") {
+        refresh?.();
+        banner({
+          title: ev.status === "approved" ? "You're verified" : "Selfie not approved",
+          sub: ev.status === "approved" ? "The black tick now shows on your profile." : ev.note || "Take a clearer selfie and try again.",
+          onClick: () => navigate(ev.status === "approved" ? "/profile" : "/verify"),
+          duration: 6000,
+          testId: "toast-verification",
+        });
       } else if (ev.type === "unmatch") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         qc.invalidateQueries({ queryKey: ["stats"] });
       }
     });
-  }, [subscribe, user, qc, navigate, location.pathname]);
+  }, [subscribe, user, qc, navigate, location.pathname, refresh]);
   return null;
 };
 

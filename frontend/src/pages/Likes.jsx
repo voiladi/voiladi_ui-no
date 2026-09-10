@@ -13,6 +13,7 @@ import { UserPhoto } from "@/components/UserPhoto";
 import { GlassSegmented } from "@/components/GlassSegmented";
 import { SkeletonList, Skeleton } from "@/components/EmptyState";
 import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, CardsArt } from "@/components/SoftUI";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
@@ -192,8 +193,11 @@ export default function Likes() {
                     </span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">
-                      {p.name} <span className="font-normal">{p.age}</span>
+                    <span className="flex items-center gap-1.5 text-[17px] font-semibold tracking-[-0.01em] text-ink">
+                      <span className="truncate">
+                        {p.name} <span className="font-normal">{p.age}</span>
+                      </span>
+                      {p.verified && <VerifiedBadge size={17} testId="likes-row-verified" />}
                     </span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-[14px] text-mute" data-testid="likes-row-sub">
                       <span className={`h-1.5 w-1.5 rounded-full ${mine ? "bg-mute" : "bg-red"}`} />

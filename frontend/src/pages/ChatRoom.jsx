@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useSocket } from "@/context/SocketContext";
 import { useMeta } from "@/hooks/useMeta";
 import { UserPhoto } from "@/components/UserPhoto";
@@ -268,7 +269,10 @@ export default function ChatRoom() {
               {match.online && <span className="vo-dot-online h-2.5 w-2.5" />}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[16px] font-semibold leading-tight text-ink">{other.name}</span>
+              <span className="flex items-center gap-1.5 text-[16px] font-semibold leading-tight text-ink">
+                <span className="truncate">{other.name}</span>
+                {other.verified && <VerifiedBadge size={16} testId="chat-header-verified" />}
+              </span>
               {status && <span className="block text-[12px] leading-tight text-mute">{status}</span>}
             </span>
           </button>
@@ -399,6 +403,17 @@ export default function ChatRoom() {
         )}
       </div>
 
+      {!user?.verified ? (
+        <div className="vo-bar flex items-center gap-3 border-t border-line px-4 pt-3" style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }} data-testid="chat-verify-gate">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-ink">Verify your profile to send messages</span>
+            <span className="block text-[13px] text-mute">A quick selfie gets you the black tick.</span>
+          </span>
+          <button type="button" onClick={() => navigate("/verify")} className="h-[40px] shrink-0 rounded-full bg-ink px-5 text-[15px] font-semibold text-onink active:scale-95" style={{ transitionProperty: "transform", transitionDuration: "120ms" }} data-testid="chat-verify-button">
+            Verify
+          </button>
+        </div>
+      ) : (
       <form
         className="vo-bar border-t border-line px-3 pt-2.5"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
@@ -432,6 +447,7 @@ export default function ChatRoom() {
           </button>
         </div>
       </form>
+      )}
 
       <Drawer open={icebreakers} onOpenChange={setIcebreakers}>
         <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-[20px] border-0 bg-bg" data-testid="icebreakers-drawer">

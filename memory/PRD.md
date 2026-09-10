@@ -74,3 +74,4 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   Tests iteration_17 100%. Deployed voiladi-api + voiladi-web.
 - Phase 19 (2026-09-10): Removed fit-to-canvas transform scaling; shell fully responsive (clamp/cqi units, flex scroll areas). iteration_18 100%. Deployed web.
 - Phase 20 (2026-09-10): Usernames (@handle) - unique, auto-generated for existing users, editable with live availability, shown on Profile/public profiles, searchable in Explore. Deployed.
+- Phase 21 (2026-09-10): Profile verification - live selfie -> human review at /admin/verify (ADMIN_API_KEY) -> black tick "Verified Profile"; unverified can't send messages. Deployed.

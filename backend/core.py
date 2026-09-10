@@ -194,8 +194,8 @@ def compatibility(a: dict, b: dict) -> Tuple[int, List[str]]:
 
 
 def is_verified(user: dict) -> bool:
-    """The blue badge: the account has a verified phone number attached."""
-    return bool(user.get("phone"))
+    """The black tick ("Verified Profile"): a live selfie was reviewed and approved by the team."""
+    return (user.get("verification") or {}).get("status") == "approved"
 
 
 # ---------- usernames ----------
@@ -267,6 +267,8 @@ def own_profile(user: dict) -> dict:
     u["has_basics"] = has_basics(u)
     u["onboarded"] = bool(u.get("onboarded"))
     u["verified"] = is_verified(u)
+    v = user.get("verification") or {}
+    u["verification"] = {"status": v.get("status") or "none", "submitted_at": v.get("submitted_at"), "reviewed_at": v.get("reviewed_at"), "note": v.get("note") or ""}
     u["has_password"] = bool(user.get("password_hash"))
     u.setdefault("photos", [])
     u.setdefault("interests", [])

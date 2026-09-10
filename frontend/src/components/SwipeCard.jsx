@@ -1,6 +1,7 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { BadgeCheck, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
 import { distanceLabel } from "@/lib/format";
 import { EASE, SETTLE } from "@/lib/motion";
@@ -95,7 +96,7 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen }, ref) => {
             {profile.name}
             {profile.age ? `, ${profile.age}` : ""}
           </h2>
-          {profile.verified && <BadgeCheck className="h-6 w-6 text-blue" fill="currentColor" stroke="white" strokeWidth={1.75} data-testid="discover-card-verified" />}
+          {profile.verified && <VerifiedBadge size={24} onPhoto testId="discover-card-verified" />}
         </span>
         {profile.job && <span className="mt-1 block text-[17px] leading-[22px] tracking-[-0.01em] text-white/95">{profile.job}</span>}
         <span className="mt-1.5 flex items-center gap-1.5 text-[15px] leading-[20px] text-white/95" data-testid="discover-card-distance">

@@ -25,6 +25,8 @@ import Filters from "@/pages/Filters";
 import Settings from "@/pages/Settings";
 import Notifications from "@/pages/Notifications";
 import Legal from "@/pages/Legal";
+import Verify from "@/pages/Verify";
+import AdminVerify from "@/pages/AdminVerify";
 
 /* Boot screen while the session is checked: logo centred, thin spinner near the bottom (as native apps do). */
 const Splash = () => (
@@ -92,6 +94,7 @@ function App() {
               </Route>
               <Route element={<AppShell nav={false} />}>
                 <Route path="/legal/:page" element={<Legal />} />
+                <Route path="/admin/verify" element={<AdminVerify />} />
               </Route>
               <Route element={<Gate need="onboarding" />}>
                 <Route element={<AppShell nav={false} />}>
@@ -113,6 +116,7 @@ function App() {
                   <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/verify" element={<Verify />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

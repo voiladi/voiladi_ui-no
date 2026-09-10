@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Heart, Star, MessageCircle, Users, Bell, ShieldCheck, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Star, MessageCircle, Users, Bell, ShieldCheck, Settings, BadgeCheck, ShieldAlert } from "lucide-react";
 import { useNotifications, markNotificationsSeen } from "@/hooks/useNotifications";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Segmented } from "@/components/Chip";
@@ -20,10 +20,10 @@ const BADGE = {
   match: { bg: "#3478F6", Icon: Users },
 };
 
-const SYSTEM_ICON = { bell: Bell, shield: ShieldCheck, gear: Settings };
+const SYSTEM_ICON = { bell: Bell, shield: ShieldCheck, gear: Settings, "badge-check": BadgeCheck, "shield-alert": ShieldAlert };
 
 const Avatar = ({ item }) => {
-  if (item.type === "system") {
+  if (item.type === "system" || item.type === "verification") {
     if (item.icon === "logo") {
       return (
         <span className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full bg-ink" aria-hidden="true">

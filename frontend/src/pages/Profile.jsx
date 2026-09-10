@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp } from "lucide-react";
+import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp, ShieldCheck } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useStats } from "@/hooks/useStats";
 import { useNotifications } from "@/hooks/useNotifications";
 import { SoftHeader, SoftIconButton, SoftCard, SoftPill } from "@/components/SoftUI";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Skeleton } from "@/components/Loading";
 
@@ -117,6 +118,7 @@ export default function Profile() {
 
   if (!user) return null;
   const { pct } = completion(user);
+  const vstatus = user?.verification?.status || "none";
   const complete = pct >= 100;
 
   const startBoost = async () => {
@@ -162,9 +164,12 @@ export default function Profile() {
         </button>
 
         <div className="min-w-0 flex-1 pt-1">
-          <h1 className="truncate text-[clamp(23px,7cqi,28px)] font-bold leading-[1.15] tracking-[-0.02em] text-ink" data-testid="profile-name">
-            {user.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-[clamp(23px,7cqi,28px)] font-bold leading-[1.15] tracking-[-0.02em] text-ink" data-testid="profile-name">
+              {user.name}
+            </h1>
+            {user.verified && <VerifiedBadge size={22} testId="profile-verified-badge" />}
+          </div>
           {user.username && (
             <p className="mt-0.5 truncate text-[clamp(14px,4cqi,16px)] leading-[1.25] tracking-[-0.01em] text-mute" data-testid="profile-username">
               @{user.username}
@@ -183,6 +188,30 @@ export default function Profile() {
           </div>
         </div>
       </section>
+
+      {/* verification */}
+      {!user.verified && (
+        <section className="mx-4 mt-3.5">
+          <SoftCard as="button" type="button" className="flex w-full items-center gap-3.5 p-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/verify")} testId="profile-verify-card" data-status={vstatus}>
+            <span className="vo-soft-tile h-[50px] w-[50px] rounded-[16px]">
+              <ShieldCheck className="h-6 w-6" strokeWidth={1.8} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[17px] font-bold leading-[21px] tracking-[-0.01em] text-ink">
+                {vstatus === "pending" ? "Verification in review" : vstatus === "rejected" ? "Verification didn't go through" : "Verify your profile"}
+              </span>
+              <span className="mt-0.5 block text-[13.5px] leading-[18px] text-mute">
+                {vstatus === "pending" ? "We're checking your selfie - usually within a day." : vstatus === "rejected" ? "Take a clearer selfie and try again." : "Get the black tick and unlock messaging with a quick selfie."}
+              </span>
+            </span>
+            {vstatus === "pending" ? (
+              <span className="vo-soft inline-flex h-[32px] shrink-0 items-center rounded-full px-3 text-[13px] font-semibold text-mute">Pending</span>
+            ) : (
+              <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} />
+            )}
+          </SoftCard>
+        </section>
+      )}
 
       {/* profile completion */}
       <section className="mx-4 mt-3.5">

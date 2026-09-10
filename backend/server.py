@@ -12,6 +12,7 @@ import routes_discover
 import routes_chat
 import routes_admin
 import routes_notifications
+import routes_verification
 import ws_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -36,6 +37,7 @@ app.include_router(routes_discover.router)
 app.include_router(routes_chat.router)
 app.include_router(routes_admin.router)
 app.include_router(routes_notifications.router)
+app.include_router(routes_verification.router)
 app.include_router(ws_manager.router)
 
 app.add_middleware(

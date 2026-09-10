@@ -642,6 +642,121 @@ class VoiladiTester:
         assert data['unseen_count'] == 0, f"unseen_count should be 0, got {data['unseen_count']}"
         print(f"  ✓ unseen_count is now 0")
 
+    # ========== VERIFICATION TESTS ==========
+    def test_verification_get_unverified(self):
+        """Test GET /verification returns status none for new user"""
+        status, data = self.req('GET', '/verification', 200)
+        assert 'status' in data, "status not in response"
+        assert 'verified' in data, "verified not in response"
+        assert 'copy' in data, "copy not in response"
+        assert data['status'] == 'none', f"Expected status=none, got {data['status']}"
+        assert data['verified'] == False, f"Expected verified=False, got {data['verified']}"
+        print(f"  ✓ Verification status: {data['status']}, verified={data['verified']}")
+
+    def test_verification_submit_selfie(self):
+        """Test POST /verification/selfie uploads selfie and sets status to pending"""
+        with open(TEST_PHOTO, 'rb') as f:
+            files = {'file': ('selfie.jpg', f, 'image/jpeg')}
+            status, data = self.req('POST', '/verification/selfie', 200, files=files)
+        assert 'status' in data, "status not in response"
+        assert data['status'] == 'pending', f"Expected status=pending, got {data['status']}"
+        assert data['verified'] == False, "verified should still be False"
+        print(f"  ✓ Selfie submitted, status={data['status']}")
+
+    def test_verification_submit_while_pending(self):
+        """Test POST /verification/selfie while pending returns 400"""
+        with open(TEST_PHOTO, 'rb') as f:
+            files = {'file': ('selfie.jpg', f, 'image/jpeg')}
+            status, data = self.req('POST', '/verification/selfie', 400, files=files)
+        assert 'already being reviewed' in data.get('detail', '').lower() or 'pending' in data.get('detail', '').lower(), "Should mention pending/review"
+        print(f"  ✓ Duplicate submission rejected: {data.get('detail')}")
+
+    def test_verification_submit_non_image(self):
+        """Test POST /verification/selfie with non-image returns 400"""
+        files = {'file': ('test.txt', b'not an image', 'text/plain')}
+        status, data = self.req('POST', '/verification/selfie', 400, files=files)
+        assert 'jpg' in data.get('detail', '').lower() or 'png' in data.get('detail', '').lower() or 'image' in data.get('detail', '').lower(), "Should mention image types"
+        print(f"  ✓ Non-image rejected: {data.get('detail')}")
+
+    def test_admin_verifications_no_key(self):
+        """Test GET /admin/verifications without admin key returns 401"""
+        status, data = self.req('GET', '/admin/verifications', 401, params={'status': 'pending'})
+        print(f"  ✓ Admin endpoint without key rejected (401)")
+
+    def test_admin_verifications_wrong_key(self):
+        """Test GET /admin/verifications with wrong admin key returns 401"""
+        status, data = self.req('GET', '/admin/verifications', 401, params={'status': 'pending'}, headers={'x-admin-key': 'wrong-key'})
+        print(f"  ✓ Admin endpoint with wrong key rejected (401)")
+
+    def test_admin_verifications_list_pending(self):
+        """Test GET /admin/verifications with correct key returns pending verifications"""
+        status, data = self.req('GET', '/admin/verifications', 200, params={'status': 'pending'}, headers={'x-admin-key': 'voiladi-admin-dev-key'})
+        assert 'items' in data, "items not in response"
+        assert 'counts' in data, "counts not in response"
+        assert 'pending' in data['counts'], "pending count not in response"
+        assert 'approved' in data['counts'], "approved count not in response"
+        assert 'rejected' in data['counts'], "rejected count not in response"
+        print(f"  ✓ Admin verifications: {data['counts']['pending']} pending, {data['counts']['approved']} approved, {data['counts']['rejected']} rejected")
+        # Store user_id for approval test
+        if len(data['items']) > 0:
+            self.pending_verification_user_id = data['items'][0]['user_id']
+
+    def test_admin_approve_verification(self):
+        """Test POST /admin/verifications/{user_id}/approve approves verification"""
+        if not hasattr(self, 'pending_verification_user_id'):
+            # Use current user's ID
+            self.pending_verification_user_id = self.user['id']
+        
+        status, data = self.req('POST', f'/admin/verifications/{self.pending_verification_user_id}/approve', 200, 
+                               json={'note': 'Looks good!'}, 
+                               headers={'x-admin-key': 'voiladi-admin-dev-key'})
+        assert 'status' in data, "status not in response"
+        assert data['status'] == 'approved', f"Expected status=approved, got {data['status']}"
+        print(f"  ✓ Verification approved for user {self.pending_verification_user_id}")
+
+    def test_admin_approve_non_pending(self):
+        """Test POST /admin/verifications/{user_id}/approve on non-pending returns 400"""
+        # Try to approve the same user again
+        if not hasattr(self, 'pending_verification_user_id'):
+            print(f"  ⚠ Skipped (no pending verification)")
+            return
+        
+        status, data = self.req('POST', f'/admin/verifications/{self.pending_verification_user_id}/approve', 400,
+                               json={'note': ''}, 
+                               headers={'x-admin-key': 'voiladi-admin-dev-key'})
+        assert 'pending' in data.get('detail', '').lower(), "Should mention not pending"
+        print(f"  ✓ Approving non-pending rejected: {data.get('detail')}")
+
+    def test_verification_get_after_approval(self):
+        """Test GET /verification after approval shows verified=true"""
+        status, data = self.req('GET', '/verification', 200)
+        assert data['status'] == 'approved', f"Expected status=approved, got {data['status']}"
+        assert data['verified'] == True, f"Expected verified=True, got {data['verified']}"
+        print(f"  ✓ Verification status after approval: {data['status']}, verified={data['verified']}")
+
+    def test_auth_me_verified(self):
+        """Test GET /auth/me shows verified=true after approval"""
+        status, data = self.req('GET', '/auth/me', 200)
+        assert data['verified'] == True, f"Expected verified=True, got {data['verified']}"
+        assert data['verification']['status'] == 'approved', f"Expected verification.status=approved, got {data['verification']['status']}"
+        print(f"  ✓ /auth/me shows verified={data['verified']}")
+
+    def test_messages_send_verified(self):
+        """Test POST /matches/{id}/messages works for verified user"""
+        if not hasattr(self, 'match_id'):
+            print(f"  ⚠ Skipped (no match available)")
+            return
+        
+        status, data = self.req('POST', f'/matches/{self.match_id}/messages', 200, json={'text': 'Hello as verified user!'})
+        assert 'id' in data, "message id not in response"
+        print(f"  ✓ Verified user can send messages")
+
+    def test_search_username(self):
+        """Test GET /search?q=neo returns profiles with username"""
+        status, data = self.req('GET', '/search', 200, params={'q': 'neo'})
+        assert 'profiles' in data, "profiles not in response"
+        print(f"  ✓ Search returned {len(data['profiles'])} profiles for 'neo'")
+
     def summary(self):
         """Print test summary"""
         print(f"\n{'='*60}")
@@ -751,6 +866,21 @@ def main():
     tester.test("Notifications: GET /notifications", tester.test_notifications_get)
     tester.test("Notifications: POST /notifications/seen", tester.test_notifications_mark_seen)
     tester.test("Notifications: unseen_count after seen", tester.test_notifications_unseen_count_zero)
+    
+    # Verification tests
+    tester.test("Verification: GET /verification (unverified)", tester.test_verification_get_unverified)
+    tester.test("Verification: POST /verification/selfie", tester.test_verification_submit_selfie)
+    tester.test("Verification: Submit while pending (400)", tester.test_verification_submit_while_pending)
+    tester.test("Verification: Submit non-image (400)", tester.test_verification_submit_non_image)
+    tester.test("Admin: GET /admin/verifications without key (401)", tester.test_admin_verifications_no_key)
+    tester.test("Admin: GET /admin/verifications wrong key (401)", tester.test_admin_verifications_wrong_key)
+    tester.test("Admin: GET /admin/verifications (pending)", tester.test_admin_verifications_list_pending)
+    tester.test("Admin: POST /admin/verifications/{id}/approve", tester.test_admin_approve_verification)
+    tester.test("Admin: Approve non-pending (400)", tester.test_admin_approve_non_pending)
+    tester.test("Verification: GET /verification (approved)", tester.test_verification_get_after_approval)
+    tester.test("Verification: GET /auth/me (verified)", tester.test_auth_me_verified)
+    tester.test("Verification: Send message as verified", tester.test_messages_send_verified)
+    tester.test("Search: GET /search?q=neo", tester.test_search_username)
     
     return tester.summary()
 
