@@ -3,6 +3,7 @@ import re
 import secrets
 import uuid
 import logging
+import time
 from datetime import timedelta, datetime
 from typing import Optional
 
@@ -14,6 +15,7 @@ from core import (ensure_username, db, now, now_iso, make_token, get_current_use
                   hash_password, verify_password,
                   TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, TWILIO_MESSAGING_SID, TWILIO_VERIFY_SID, UPLOAD_DIR)
 from ws_manager import manager
+from security import lock_remaining, LOCK_AFTER, LOCK_WINDOW_SEC, LOCK_FOR_SEC
 
 logger = logging.getLogger("voiladi.auth")
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -149,11 +151,25 @@ async def register(body: EmailPasswordIn):
 
 @router.post("/login")
 async def login(body: EmailPasswordIn):
+    """Email + password. After LOCK_AFTER wrong passwords in LOCK_WINDOW_SEC the account cools off for LOCK_FOR_SEC (brute-force guard)."""
     email = normalize_email(body.email)
     user = await db.users.find_one({"email": email}, {"_id": 0})
-    if not user or not verify_password(body.password, user.get("password_hash"), user.get("password_salt")):
+    ts = time.time()
+    if user:
+        remaining = lock_remaining(user, ts)
+        if remaining > 0:
+            raise HTTPException(status_code=429, detail=f"Too many attempts. Try again in {max(1, remaining // 60)} min")
+    ok = bool(user) and verify_password(body.password, user.get("password_hash"), user.get("password_salt"))
+    if not ok:
+        if user:
+            lock = user.get("login_lock") or {}
+            fails = [t for t in (lock.get("fails") or []) if ts - t < LOCK_WINDOW_SEC] + [ts]
+            new_lock = {"fails": fails[-LOCK_AFTER:], "until": ts + LOCK_FOR_SEC if len(fails) >= LOCK_AFTER else 0}
+            await db.users.update_one({"id": user["id"]}, {"$set": {"login_lock": new_lock}})
+            if new_lock["until"]:
+                logger.warning("login locked for %s after %d failures", user["id"], len(fails))
         raise HTTPException(status_code=400, detail="Incorrect email or password")
-    await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}, "$unset": {"login_lock": ""}})
     return {"token": make_token(user["id"]), "user": own_profile(user), "is_new": False}
 
 

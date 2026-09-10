@@ -13,11 +13,10 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
 
-const TABS = [
-  { value: "all", label: "All" },
-  { value: "matches", label: "Matches" },
-  { value: "unread", label: "Unread" },
-];
+/*
+ * Messages inbox. "All" = matches + conversations you started; "Requests" = people who messaged you first
+ * (Instagram DM requests) - they stay there until you reply or accept; "Unread" = anything waiting for you.
+ */
 
 const NAV_PAD = "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))";
 
@@ -31,6 +30,16 @@ export default function Chats() {
   const [compose, setCompose] = useState(false);
   const searchRef = useRef(null);
   const matches = useMemo(() => data?.matches || [], [data]);
+  const requests = useMemo(() => data?.requests || [], [data]);
+
+  const TABS = useMemo(
+    () => [
+      { value: "all", label: "All" },
+      { value: "requests", label: requests.length ? `Requests (${requests.length})` : "Requests" },
+      { value: "unread", label: "Unread" },
+    ],
+    [requests.length]
+  );
 
   useEffect(() => {
     if (searching) searchRef.current?.focus();
@@ -38,26 +47,31 @@ export default function Chats() {
   }, [searching]);
 
   const filtered = useMemo(() => {
-    if (tab === "matches") return matches.filter((m) => !m.last_message);
+    if (tab === "requests") return requests;
     if (tab === "unread") return matches.filter((m) => m.unread > 0);
     return matches;
-  }, [matches, tab]);
+  }, [matches, requests, tab]);
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return s ? filtered.filter((m) => m.user.name.toLowerCase().includes(s)) : filtered;
+    return s ? filtered.filter((m) => m.user.name.toLowerCase().includes(s) || (m.user.username || "").toLowerCase().includes(s)) : filtered;
   }, [filtered, q]);
 
   const preview = (m) => {
-    if (!m.last_message) return "New match. Say hi!";
+    if (m.is_request) return m.last_message?.text ? m.last_message.text : "Wants to send you a message";
+    if (!m.last_message) {
+      if (m.kind === "dm" && m.status === "request") return "Request sent";
+      return "New match. Say hi!";
+    }
     const mine = m.last_message.sender_id === user?.id;
     if (m.last_message.kind === "reaction") return mine ? m.last_message.text.replace("Liked your", "You liked their") : m.last_message.text;
-    return `${mine ? "You: " : ""}${m.last_message.text}`;
+    const base = `${mine ? "You: " : ""}${m.last_message.text}`;
+    return m.kind === "dm" && m.status === "request" && mine ? `${base} · Request sent` : base;
   };
 
   const empty = {
-    all: { title: "No conversations yet", description: "When you match, you can start a conversation here.", footer: "Start something new" },
-    matches: { title: "No new matches", description: "Matches you haven't messaged yet will show up here.", footer: "Start something new" },
+    all: { title: "No conversations yet", description: "Match with someone, or open a profile and tap Message.", footer: "Start something new" },
+    requests: { title: "No message requests", description: "When someone you haven't matched with messages you, it shows up here first.", footer: "You're in control" },
     unread: { title: "You're all caught up", description: "Unread messages will show up here.", footer: "Start something new" },
   }[tab];
 
@@ -96,9 +110,14 @@ export default function Chats() {
         )
       ) : (
         <ul className="mt-5 flex flex-col gap-3 px-[clamp(14px,5cqi,20px)]" data-testid="chats-list">
+          {tab === "requests" && (
+            <li className="px-1 pb-1 text-[13px] leading-[17px] text-mute" data-testid="chats-requests-hint">
+              These people aren't your matches yet. Open a request to accept or delete it - they won't know until you reply.
+            </li>
+          )}
           {rows.map((m, i) => (
             <motion.li key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)}>
-              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-soft-row" data-testid="chats-list-row">
+              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-soft-row" data-testid={m.is_request ? "chats-request-row" : "chats-list-row"} data-kind={m.kind}>
                 <span className="relative shrink-0">
                   <UserPhoto src={m.user.photos?.[0]} name={m.user.name} size="xs" className="h-[56px] w-[56px] rounded-full text-xl" />
                   {m.online && <span className="vo-dot-online" />}
@@ -108,17 +127,21 @@ export default function Chats() {
                     <span className="truncate">{m.user.name}</span>
                     {m.user.verified && <VerifiedBadge size={17} testId="chats-row-verified" />}
                   </span>
-                  <span className={`mt-0.5 block truncate text-[15px] ${m.unread ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
+                  <span className={`mt-0.5 block truncate text-[15px] ${m.unread || m.is_request ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
                     {preview(m)}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1.5 pr-1">
                   <span className="text-[13px] text-mute">{chatTime(m.last_message_at || m.created_at)}</span>
-                  {m.unread > 0 && (
+                  {m.is_request ? (
+                    <span className="inline-flex h-[22px] items-center rounded-full bg-ink px-2.5 text-[11px] font-semibold text-onink" data-testid="chats-request-badge">
+                      Request
+                    </span>
+                  ) : m.unread > 0 ? (
                     <span className="vo-badge" data-testid="chats-unread-badge">
                       {m.unread}
                     </span>
-                  )}
+                  ) : null}
                 </span>
               </button>
             </motion.li>
@@ -129,15 +152,15 @@ export default function Chats() {
       <Drawer open={compose} onOpenChange={setCompose}>
         <DrawerContent className="mx-auto max-h-[80dvh] max-w-[430px] rounded-t-[28px] border-0 bg-canvas" data-testid="compose-drawer">
           <DrawerTitle className="mt-3 px-5 text-[22px] font-bold tracking-[-0.02em] text-ink">New message</DrawerTitle>
-          <DrawerDescription className="mb-3 px-5 text-[15px] text-mute">Pick a match to start talking.</DrawerDescription>
+          <DrawerDescription className="mb-3 px-5 text-[15px] text-mute">Pick a conversation, or find someone new in Explore.</DrawerDescription>
           <div className="vo-scroll px-5 pb-8">
             {matches.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface text-mute">
                   <MessageCircle className="h-6 w-6" strokeWidth={1.8} />
                 </span>
-                <p className="mt-3 text-[16px] font-semibold text-ink">No matches yet</p>
-                <p className="mt-1 text-[14px] text-mute">Find people in Explore to get started.</p>
+                <p className="mt-3 text-[16px] font-semibold text-ink">No conversations yet</p>
+                <p className="mt-1 text-[14px] text-mute">Open anyone's profile and tap Message.</p>
                 <button
                   type="button"
                   className="vo-soft-btn mt-5 h-12 max-w-[240px] text-[16px]"
@@ -152,6 +175,20 @@ export default function Chats() {
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  className="vo-soft-row"
+                  onClick={() => {
+                    setCompose(false);
+                    navigate("/explore");
+                  }}
+                  data-testid="compose-find-people-row"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-onink">
+                    <Search className="h-5 w-5" strokeWidth={2.2} />
+                  </span>
+                  <span className="text-[16px] font-semibold text-ink">Find someone new</span>
+                </button>
                 {matches.map((m) => (
                   <button
                     key={m.id}

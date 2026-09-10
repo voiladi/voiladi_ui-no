@@ -15,5 +15,9 @@ RUN yarn build
 FROM nginx:1.27-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY security-headers.inc.template /etc/nginx/templates/security-headers.inc.template
+# derives WS_BACKEND_URL for the Content-Security-Policy; sourced (not executed) by the nginx entrypoint
+COPY docker/15-derive-ws.envsh /docker-entrypoint.d/15-derive-ws.envsh
+RUN chmod 755 /docker-entrypoint.d/15-derive-ws.envsh
 ENV PORT=3000
 EXPOSE 3000

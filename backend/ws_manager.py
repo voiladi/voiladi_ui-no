@@ -1,4 +1,5 @@
 """WebSocket connection manager + endpoint for real-time events."""
+import asyncio
 import logging
 from typing import Dict, Set
 
@@ -39,13 +40,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@router.websocket("/ws/{token}")
-async def ws_endpoint(ws: WebSocket, token: str):
-    user_id = decode_token(token)
-    if not user_id:
-        await ws.close(code=4001)
-        return
-    await manager.connect(user_id, ws)
+async def _run(ws: WebSocket, user_id: str):
     await ws.send_json({"type": "hello", "user_id": user_id})
     try:
         while True:
@@ -66,3 +61,31 @@ async def ws_endpoint(ws: WebSocket, token: str):
     except Exception as e:  # noqa
         logger.debug(f"ws closed: {e}")
         manager.disconnect(user_id, ws)
+
+
+@router.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    """Preferred: connect, then send {"type": "auth", "token": "..."} as the first frame (keeps tokens out of URL logs)."""
+    await ws.accept()
+    try:
+        first = await asyncio.wait_for(ws.receive_json(), timeout=10)
+    except Exception:
+        await ws.close(code=4001)
+        return
+    user_id = decode_token(first.get("token") or "") if first.get("type") == "auth" else None
+    if not user_id:
+        await ws.close(code=4001)
+        return
+    manager.active.setdefault(user_id, set()).add(ws)
+    await _run(ws, user_id)
+
+
+@router.websocket("/ws/{token}")
+async def ws_endpoint_legacy(ws: WebSocket, token: str):
+    """Older clients: token in the path. Kept for the rollout window."""
+    user_id = decode_token(token)
+    if not user_id:
+        await ws.close(code=4001)
+        return
+    await manager.connect(user_id, ws)
+    await _run(ws, user_id)

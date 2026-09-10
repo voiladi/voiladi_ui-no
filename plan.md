@@ -3,17 +3,28 @@
 ## 1) Objectives
 - Deliver **Voiladi**: a **mobile-first** dating app for ages **18–30** with:
   - **Account creation + login (Email + Password)**
-  - **Phone number + OTP verification** (required during onboarding, as shown in photos)
+  - **Phone number + OTP verification**
   - **Profile + photo upload**
   - **Swipe cards** (like/pass + **Voila** superlike quota)
-  - **Explore grid** (tabs: All / Near you / New / Popular)
-  - **Likes** (tabs: All / Likes you / You liked)
-  - **Real-time chat** (WebSockets + fallback)
-  - **Vibe check** prompts / icebreakers
-  - **Filters** (location + age + gender preference)
+  - **Explore grid** (tabs + global @username search)
+  - **Likes** views
+  - **Real-time chat** (WebSockets + fallback polling)
+  - **Filters** (age/distance/show-me)
+  - **Manual selfie verification** (human review) → **black tick** + unlock messaging
+  - **Direct messages (DM Requests)**: **verified users can message any profile**; recipient sees it under **Requests** until they reply/accept
 - **STRICTLY NO AI RELATED FEATURES** in UX/UI, copy, or flows.
-- **Top priority**: **Phase 9 pixel-perfect UI replication** of the user’s provided interface photos. No “AI generated” redesigns, no creative liberties.
-- Keep deployment **env-driven**, production on **Railway**, and preserve **cache-busting** so users see latest builds.
+- **Top priority**: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
+  - No “AI generated” look, no creative liberties.
+  - Preserve neumorphic/glass tokens and Apple font stack.
+- Production is **env-driven**, hosted on **Railway**, with domain behind **Cloudflare** (fixes Jio).
+- Performance target: **Instagram-like perceived speed**
+  - Fast first paint (boot splash)
+  - Lazy route loading with professional loaders
+  - Thumbnail photo delivery + edge caching
+  - Reduce India latency where possible (region migration if approved)
+- Security target: strong server + client hardening.
+  - **Do not rotate JWT secret yet** (keep sessions) (user decision)
+  - Protect against abuse (rate limiting, lockouts), lock down WebView and release signing
 
 ---
 
@@ -76,242 +87,246 @@
 
 ### 9.1 Why this phase exists
 - User explicitly demanded: **“Just make as it is I send you now in the interface photos.”**
-- User rejected:
-  - iOS-style minimal clone
-  - Editorial/Magazine redesign
 - Therefore the UI must be a **pixel-perfect clone** of the provided photos.
 
 ### 9.2 User decisions recorded (binding)
 1) **Email + Password is REAL** account creation/login.
-   - Phone number + OTP verification is still required (during onboarding, as in the photos).
+   - Phone number + OTP verification is still required.
 2) **Replicate every screen in the photos exactly**.
-   - Wire real data where possible.
-   - Show placeholders where backend feature doesn’t exist (Boost/VOILADI+).
-   - “Super Likes” maps to **real Voila quota**.
-3) Gender is not shown in the photos during onboarding but is required for matching.
-   - Added minimally as a segmented control on the “What’s your name?” step.
-   - “Show me” defaults to **Everyone**.
-4) After tests pass: **deploy to Railway immediately**.
+3) Gender not shown in photos but required for matching → minimally added.
+4) After tests pass: **deploy to Railway**.
 
 ### 9.3 Backend work (FastAPI + MongoDB)
 **Status: COMPLETED**
-- Auth:
-  - `POST /api/auth/register` and `POST /api/auth/login` implemented.
-  - Password hashing uses PBKDF2 (`hashlib.pbkdf2_hmac`) with per-user random salt.
-  - Phone attach + verification: `POST /api/auth/verify-phone`.
-  - Indexes: sparse unique on `users.email` and `users.phone`.
-- Explore + Likes + Stats:
-  - `GET /api/explore?tab=all|near|new|popular`
-  - `GET /api/likes/sent`
-  - `GET /api/likes/received`
-  - `GET /api/me/stats` includes UI-aligned fields: followers/following/profile_views + voilas.
-- Profile views:
-  - Profile view tracking wired (increment when appropriate endpoints are hit).
+- Auth: register/login, PBKDF2 hashing, phone verify, sparse unique indexes.
+- Explore + Likes + Stats, profile view tracking.
 
 ### 9.4 Frontend work (React + Tailwind)
-**Status: COMPLETED (pixel-perfect UI implemented as per photos)**
-- Tokens / typography / radii / components implemented to match the photo spec.
-- 5-tab bottom nav exactly as photographed.
-- Page set rebuilt to match photos:
-  - Splash + Welcome pager
-  - Signup/Login (email/password)
-  - Onboarding: Name+DOB+Gender, Phone, OTP, Photo (skippable), Interests, Notifications, Done
-  - Discover, Explore, Likes, Chat list, Chat room
-  - Profile, Edit Profile, Filters, Settings, Legal
-
-#### Fixes made during this session (Phase 9 hardening)
-- **Frontend build/runtime fixes**
-  - `Filters.jsx`: Fixed Babel “Maximum call stack size exceeded” caused by a local component named `Thumb` colliding with Radix `SliderPrimitive.Thumb` under the visual-edits Babel plugin. Renamed to `SliderKnob`.
-  - `Chats.jsx`: Fixed `useMemo` dependency warning by memoizing the `matches` array.
-  - `index.css`: Hid native date input calendar indicator so only the custom trailing calendar icon appears (as in the reference), while keeping the picker tappable.
-  - `PhoneOtp.jsx` / onboarding phone step: Replaced Radix Select country picker with a transparent native `<select>` overlay (keeps the same look) to ensure reliability on phones and in automation; prevents accidental real SMS sends by allowing deterministic selection of test prefixes.
+**Status: COMPLETED**
+- Tokens / typography / radii / components implemented to match photo spec.
+- 5-tab bottom nav.
+- Full page set implemented.
 
 ### 9.5 Testing + verification
 **Status: COMPLETED**
-- Build verification:
-  - `esbuild` compilation check passed.
-  - CRA/webpack dev server compile is clean (no “Compiled with problems” overlay).
-- Visual verification:
-  - Screenshot verification performed across the full screen set against the reference boards.
-- Automated test report:
-  - `/app/test_reports/iteration_6.json`
-  - Backend: **45/45 passed (100%)**
-  - Frontend: All core flows validated; the single critical onboarding country selector issue was fixed and re-verified end-to-end.
-- End-to-end flow re-verified:
-  - Signup → onboarding → phone select +1 → test OTP dev code → photo upload → interests → discover.
+- Test reports in `/app/test_reports/iteration_6.json` and later.
 
 ---
 
 ## Phase 10 — Deploy this Phase 9 build to Railway (P0)
-**Status: COMPLETED (2026-09-09 17:43 UTC) — voiladi-api 6347754e SUCCESS, voiladi-web cb21775f SUCCESS; https://api.voiladi.com/api/health ok, https://www.voiladi.com serves new build main.d31542e6.js with no-store headers; prod register/login/explore/stats smoke passed**
-
-### 10.1 Deployment steps (per `/app/deploy/README.md`)
-1) Load Railway token:
-   - `source /app/deploy/.env.railway && export RAILWAY_API_TOKEN RAILWAY_NO_TELEMETRY=1`
-2) Deploy:
-   - `railway up ./backend  --path-as-root --service voiladi-api --detach`
-   - `railway up ./frontend --path-as-root --service voiladi-web --detach`
-3) Verify health + smoke:
-   - API health: `https://api.voiladi.com/api/health`
-   - Web: `https://www.voiladi.com`
-   - Confirm env wiring (web points to api domain), login/signup works, onboarding works with test prefixes.
-
----
-
+**Status: COMPLETED**
+- Deployment steps captured in `/app/deploy/README.md`.
 
 ---
 
 ## Phase 11 — Profile 1:1 rebuild, Boost, Welcome screen, loading system (P0)
-**Status: COMPLETED (2026-09-09)**
-- Profile screen rebuilt from the user's high-res reference (100px avatar + camera disc, name/tagline/stats column, PROFILE COMPLETION card,
-  grey card with Boost / Super Likes / VOILADI+ rows (white icon tiles + white pills), grey card with Account / Privacy & Safety / Preferences / Help & Support).
-- REAL Boost: `POST /api/me/boost` (90 min, one per 24h), `/api/me/stats` returns boost_active/boost_until/boost_next_at; boosted users rank first in discover/explore. Live HH:MM:SS countdown pill.
-- Bottom nav: 26px icons, 12px labels, plain red dot badges, two-squares Discover icon.
-- Global size corrections measured from the boards (inputs 52, chips 42, buttons 16px, icon buttons 40, OTP boxes white+border, dark glass chips on Discover card, white segmented everywhere, hairline dividers on Filters).
-- NEW Welcome screen exactly as the user's final reference (logo with two-stroke V, "Connect with people.", blurb, Create new account / Log in, legal line).
-- Loading system: Spinner / PageLoader / Skeleton* (components/Loading.jsx), boot splash with spinner, busy buttons keep solid ink with spinner, list skeletons, chat-room spinner, image fade-in, route transitions.
-- Fixed dialog overlays (bg-ink/30 did not resolve -> bg-black/45).
-- Tests: iteration_7 (BE 47/47, FE 100%), iteration_8 (FE 95%; the 4 flagged items were test-selector mismatches, verified manually).
-- Deployed to Railway (voiladi-api + voiladi-web).
-- Logo updated everywhere to the user's final mark (thick white stroke front, grey stroke behind, radius 23.5%, wordmark 800 weight); favicon.svg, PNG icons (32/64/180/192/512 + maskable), manifest.json, OG tags added. Welcome page made fluid (clamp() sizes, flex rhythm, safe areas) and verified at 320x568, 393x852, 430x932, 1440x900 with no scrolling. Redeployed web.
+**Status: COMPLETED**
+- Profile rebuilt 1:1.
+- Real Boost feature.
+- Welcome screen exact.
+- Loading primitives added.
 
+---
 
-## Phase 12 — Blank-screen bug, exact logo, Profile 1:1 + fit-to-device scaling (P0)
-**Status: COMPLETED (2026-09-09)**
-- BUG (iOS Safari: Profile/Likes/Filters turned white until reload): root cause = AnimatePresence mode="wait" exit-wait in AppShell. Fixed with a plain
-  <main key={pathname}> + CSS entrance animation (.vo-page-fade/.vo-page-push) + ScreenErrorBoundary. Verified iteration_9 (80 rapid switches, 0 blank) and iteration_10 (70/70).
-- Logo: user's own PNG cropped pixel-exact (/public/logo-mark.png) used by LogoMark everywhere; favicon/app icons/manifest regenerated from it.
-- Profile rebuilt 1:1 from the hi-res reference (canvas bg, white cards, 60/42px rows) and fits 393x852 without scrolling.
-- Fit-to-device system (hooks/useFitScale.js): shell laid out at viewport/scale and transform-scaled (0.78..1) so screens keep the mockup proportions on any phone; frozen while typing.
-- Deployed web to Railway (SUCCESS).
+## Phase 12 — Blank-screen bug fix + exact logo + responsive shell evolution
+**Status: COMPLETED**
+- Removed transform scaling; migrated to fluid responsive layouts.
+- Screen transition bug fixed.
 
+---
 
-## Phase 13 — Instagram-style notifications + Notifications page (P0)
-**Status: COMPLETED (2026-09-09)**
-- Toasts: single dark bottom bar above the tab bar (sonner unstyled, .vo-toast), success check / red error icon; realtime match/message banners = dark top card with avatar (.vo-banner, position top-center). No stacking, no white cards.
-- Notifications page (/notifications) from the profile bell: tabs All/Likes/Matches/Messages/System, New/Earlier groups, avatar badges, system notices. Backend routes_notifications.py (GET /api/notifications, POST /api/notifications/seen; users.notifications_seen_at). Bell dot = unseen_count.
-- Tests iteration_11 (toasts) + iteration_12 (notifications, BE+FE 100%). Deployed api + web.
+## Phase 13 — Instagram-style notifications + Notifications page
+**Status: COMPLETED**
+- Notifications page + backend routes.
 
+---
 
 ## Phase 14 — Android APK (P1)
-**Status: COMPLETED (2026-09-09)**
-- /app/android-build: WebView shell (com.voiladi.app, MainActivity -> https://www.voiladi.com/, file chooser, geolocation permission, back navigation, white status bar).
-  build_apk.py hand-encodes AndroidManifest.xml (binary AXML) + resources.arsc (icon) because aapt2 is x86-only; javac + d8 + apksigner (v2/v3, keystore android-build/voiladi-debug.keystore, pass voiladi123).
-  SDK bits in android-build/sdk (gitignored; re-download build-tools_r34 + platform-34-ext7 if missing). Requires openjdk-17 (apt).
-- Download: https://www.voiladi.com/voiladi.apk (nginx serves with APK mime + attachment). Copies: frontend/public/voiladi.apk, deploy/android/voiladi-1.0.0.apk.
-- Validated by testing agent (iteration_13: 61/61 structural checks, androguard + pyaxml + apksigner).
+**Status: COMPLETED**
+- Native WebView wrapper built via `android-build/build_apk.py`.
 
+---
 
-## Phase 15 — Offline notice, phone notifications, native splash (P1)
+## Phase 15 — Offline notice, native notifications bridge, native splash
+**Status: COMPLETED**
+
+---
+
+## Phase 16 — No-popup feedback: inline states + iOS glass sheets
+**Status: COMPLETED**
+
+---
+
+## Phase 17 — Likes + Messages tabs soft-UI rebuild + floating nav
+**Status: COMPLETED**
+
+---
+
+## Phase 18 — Explore / Profile / Discover 1:1 from neumorphic mockups + communities
+**Status: COMPLETED**
+
+---
+
+## Phase 19 — Fully responsive shell (no transform scaling)
+**Status: COMPLETED**
+
+---
+
+## Phase 20 — Usernames + Global Search
+**Status: COMPLETED**
+
+---
+
+## Phase 21 — Manual Profile Verification (selfie, human review, black tick)
+**Status: COMPLETED**
+- Admin verify dashboard.
+- Verified badges.
+- Unverified chat lock for matches messaging.
+
+---
+
+## Phase 22 — Settings refactor + Verification in Settings + Loading/Offline/Perf + Cloudflare (P0)
 **Status: COMPLETED (2026-09-10)**
-- Web: OfflineBanner (top pill while navigator offline) + OfflineScreen (cold start with token but network error -> no redirect to /welcome; Retry). AuthContext exposes netError.
-- Native bridge (lib/native.js): window.VoiladiNative.setToken/clearToken on login/logout/refresh, ready() after first render (NativeReady in App.js).
-- APK 1.1.0 (versionCode 2): native splash (logo, fades when web calls ready(), 8s safety), native offline view on main-frame errors (Try again), JS bridge, PollService (JobScheduler 15 min, persisted, GET /api/notifications, posts notifications with avatar, deep-links via "path" extra), Notifier channel voiladi_activity, POST_NOTIFICATIONS runtime prompt after login, second mipmap ic_notification (0x7f010001).
-- Tests iteration_14: 100% (web offline, bridge, regression, APK structure, rebuild). Deployed web (serves the new APK). Copies: deploy/android/voiladi-1.1.0.apk.
-- Ops note: pod restarts wipe the railway CLI -> reinstall (see deploy/README.md); java 17 survived, android-build/sdk is in /app.
+- Verification moved from Profile card → **Settings > Verification** (Meta-Verified style)
+- Settings now has **Account** section with **Email / Phone / Verification**; Email + Phone editable
+  - Backend: `PUT /api/auth/email` added (password confirmation for password accounts)
+- Professional loading improvements:
+  - Boot splash (pre-JS) + route-level lazy loading with Suspense RouteLoader
+  - Chunk-load auto-recover (one-shot reload)
+- Offline UX improved:
+  - Cache last profile locally; on network blip show “Reconnecting…” pill instead of blocking offline screen
+- Domain reliability:
+  - Cloudflare proxy in front of `voiladi.com` to fix **Jio DNS blocking** of `*.up.railway.app`
+- Photo/performance:
+  - `logo-mark.png` reduced dramatically + cached
+  - Backend `/api/uploads/{file}?w=240|480|800` on-demand variants in `uploads/_thumbs` with immutable caching
+  - Frontend `UserPhoto size` → grids/lists/avatars request thumbnails; swipe cards use full
 
-## Phase 16 — No-popup feedback: inline states + iOS glass sheets (P0) — COMPLETED 2026-09-10
-User rejected toast pop-ups ("weird / AI generated"). Chosen after visual mockups: (C) inline state, no popup for successes;
-Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (glass, red destructive, separate Cancel) for confirmations.
-- lib/feedback.js (notice/banner store) + components/Feedback.jsx (NoticeBar above tab bar, iOS notification Banner at top) mounted in AppShell.
-- components/Dialogs.jsx rebuilt: ConfirmDialog = iOS action sheet; ReportDialog = sheet with reason list + inline "Thanks for letting us know" done state.
-- Sonner Toaster removed from App.js; all 45 toast() call sites converted (Profile VOILADI+ -> "Soon" pill; block/unmatch/superlike/save/boost -> silent inline;
-  interests limit -> red counter flash via hooks/useFlash.js; notifications switch disabled when blocked). Apple font stack + glass tokens in index.css.
-- Tests iteration_15: 17/17 pass. Dev hook window.__voFeedback (non-production only).
+---
 
-## Phase 17 — Likes + Messages tabs 1:1 from soft-UI mockups, floating nav app-wide (P0) — COMPLETED 2026-09-10
-- components/SoftUI.jsx: SoftHeader (40px brand), SoftIconButton (44px raised), SoftTitle (34px + subtitle + right slot), SoftEmpty (fills to nav),
-  BubblesArt (SVG) / CardsArt. CSS: --soft-* tokens, .vo-soft*, .vo-seg-lg, .vo-float-nav, .vo-art-card*. --nav-h/--nav-gap drive page bottom padding.
-- Chats: Messages title, tabs All/Matches(no msgs)/Unread, search toggle button, compose drawer, raised rows, empty card + "Find people" -> /explore.
-- Likes: "..." menu (Newest/Oldest, Super Likes only), heart-count pill, tabs, raised rows, empty card + "Explore people" -> /explore.
-- BottomNav floating (inset 12px, 68px, raised) on all tabs; Discover/Explore/Profile paddings updated. Tests iteration_16 100%.
-- Pass 2 (user: 'not same, box line, glass effect'): removed all 1px inset highlights (they aliased into a dashed line under fit-scale), widened SVG filter regions
-  (shadow was clipping to a rectangle = the 'box'), wider/softer neumorphic shadows, CardsArt -> SVG, 34px card radius, 22px title, art 220x198.
-- Pass 3 (user: 'iPhone glass effect, white + shades of black, fonts'): true neumorphism tokens (--neu-*: top-left white light, bottom-right dark shadow,
-  gradient surfaces, inset segment track, bevelled SVG art). Font stack now -apple-system/SF Pro first (real SF on iPhone), Inter variable w/ opsz for Android.
-- Pass 4: stronger downward dark shadows (--neu-dark 0.16/0.20) as in reference; useFitScale(fluid) -> /likes & /chats scale by WIDTH only so they fill the phone height 1:1.
-- Pass 5: empty card content is height-fluid (art flex-basis 198/min 92 + aspect-ratio, clamp(dvh) rhythm; page h-full when empty) -> zero scroll on 360x640..430x932.
-- Pass 6: components/GlassSegmented.jsx - iOS 26 liquid-glass segmented control (press = lens lifts w/ blur+sheen, drag follows finger w/ rubber-band,
-  labels light up under lens, release snaps w/ jelly spring, haptic via navigator.vibrate, keyboard arrows). Used on Likes/Chats. Deployed web.
+## Phase 23 — Direct Messages + Requests tab + Chat polish (P0)
+**Status: COMPLETED (2026-09-10 19:15 UTC)**
 
-## Phase 18 — Explore / Profile / Discover 1:1 from neumorphic mockups + communities (P0) — COMPLETED 2026-09-10
-- Backend: GET /explore/topics (63 interest communities, real member counts, Unsplash covers in content.TOPIC_COVERS - all verified 200),
-  GET /explore/topics/{name} (members), explore tab aliases people/nearby/creators, seed JOBS ("what they do").
-- Explore.jsx rewrite: SoftHeader (brand 40) + search/filters, sunken search (live people+communities), GlassSegmented People/Topics/Nearby/Creators,
-  Trending now 2x2 tiles, Suggested for you + Follow(=like)/Following, Popular interests chips, community Drawer.
-- Profile.jsx: neumorphic (Edit profile pill, stats w/ dividers, completion card w/ % pill, raised icon tiles, menu). Fits 393x852 (7px).
-- Discover.jsx + SwipeCard: title/subtitle, raised deck card holding photo card (1/6 counter, "Name, Age", job, distance; caption opens profile)
-  + 3 raised round actions; "Better matches ahead" card while profile incomplete. All tabs width-only fluid scaling.
-- Tests iteration_17: backend 58/58, frontend 100%. Deployed api + web; prod reseeded (jobs).
-- BottomNav pass: iPhone look (solid front square Discover icon, black bold active, grey outline idle, white pill w/ soft shadow) +
-  liquid-glass lens (fades in, glides on tap, press-hold-drag with lift/haptics, snap navigates). Deployed web.
+### 23.1 Direct Messages (DM Requests)
+**Binding spec (user decision 2026-09-10):**
+- **Anyone verified can message anyone** from their profile.
+- Recipient sees the conversation under **Requests** until they reply/accept.
 
-## Phase 19 — Fully responsive shell (no transform scaling) (P0) — COMPLETED 2026-09-10
-- Deleted hooks/useFitScale.js; AppShell renders .vo-shell with no inline style/transform. Shell = 100% width (max 430), 100dvh, flex column,
-  container-type: inline-size so type/gutters use clamp(min, Ncqi, max). Screens scroll inside #vo-main.
-- SoftTitle / SectionHead / SoftEmpty / Profile name+stats / Discover caption + actions / Explore tiles use clamp(); Discover deck min-h 320 + flex-1,
-  page min-h-full (scrolls on short phones). GlassSegmented/BottomNav no longer read data-fit-scale.
-- Verified 0 horizontal overflow on 9 routes x 320/360/393/412/430/1280 widths. Tests iteration_18 100%. Deployed web.
+**Backend (implemented)**
+- DM threads are stored in **`db.matches`** (no new collection), with:
+  - `kind: 'dm' | 'match'` (legacy rows treated as `match`)
+  - `status: 'request' | 'active'`
+  - `requested_by`, `accepted_at`
+- Endpoints:
+  - `POST /api/dm/{user_id}` → create/return thread
+  - `POST /api/matches/{match_id}/accept` → accept request
+  - Replying via `POST /api/matches/{match_id}/messages` auto-accepts
+- Rules:
+  - Sender must be **verified**
+  - Blocks prevent DM
+  - Mutual like upgrades existing `dm` → `match`
 
-## Phase 20 — Usernames (P1) — COMPLETED 2026-09-10
-- Backend: users.username (unique sparse index), rules 3-20 [a-z0-9._], reserved list; GET /profile/username-available?u=; PUT /profile {username} (400/409);
-  ensure_username() auto-derives a handle for existing accounts on /auth/me; public_profile exposes username; seed users get name.NN handles.
-- Frontend: Profile shows @username under the name; Edit Profile "Username" row with debounced live check (spinner / check / red X + hint), Done disabled
-  when invalid/taken; ProfileSheet shows @username; Explore search matches @handles. Deployed api + web; prod reseeded.
-- Fix: Popular interests horizontal scroller clipped chip shadows into a rectangle -> scroller gets pt-4 pb-7 pr-8 with negative margins.
-- Search: GET /api/search?q= across ALL accounts (@username exact/prefix > name prefix > contains; excludes blocked; followed/matched/is_me flags) + communities.
-  Explore search is debounced server-side; rows show @handle · job, "You" / "Following" / "Matched" pills. Native search cancel button hidden.
+**Frontend (implemented)**
+- ProfileSheet: **Message** button (`data-testid=profile-message-button`) opens/creates chat.
+- Chats: added **Requests** tab + request badge + hint text.
 
-## Phase 21 — Profile verification (live selfie, human review, black tick) (P1) — COMPLETED 2026-09-10
-- Backend routes_verification.py: GET /verification, POST /verification/selfie (private upload -> pending), admin GET /admin/verifications?status=,
-  POST /admin/verifications/{id}/approve|reject {note} (x-admin-key); WS event "verification"; notification items. is_verified = approved selfie
-  (was: has phone). Messaging: POST /matches/{id}/messages -> 403 until verified. Seed: even-index sample people approved.
-- Frontend: components/VerifiedBadge.jsx (black tick, popover "Verified Profile"), pages/Verify.jsx (front camera + oval guide, capture/retake/submit,
-  file fallback, pending/approved states), pages/AdminVerify.jsx (/admin/verify, key in sessionStorage, selfie vs profile photo, approve/reject + note),
-  Profile verify card (none/pending/rejected), ChatRoom composer replaced by verify gate for unverified users, ticks on Discover/Explore/Likes/Chats/
-  chat header/profile sheet, realtime banner + refresh on review. Tests iteration_19: backend 70/71 (wording), admin UI 100%; badges verified manually.
-- Deployed api + web; prod reseeded.
+### 23.2 Chat polish (visual + UX)
+**Implemented**
+- Neumorphic chat refresh (soft header controls, raised bubbles, soft input bar).
+- Typing indicator + seen ticks.
+- Message actions: long-press / context menu on own bubble → **Copy** / **Unsend**.
+- Chat safety actions:
+  - DM: Delete chat
+  - Match: Unmatch
+  - Both: Report / Block
+
+### 23.3 Testing
+- Test report: `/app/test_reports/iteration_23.json` (post-fix: ended threads 404).
+
+---
+
+## Phase 24 — Security hardening (Server + Web + APK) (P0/P1)
+**Status: COMPLETED (2026-09-10 19:15 UTC)**
+
+### 24.1 Server hardening (FastAPI)
+**Implemented**
+- `security.py` middlewares:
+  - **Rate limiting** keyed by `CF-Connecting-IP` / `X-Forwarded-For`
+  - **Security headers** on API JSON responses (HSTS, nosniff, frame deny, CSP, no-store)
+  - **Body size cap**:  > 12MB → `413`
+- Brute force guard:
+  - **Account lockout** after **8 wrong passwords in 15 min** → `429`
+- Production hygiene:
+  - `/api/docs` disabled in prod
+- WebSocket auth:
+  - New: `/api/ws` then first frame `{type:'auth', token}`
+  - Legacy `/api/ws/{token}` kept temporarily for rollout
+
+### 24.2 Web security (nginx)
+**Implemented**
+- Security headers for the SPA, including CSP + HSTS.
+- Implemented as `security-headers.inc.template` **included per location** (nginx drops server-level add_header if location adds its own).
+
+**Outage lesson (recorded)**
+- `/docker-entrypoint.d/*.envsh` must be **executable** and end with `.envsh` so nginx entrypoint sources it.
+  - Otherwise nginx may crash with `unknown "ws_backend_url" variable`.
+
+### 24.3 APK hardening (Android)
+**Implemented**
+- **v1.3.0 APK** built and copied to `frontend/public/voiladi.apk`.
+- **Release signing**:
+  - Uses `android-build/release.env` and `android-build/voiladi-release.keystore` (both gitignored).
+  - **Backup required**: losing the keystore prevents in-place updates.
+  - Old debug-signed installs cannot update in place (uninstall+reinstall once).
+- WebView lockdown:
+  - https-only exact-host allow-list: `voiladi.com`, `www.voiladi.com`, `api.voiladi.com`
+  - Disable file/content access, disable 3rd-party cookies, disable WebView debugging
+
+### 24.4 Deliverables
+- Deployed to Railway + Cloudflare.
+- Documentation updates in `/app/deploy/README.md` and `memory/PRD.md`.
+
+---
 
 ## 3) Next Actions
-1) ~~Deploy Phase 9 build to Railway~~ DONE.
-2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:
-   - Signup/login
-   - Phone OTP verification (test prefix only)
-   - Swipe + match
-   - Chat send/receive
-   - Explore/Likes/Filters/Profile/Settings
-3) Monitor caching behaviour (no-store headers + `src/lib/updateCheck.js`) to ensure users see the latest build.
+1) **Change Password (Settings → Account)**
+   - Add UI row + backend endpoint to change password (with re-auth). 
+2) **Move servers to Singapore (Asia)** (optional but biggest speed gain for India)
+   - Requires explicit approval + maintenance window to migrate volumes (db + uploads).
+3) **Cloudflare WAF / Bot protection rules**
+   - Requires a Cloudflare token with additional permissions (Zone Settings/Rules) beyond DNS.
+4) **Google Play ready**
+   - Produce a signed **AAB** (and/or Play App Signing) pipeline; align versioning.
 
 ---
 
 ## 4) Success Criteria
-- UI matches user photos **pixel-for-pixel** across:
-  - Splash/Welcome, Auth, Onboarding, Discover, Explore, Likes, Chat, Profile, Filters, Settings.
-- Email/password is real; phone OTP verification is required and succeeds.
-- Explore/Likes/Profile stats show real data where endpoints exist.
-- Boost/VOILADI+ are placeholders; Super Likes reflects real Voila quota.
-- No AI-related features or copy anywhere.
-- After deploy, users reliably see the latest build (cache-busting verified).
+- UI matches user references pixel-for-pixel.
+- Verified-only DM requests work:
+  - Verified user can message any profile → recipient sees in Requests until accepted.
+- Chat feels professional:
+  - typing + seen + unsend + safety actions
+- App loads fast on Indian networks:
+  - thumbnails + edge caching + reduced first paint
+- Security hardened:
+  - rate limits, lockouts, security headers, upload/body caps, WebView lockdown, release signing
+- No AI-related features.
 
 ---
 
 ## 5) Status Log
-- **Phase 1 (Core POC)**: COMPLETED — tests green.
-- **Phase 2 (Full V1)**: COMPLETED — E2E working.
-- **Phase 3 (Hardening)**: PARTIALLY DONE — WS resilience + upload hardening.
-- **Phase 4 (Reactions + safety + admin reports)**: COMPLETED.
-- **Phase 5 (Twilio real SMS)**: COMPLETED (pending user real-phone verification).
-- **Phase 6 (Railway deployment)**: COMPLETED.
-- **Phase 7 (iOS restyle)**: COMPLETED but rejected.
-- **Phase 8 (Editorial redesign)**: COMPLETED but rejected.
-- **Phase 9 (Exact UI replication from photos)**: **COMPLETED** — compiled, visually verified, tested; critical onboarding country selector issue fixed.
-- **Phase 10 (Railway deploy of Phase 9 build)**: **COMPLETED** — live on www.voiladi.com.
-- **Phase 11 (Profile 1:1 + Boost + Welcome + loading system)**: **COMPLETED** — redeployed to Railway.
+- Phase 1–21: **COMPLETED**
+- Phase 22: **COMPLETED** (Settings verification, loading/offline/perf, Cloudflare/Jio fix)
+- Phase 23: **COMPLETED** (DM Requests + Requests tab + Chat polish)
+- Phase 24: **COMPLETED** (Security hardening server + web + APK)
 
 ---
 
 ## 6) Future backlog
-- **P2** Share Preview Card: OpenGraph meta tags + preview image.
-- **P2** Install Prompt: Add PWA support / add-to-home-screen.
-- **P3** Match Expiry Nudge: reminder if nobody messages within 24 hours.
-- **P3** Photo Verification Badge: live selfie to earn verified badge.
+- P1 Google Play ready (signed AAB)
+- P1 iPhone app packaging
+- P2 Notification settings
+- P2 Unblock list
+- P3 Recent searches
+- P3 Haptics
+- P3 Match expiry nudges

@@ -30,5 +30,5 @@ export const useLikesSentQuery = (enabled = true) =>
 export const useBadges = () => {
   const m = useMatchesQuery();
   const l = useLikesQuery();
-  return { unread: m.data?.total_unread || 0, likes: l.data?.count || 0 };
+  return { unread: (m.data?.total_unread || 0) + (m.data?.requests_count || 0), likes: l.data?.count || 0 };
 };

@@ -42,13 +42,15 @@ export const SocketProvider = ({ children }) => {
       if (!activeRef.current) return;
       let ws;
       try {
-        ws = new WebSocket(`${WS_URL}/${token}`);
+        ws = new WebSocket(WS_URL);
       } catch (e) {
         scheduleReconnect();
         return;
       }
       wsRef.current = ws;
       ws.onopen = () => {
+        // the token travels in the first frame, never in the URL (URLs end up in server / proxy logs)
+        ws.send(JSON.stringify({ type: "auth", token }));
         retryRef.current = 0;
         setConnected(true);
         clearInterval(pingRef.current);

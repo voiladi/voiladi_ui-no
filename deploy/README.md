@@ -88,3 +88,13 @@ Records (all Proxied / orange cloud, so clients only ever see Cloudflare IPs):
   email / _domainconnect CNAMEs + MX/SPF/DMARC/SRV kept, DNS-only.
 SSL mode is Full (verified by 200s end to end; token has no Zone Settings permission to read/change it).
 API token (Edit zone DNS only) in deploy/.env.cloudflare (gitignored). Verify: curl -sD- https://www.voiladi.com/ | grep -i cf-ray
+
+### 2026-09-10 19:15 UTC - security hardening + DM release
+- API: security.py (rate limits per CF-Connecting-IP, security headers, 12MB body cap), login lockout (8 fails/15min),
+  docs disabled in prod, WS auth via first frame (/api/ws) with legacy /api/ws/{token} kept for one release.
+- Web: nginx security headers via security-headers.inc.template (included per location!). CSP connect-src needs
+  WS_BACKEND_URL, derived by docker/15-derive-ws.envsh - MUST be *.envsh AND executable (chmod 755) or the nginx
+  entrypoint ignores it and nginx fails with 'unknown ws_backend_url variable' (caused a 10-min outage today).
+- APK v1.3.0 signed with the RELEASE keystore (android-build/voiladi-release.keystore, password in android-build/release.env,
+  both gitignored - BACK THEM UP; losing them means users must reinstall). Installs of the old debug-signed APK cannot
+  update in place: uninstall + reinstall once.

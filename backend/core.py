@@ -64,7 +64,7 @@ SHOW_ME = ["women", "men", "everyone"]
 SHOW_ME_TO_GENDER = {"women": "woman", "men": "man"}
 
 # Fields that must never leave the server.
-PRIVATE_FIELDS = ("_id", "password_hash", "password_salt")
+PRIVATE_FIELDS = ("_id", "password_hash", "password_salt", "login_lock", "notifications_seen_at")
 
 bearer = HTTPBearer(auto_error=False)
 

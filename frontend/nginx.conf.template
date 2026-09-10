@@ -4,24 +4,31 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # hide the nginx version
+    server_tokens off;
+
+    # security headers live in security-headers.inc (included per location, see note there)
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
     gzip_min_length 1024;
 
     # Long-lived cache for hashed build assets
     location ^~ /static/ {
+        include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
 
     # Brand/icon images at the site root: cacheable at the browser and the CDN edge for a week
     location ~* \.(png|jpg|jpeg|webp|svg|ico|woff2?)$ {
+        include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "public, max-age=604800, stale-while-revalidate=86400";
         try_files $uri =404;
     }
 
     # The build manifest is polled by the app to detect new deploys: never cache it anywhere.
     location = /asset-manifest.json {
+        include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "no-store, no-cache, must-revalidate";
         add_header Pragma "no-cache";
         try_files $uri =404;
@@ -29,6 +36,7 @@ server {
 
     # Android test build: served with the APK mime type so phones offer to install it directly
     location = /voiladi.apk {
+        include /etc/nginx/conf.d/security-headers.inc;
         types { application/vnd.android.package-archive apk; }
         default_type application/vnd.android.package-archive;
         add_header Content-Disposition 'attachment; filename="voiladi.apk"';
@@ -38,6 +46,7 @@ server {
 
     # SPA fallback: every route renders index.html. no-store so no browser/proxy ever serves a stale shell.
     location / {
+        include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "no-store, no-cache, must-revalidate";
         add_header Pragma "no-cache";
         try_files $uri $uri/ /index.html;

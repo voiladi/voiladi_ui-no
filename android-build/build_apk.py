@@ -247,16 +247,36 @@ def main():
         z.write(os.path.join(OUT, "ic_launcher.png"), icon_rel, compress_type=zipfile.ZIP_STORED)
         z.write(os.path.join(OUT, "ic_notification.png"), small_rel, compress_type=zipfile.ZIP_STORED)
 
-    # 4) align + sign (debug key, generated once and kept in the repo build dir)
+    # 4) align + sign
+    #    Release builds use a private keystore whose password lives OUTSIDE the repo (android-build/release.env, gitignored).
+    #    The old debug keystore (public password) is only used when RELEASE_KEYSTORE is not configured.
     aligned = os.path.join(OUT, "voiladi-aligned.apk")
     zipalign_py(unsigned, aligned)
-    keystore = os.path.join(ROOT, "voiladi-debug.keystore")
-    if not os.path.exists(keystore):
-        run(["keytool", "-genkeypair", "-v", "-keystore", keystore, "-storepass", "voiladi123", "-keypass", "voiladi123",
-             "-alias", "voiladi", "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000", "-dname", "CN=Voiladi, O=Voiladi, C=IN"])
+    release_env = os.path.join(ROOT, "release.env")
+    if os.path.exists(release_env):
+        for line in open(release_env):
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.strip().split("=", 1)
+                os.environ.setdefault(k, v)
+    ks_path = os.environ.get("RELEASE_KEYSTORE")
+    ks_pass = os.environ.get("RELEASE_KEYSTORE_PASSWORD")
+    ks_alias = os.environ.get("RELEASE_KEY_ALIAS", "voiladi")
+    if ks_path and ks_pass:
+        keystore = ks_path if os.path.isabs(ks_path) else os.path.join(ROOT, ks_path)
+        if not os.path.exists(keystore):
+            run(["keytool", "-genkeypair", "-v", "-keystore", keystore, "-storepass", ks_pass, "-keypass", ks_pass,
+                 "-alias", ks_alias, "-keyalg", "RSA", "-keysize", "4096", "-validity", "10000", "-dname", "CN=Voiladi, O=Voiladi, C=IN"])
+        print("signing with RELEASE keystore", os.path.basename(keystore))
+    else:
+        keystore = os.path.join(ROOT, "voiladi-debug.keystore")
+        ks_pass, ks_alias = "voiladi123", "voiladi"
+        if not os.path.exists(keystore):
+            run(["keytool", "-genkeypair", "-v", "-keystore", keystore, "-storepass", ks_pass, "-keypass", ks_pass,
+                 "-alias", ks_alias, "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000", "-dname", "CN=Voiladi, O=Voiladi, C=IN"])
+        print("WARNING: signing with the DEBUG keystore (configure android-build/release.env for release builds)")
     final = os.path.join(OUT, "voiladi.apk")
-    run(["java", "-jar", os.path.join(BT, "lib", "apksigner.jar"), "sign", "--ks", keystore, "--ks-pass", "pass:voiladi123",
-         "--key-pass", "pass:voiladi123", "--ks-key-alias", "voiladi", "--min-sdk-version", "24", "--out", final, aligned])
+    run(["java", "-jar", os.path.join(BT, "lib", "apksigner.jar"), "sign", "--ks", keystore, "--ks-pass", f"pass:{ks_pass}",
+         "--key-pass", f"pass:{ks_pass}", "--ks-key-alias", ks_alias, "--min-sdk-version", "24", "--out", final, aligned])
     run(["java", "-jar", os.path.join(BT, "lib", "apksigner.jar"), "verify", "--verbose", final])
     print("APK:", final, os.path.getsize(final), "bytes")
 

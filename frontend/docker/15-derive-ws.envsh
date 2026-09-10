@@ -1,0 +1,8 @@
+# Sourced by the nginx image entrypoint (executable *.envsh files are sourced, so the exports survive) before the
+# config templates are rendered. Derives the WebSocket origin for the CSP connect-src.
+export REACT_APP_BACKEND_URL="${REACT_APP_BACKEND_URL:-}"
+case "$REACT_APP_BACKEND_URL" in
+  https://*) export WS_BACKEND_URL="wss://${REACT_APP_BACKEND_URL#https://}" ;;
+  http://*)  export WS_BACKEND_URL="ws://${REACT_APP_BACKEND_URL#http://}" ;;
+  *)         export WS_BACKEND_URL="" ;;
+esac

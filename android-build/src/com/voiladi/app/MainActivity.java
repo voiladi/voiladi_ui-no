@@ -110,13 +110,29 @@ public class MainActivity extends Activity {
 
     /* ---------------------------------------------------------------- web view */
 
+    private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
+
+    /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */
+    static boolean isAllowedOrigin(Uri uri) {
+        if (uri == null || uri.getHost() == null) return false;
+        if (!"https".equalsIgnoreCase(uri.getScheme())) return false;
+        String host = uri.getHost().toLowerCase();
+        for (String h : ALLOWED_HOSTS) if (h.equals(host)) return true;
+        return false;
+    }
+
     private void setupWebView() {
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setAllowFileAccess(true);
+        // lock the WebView to the web: no local file / content:// access, no file-URL origins
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(false);
+        s.setAllowFileAccessFromFileURLs(false);
+        s.setAllowUniversalAccessFromFileURLs(false);
+        s.setSaveFormData(false);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setSupportZoom(false);
@@ -125,9 +141,10 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.1");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.3");
         CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
+        WebView.setWebContentsDebuggingEnabled(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setBackgroundColor(Color.WHITE);
         web.addJavascriptInterface(new Bridge(), "VoiladiNative");
@@ -136,8 +153,8 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                String host = uri.getHost() == null ? "" : uri.getHost();
-                if (host.endsWith("voiladi.com")) return false;
+                // only our own https origins render inside the app; anything else opens in the system browser
+                if (isAllowedOrigin(uri)) return false;
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, uri));
                 } catch (Exception ignored) {

@@ -78,15 +78,28 @@ async def list_notifications(user=Depends(get_current_user)):
         u = users.get(other_of.get(m["id"]))
         if not u:
             continue
-        items.append({
-            "id": f"match:{m['id']}",
-            "type": "match",
-            "title": f"You matched with {_first(u['name'])}",
-            "sub": "Say hi and break the ice.",
-            "created_at": m["created_at"],
-            "user": person(u),
-            "href": f"/chats/{m['id']}",
-        })
+        if (m.get("kind") or "match") == "dm":
+            # a direct message thread: only the recipient gets a "request" notice; the sender gets nothing here
+            if m.get("requested_by") != uid:
+                items.append({
+                    "id": f"dm:{m['id']}",
+                    "type": "message",
+                    "title": f"{_first(u['name'])} sent you a message request",
+                    "sub": "Open it to accept or delete." if m.get("status") == "request" else "You accepted their request.",
+                    "created_at": m["created_at"],
+                    "user": person(u),
+                    "href": f"/chats/{m['id']}",
+                })
+        else:
+            items.append({
+                "id": f"match:{m['id']}",
+                "type": "match",
+                "title": f"You matched with {_first(u['name'])}",
+                "sub": "Say hi and break the ice.",
+                "created_at": m["created_at"],
+                "user": person(u),
+                "href": f"/chats/{m['id']}",
+            })
         msg = latest_msg.get(m["id"])
         if msg:
             items.append({

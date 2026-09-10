@@ -58,6 +58,20 @@ const RealtimeToasts = () => {
           duration: 6000,
           testId: "toast-verification",
         });
+      } else if (ev.type === "dm_request") {
+        qc.invalidateQueries({ queryKey: ["matches"] });
+        const m = ev.match;
+        banner({
+          title: `${m?.user?.name || "Someone"} sent you a message request`,
+          sub: "Open it to accept or delete.",
+          photo: m?.user?.photos?.[0],
+          name: m?.user?.name || "?",
+          onClick: () => navigate(`/chats/${ev.match_id}`),
+          duration: 5000,
+          testId: "toast-dm-request",
+        });
+      } else if (ev.type === "dm_accepted" || ev.type === "message_deleted") {
+        qc.invalidateQueries({ queryKey: ["matches"] });
       } else if (ev.type === "unmatch") {
         qc.invalidateQueries({ queryKey: ["matches"] });
         qc.invalidateQueries({ queryKey: ["stats"] });

@@ -85,3 +85,5 @@ android-build/sdk/
 android-build/out/
 android-build/tmp/
 backend/uploads/_thumbs/
+android-build/release.env
+android-build/voiladi-release.keystore

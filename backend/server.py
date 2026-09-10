@@ -5,7 +5,8 @@ import logging
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from core import db, client, SMS_ENABLED, OTP_PROVIDER
+from core import db, client, SMS_ENABLED, OTP_PROVIDER, JWT_SECRET
+from security import RateLimitMiddleware, SecurityHeadersMiddleware, BodySizeMiddleware
 import routes_auth
 import routes_profile
 import routes_discover
@@ -18,7 +19,12 @@ import ws_manager
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("voiladi")
 
-app = FastAPI(title="Voiladi API", version="1.0.0")
+# no interactive docs in production - they advertise every endpoint
+_prod = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+app = FastAPI(title="Voiladi API", version="1.0.0", docs_url=None if _prod else "/api/docs", redoc_url=None, openapi_url=None if _prod else "/api/openapi.json")
+
+if JWT_SECRET == "voiladi-dev-secret-change-me" and _prod:
+    logger.error("JWT_SECRET is the development default - set a strong secret in the environment")
 
 
 @app.get("/api/")
@@ -40,13 +46,19 @@ app.include_router(routes_notifications.router)
 app.include_router(routes_verification.router)
 app.include_router(ws_manager.router)
 
+# middleware order: the last one added runs first. Rate limit + body size run before CORS so abusive
+# traffic is dropped cheaply; security headers wrap everything.
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Key"],
+    max_age=600,
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(BodySizeMiddleware)
+app.add_middleware(RateLimitMiddleware, enabled=os.environ.get("RATE_LIMIT", "1") != "0")
 
 
 async def _sparse_unique(field: str):

@@ -365,9 +365,14 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
             fresh_match = False
             if existing and existing.get("active"):
                 match = existing
+                if existing.get("kind") == "dm":
+                    # they were already talking (or one had sent a request) - a mutual like turns it into a real match
+                    await db.matches.update_one({"id": existing["id"]}, {"$set": {"kind": "match", "status": "active", "accepted_at": now_iso(), "matched_at": now_iso()}})
+                    match = {**existing, "kind": "match", "status": "active"}
+                    fresh_match = True
             elif existing:
-                await db.matches.update_one({"id": existing["id"]}, {"$set": {"active": True, "created_at": now_iso()}})
-                match = {**existing, "active": True}
+                await db.matches.update_one({"id": existing["id"]}, {"$set": {"active": True, "created_at": now_iso(), "kind": "match", "status": "active"}})
+                match = {**existing, "active": True, "kind": "match", "status": "active"}
                 fresh_match = True
             else:
                 match = {
@@ -397,7 +402,7 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
 @router.get("/me/stats")
 async def my_stats(user=Depends(get_current_user)):
     """Real numbers for the profile page: matches, likes, views and the weekly Super Like allowance."""
-    matches = await db.matches.count_documents({"users": user["id"], "active": True})
+    matches = await db.matches.count_documents({"users": user["id"], "active": True, "kind": {"$ne": "dm"}})
     likes_received = await db.swipes.count_documents({"to_id": user["id"], "action": {"$in": ["like", "superlike"]}})
     likes_sent = await db.swipes.count_documents({"from_id": user["id"], "action": {"$in": ["like", "superlike"]}})
     used = await voilas_used_this_week(user["id"])

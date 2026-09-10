@@ -1,10 +1,16 @@
 import React, { useRef, useState } from "react";
-import { Briefcase, MapPin, ShieldAlert, Ban } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Briefcase, MapPin, ShieldAlert, Ban, MessageCircle } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Tag } from "@/components/Chip";
 import { ReactHeart } from "@/components/ReactHeart";
+import { Spinner } from "@/components/Loading";
+import { useAuth } from "@/context/AuthContext";
+import { api, errMsg } from "@/lib/api";
+import { notice } from "@/lib/feedback";
 import { distanceLabel, activeLabel } from "@/lib/format";
 
 export const PhotoCarousel = ({ photos = [], name, className = "", onReact }) => {
@@ -86,7 +92,40 @@ export const ProfileDetails = ({ profile, onReact }) => (
   </div>
 );
 
-export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, onReport, onReact, note, isSelf = false }) => {
+/* Instagram-style "Message" button on someone's profile: opens (or creates) a direct conversation. Unverified people are sent to Settings > Verification first. */
+const MessageButton = ({ profile, onOpenChange }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    if (busy) return;
+    if (!user?.verified) {
+      onOpenChange?.(false);
+      notice("Verify your profile to send messages");
+      navigate("/settings/verification");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/dm/${profile.id}`);
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      onOpenChange?.(false);
+      navigate(`/chats/${data.id}`);
+    } catch (e) {
+      notice(errMsg(e, "Couldn't open the chat"));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" onClick={go} disabled={busy} aria-busy={busy} className="inline-flex h-[46px] w-full items-center justify-center gap-2 rounded-full bg-ink text-[16px] font-semibold text-onink active:scale-[0.98] disabled:opacity-60" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} data-testid="profile-message-button">
+      {busy ? <Spinner size={18} stroke={2.4} /> : <><MessageCircle className="h-[18px] w-[18px]" strokeWidth={2.2} /> Message</>}
+    </button>
+  );
+};
+
+export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, onReport, onReact, note, isSelf = false, showMessage = true }) => {
   if (!profile) return null;
   const active = activeLabel(profile.last_active);
   return (
@@ -125,6 +164,11 @@ export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, on
                 {active && !isSelf && <span className="ml-1 inline-flex items-center gap-1 text-[12px]"><span className="h-1.5 w-1.5 rounded-full bg-[#34C759]" /> {active}</span>}
               </div>
             </div>
+            {showMessage && !isSelf && (
+              <div className="mt-4">
+                <MessageButton profile={profile} onOpenChange={onOpenChange} />
+              </div>
+            )}
           </div>
           {profile.shared_interests?.length > 0 && !isSelf && (
             <p className="mt-3 text-[13px] text-ink" data-testid="profile-shared">
