@@ -12,14 +12,18 @@ export const DESIGN_H = 852;
 const MIN_SCALE = 0.78;
 const DESKTOP = 1024;
 
-const read = () => {
+/*
+ * fluid = true: the screen is a flexible layout (its content stretches to fill the height), so only the WIDTH
+ * decides the scale and the page fills the device height 1:1. Used for Likes / Messages.
+ */
+const read = (fluid = false) => {
   if (typeof window === "undefined") return { scale: 1, vw: DESIGN_W, vh: DESIGN_H, desktop: false };
   const vv = window.visualViewport;
   const vw = Math.round(vv?.width || window.innerWidth);
   const vh = Math.round(vv?.height || window.innerHeight);
   const desktop = vw >= DESKTOP;
   if (desktop) return { scale: 1, vw, vh, desktop };
-  const raw = Math.min(vw / DESIGN_W, vh / DESIGN_H, 1);
+  const raw = fluid ? Math.min(vw / DESIGN_W, 1) : Math.min(vw / DESIGN_W, vh / DESIGN_H, 1);
   const scale = Math.max(MIN_SCALE, Math.round(raw * 1000) / 1000);
   return { scale, vw, vh, desktop };
 };
@@ -29,14 +33,14 @@ const typing = () => {
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
 };
 
-export const useFitScale = () => {
-  const [state, setState] = useState(read);
+export const useFitScale = (fluid = false) => {
+  const [state, setState] = useState(() => read(fluid));
   useEffect(() => {
     let raf = 0;
     let pending = false;
     const apply = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setState(read()));
+      raf = requestAnimationFrame(() => setState(read(fluid)));
     };
     const update = () => {
       // the on-screen keyboard shrinks the viewport while typing: never re-scale mid-typing, catch up on blur
@@ -63,7 +67,7 @@ export const useFitScale = () => {
       window.visualViewport?.removeEventListener("resize", update);
       document.removeEventListener("focusout", onBlur);
     };
-  }, []);
+  }, [fluid]);
   return state;
 };
 

@@ -228,7 +228,8 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Pass 2 (user: 'not same, box line, glass effect'): removed all 1px inset highlights (they aliased into a dashed line under fit-scale), widened SVG filter regions
   (shadow was clipping to a rectangle = the 'box'), wider/softer neumorphic shadows, CardsArt -> SVG, 34px card radius, 22px title, art 220x198.
 - Pass 3 (user: 'iPhone glass effect, white + shades of black, fonts'): true neumorphism tokens (--neu-*: top-left white light, bottom-right dark shadow,
-  gradient surfaces, inset segment track, bevelled SVG art). Font stack now -apple-system/SF Pro first (real SF on iPhone), Inter variable w/ opsz for Android. Deployed web.
+  gradient surfaces, inset segment track, bevelled SVG art). Font stack now -apple-system/SF Pro first (real SF on iPhone), Inter variable w/ opsz for Android.
+- Pass 4: stronger downward dark shadows (--neu-dark 0.16/0.20) as in reference; useFitScale(fluid) -> /likes & /chats scale by WIDTH only so they fill the phone height 1:1. Deployed web.
 
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.

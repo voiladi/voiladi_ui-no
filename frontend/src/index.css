@@ -61,15 +61,16 @@
         --neu-canvas: #F3F3F6;
         --neu-surface: linear-gradient(145deg, #FDFDFE 0%, #F1F1F4 100%);
         --neu-pill: linear-gradient(145deg, #FFFFFF 0%, #F7F7F9 100%);
-        --neu-light: rgba(255, 255, 255, 0.95);
-        --neu-dark: rgba(28, 28, 38, 0.10);
+        --neu-light: rgba(255, 255, 255, 1);
+        --neu-dark: rgba(28, 28, 38, 0.16);
+        --neu-dark-2: rgba(28, 28, 38, 0.20);
         --soft-bg: #F8F8FA;
         --soft-bg-2: #ECECF0;
-        --soft-shadow: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
-        --soft-shadow-btn: -8px -8px 18px var(--neu-light), 10px 10px 24px var(--neu-dark);
-        --soft-shadow-lg: -16px -16px 36px var(--neu-light), 20px 20px 48px var(--neu-dark);
-        --neu-inset: inset 5px 5px 12px rgba(28, 28, 38, 0.06), inset -5px -5px 12px rgba(255, 255, 255, 0.95);
-        --neu-seg-on: -3px -3px 8px rgba(255, 255, 255, 0.9), 4px 4px 12px rgba(28, 28, 38, 0.10);
+        --soft-shadow: -4px -4px 10px var(--neu-light), 6px 8px 16px var(--neu-dark);
+        --soft-shadow-btn: -6px -6px 14px var(--neu-light), 8px 12px 24px var(--neu-dark-2);
+        --soft-shadow-lg: -12px -12px 28px var(--neu-light), 14px 18px 40px rgba(28, 28, 38, 0.13);
+        --neu-inset: inset 4px 4px 10px rgba(28, 28, 38, 0.07), inset -4px -4px 10px rgba(255, 255, 255, 1);
+        --neu-seg-on: -3px -3px 8px rgba(255, 255, 255, 1), 4px 6px 14px rgba(28, 28, 38, 0.14);
         --soft-art-hi: #FFFFFF;
         --soft-art-lo: #EFEFF2;
         --soft-art-back-hi: #F6F6F8;
@@ -105,6 +106,7 @@
         --neu-pill: linear-gradient(145deg, #2A2A2E 0%, #1E1E22 100%);
         --neu-light: rgba(255, 255, 255, 0.04);
         --neu-dark: rgba(0, 0, 0, 0.65);
+        --neu-dark-2: rgba(0, 0, 0, 0.75);
         --soft-bg: #1A1A1D;
         --soft-bg-2: #0F0F11;
         --soft-shadow: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
@@ -857,7 +859,7 @@
     /* floating bottom nav */
     .vo-float-nav {
         background: var(--neu-surface);
-        box-shadow: -10px -10px 24px var(--neu-light), 12px 12px 32px var(--neu-dark);
+        box-shadow: -8px -8px 20px var(--neu-light), 8px 12px 28px var(--neu-dark);
     }
 
     /* ---------- misc ---------- */

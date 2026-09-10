@@ -67,7 +67,7 @@ export const BubblesArt = () => (
       </linearGradient>
       <filter id="vo-bub-shadow" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
         <feDropShadow dx="-7" dy="-7" stdDeviation="7" floodColor="#ffffff" floodOpacity="1" />
-        <feDropShadow dx="12" dy="14" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.14" />
+        <feDropShadow dx="12" dy="16" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.18" />
         <feDropShadow dx="3" dy="4" stdDeviation="3" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.05" />
       </filter>
       <filter id="vo-bub-shadow-soft" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
@@ -107,7 +107,7 @@ export const CardsArt = () => (
       </linearGradient>
       <filter id="vo-card-shadow" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">
         <feDropShadow dx="-7" dy="-7" stdDeviation="7" floodColor="#ffffff" floodOpacity="1" />
-        <feDropShadow dx="12" dy="14" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.14" />
+        <feDropShadow dx="12" dy="16" stdDeviation="12" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.18" />
         <feDropShadow dx="3" dy="4" stdDeviation="3" style={{ floodColor: "var(--soft-art-shadow)" }} floodOpacity="0.05" />
       </filter>
       <filter id="vo-card-shadow-soft" x="-70%" y="-70%" width="240%" height="260%" colorInterpolationFilters="sRGB">

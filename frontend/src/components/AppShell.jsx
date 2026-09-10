@@ -98,12 +98,14 @@ class ScreenErrorBoundary extends React.Component {
  */
 const TAB_PATHS = ["/discover", "/explore", "/likes", "/chats", "/profile"];
 const isTab = (path) => TAB_PATHS.includes(path);
+/* Screens whose layout stretches to the device height: scale by width only (see useFitScale). */
+const FLUID_PATHS = ["/likes", "/chats"];
 
 export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const tab = isTab(pathname);
-  const fit = useFitScale();
+  const fit = useFitScale(FLUID_PATHS.includes(pathname));
   return (
     <div className="vo-backdrop">
       <div className="vo-shell" style={shellStyle(fit)} data-fit-scale={fit.scale} data-testid="app-shell">
