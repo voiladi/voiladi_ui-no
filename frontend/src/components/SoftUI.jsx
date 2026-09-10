@@ -35,21 +35,25 @@ export const SoftTitle = ({ title, subtitle, right, testId }) => (
   </div>
 );
 
-/* Empty state: big rounded card that fills the space down to the floating nav. */
+/*
+ * Empty state: big rounded card that fills the space down to the floating nav.
+ * Nothing here has a fixed height: the art shrinks (flex-basis 198px, min 92px) and the vertical rhythm uses
+ * clamp(...dvh) so the whole screen fits any phone height without scrolling.
+ */
 export const SoftEmpty = ({ art, title, description, actionIcon: ActionIcon, actionLabel, onAction, footer, actionTestId, testId = "empty-state" }) => (
-  <motion.section {...rise} className="vo-soft-lg mx-5 mt-4 flex flex-1 flex-col items-center justify-center rounded-[34px] px-5 py-8 text-center" data-testid={testId}>
-    <div className="relative h-[198px] w-[220px]" aria-hidden="true">
+  <motion.section {...rise} className="vo-soft-lg mx-5 mt-4 flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-[34px] px-5 py-[clamp(18px,3.4dvh,32px)] text-center" data-testid={testId}>
+    <div className="relative w-auto" style={{ flex: "0 1 198px", minHeight: 92, aspectRatio: "200 / 180" }} aria-hidden="true">
       {art}
     </div>
-    <h2 className="mt-7 text-[22px] font-bold leading-[28px] tracking-[-0.02em] text-ink">{title}</h2>
-    <p className="mt-1.5 max-w-[280px] text-[17px] leading-[23px] tracking-[-0.01em] text-mute">{description}</p>
+    <h2 className="mt-[clamp(12px,3.2dvh,28px)] shrink-0 text-[22px] font-bold leading-[28px] tracking-[-0.02em] text-ink">{title}</h2>
+    <p className="mt-1.5 max-w-[280px] shrink-0 text-[17px] leading-[23px] tracking-[-0.01em] text-mute">{description}</p>
     {actionLabel && (
-      <button type="button" className="vo-soft-btn mt-8 max-w-[330px]" onClick={onAction} data-testid={actionTestId}>
+      <button type="button" className="vo-soft-btn mt-[clamp(14px,3.6dvh,32px)] max-w-[330px] shrink-0" onClick={onAction} data-testid={actionTestId}>
         {ActionIcon && <ActionIcon className="h-6 w-6" strokeWidth={2.2} />}
         {actionLabel}
       </button>
     )}
-    {footer && <p className="mt-6 text-[16px] leading-[20px] text-mute">{footer}</p>}
+    {footer && <p className="mt-[clamp(12px,2.8dvh,24px)] shrink-0 text-[16px] leading-[20px] text-mute">{footer}</p>}
   </motion.section>
 );
 
