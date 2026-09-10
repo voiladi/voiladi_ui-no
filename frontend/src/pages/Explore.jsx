@@ -98,7 +98,7 @@ const RowSkeleton = ({ rows = 3 }) => (
   </div>
 );
 
-const whatTheyDo = (p) => p.job || (p.city ? `Lives in ${p.city}` : "New here");
+const whatTheyDo = (p) => p.job || (p.username ? `@${p.username}` : p.city ? `Lives in ${p.city}` : "New here");
 
 export default function Explore() {
   const navigate = useNavigate();
@@ -131,7 +131,8 @@ export default function Explore() {
 
   const list = useMemo(() => (people.data?.profiles || []).filter((p) => !gone.has(p.id)), [people.data, gone]);
   const s = q.trim().toLowerCase();
-  const searchPeople = useMemo(() => (s ? list.filter((p) => p.name.toLowerCase().includes(s) || (p.job || "").toLowerCase().includes(s) || (p.city || "").toLowerCase().includes(s)) : []), [list, s]);
+  const q0 = s.replace(/^@/, "");
+  const searchPeople = useMemo(() => (s ? list.filter((p) => p.name.toLowerCase().includes(s) || (p.username || "").includes(q0) || (p.job || "").toLowerCase().includes(s) || (p.city || "").toLowerCase().includes(s)) : []), [list, s, q0]);
   const searchTopics = useMemo(() => (s ? (topics.data?.topics || []).filter((t) => t.name.toLowerCase().includes(s)) : []), [topics.data, s]);
 
   const remove = (id) => setGone((g) => new Set([...g, id]));
@@ -310,7 +311,7 @@ export default function Explore() {
             {/* Popular interests */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, 0.1)} data-testid="explore-popular">
               <SectionHead title="Popular interests" action="See all" onAction={() => setTab("topics")} actionTestId="explore-popular-see-all" />
-              <div className="no-scrollbar -mx-[clamp(14px,5cqi,20px)] mt-3 flex gap-3 overflow-x-auto px-[clamp(14px,5cqi,20px)] pb-2">
+              <div className="no-scrollbar -mx-[clamp(14px,5cqi,20px)] -mb-7 -mt-1 flex gap-3 overflow-x-auto px-[clamp(14px,5cqi,20px)] pb-7 pt-4 pr-8">
                 {topics.isLoading
                   ? [0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[44px] w-24 shrink-0 rounded-full" />)
                   : (topics.data?.popular || []).map((t) => (

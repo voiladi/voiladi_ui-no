@@ -253,6 +253,13 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
   page min-h-full (scrolls on short phones). GlassSegmented/BottomNav no longer read data-fit-scale.
 - Verified 0 horizontal overflow on 9 routes x 320/360/393/412/430/1280 widths. Tests iteration_18 100%. Deployed web.
 
+## Phase 20 — Usernames (P1) — COMPLETED 2026-09-10
+- Backend: users.username (unique sparse index), rules 3-20 [a-z0-9._], reserved list; GET /profile/username-available?u=; PUT /profile {username} (400/409);
+  ensure_username() auto-derives a handle for existing accounts on /auth/me; public_profile exposes username; seed users get name.NN handles.
+- Frontend: Profile shows @username under the name; Edit Profile "Username" row with debounced live check (spinner / check / red X + hint), Done disabled
+  when invalid/taken; ProfileSheet shows @username; Explore search matches @handles. Deployed api + web; prod reseeded.
+- Fix: Popular interests horizontal scroller clipped chip shadows into a rectangle -> scroller gets pt-4 pb-7 pr-8 with negative margins.
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

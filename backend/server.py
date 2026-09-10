@@ -62,6 +62,7 @@ async def ensure_indexes():
         await db.users.create_index("id", unique=True)
         await _sparse_unique("phone")
         await _sparse_unique("email")
+        await _sparse_unique("username")
         await db.users.create_index([("profile_complete", 1), ("gender", 1)])
         await db.otp_sessions.create_index("phone", unique=True)
         await db.swipes.create_index([("from_id", 1), ("to_id", 1)], unique=True)

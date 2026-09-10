@@ -20,7 +20,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from core import (db, now_iso, get_current_user, own_profile, public_profile, is_profile_complete, has_basics,
-                  calc_age, UPLOAD_DIR, GENDERS, SHOW_ME, ANYWHERE_KM, SMS_ENABLED)
+                  calc_age, UPLOAD_DIR, GENDERS, SHOW_ME, ANYWHERE_KM, SMS_ENABLED,
+                  normalize_username, username_problem, username_taken, ensure_username)
 from content import INTERESTS, GOALS, PROMPTS, ICEBREAKERS, CITIES, REPORT_REASONS
 from ws_manager import manager
 
@@ -62,6 +63,7 @@ class PromptIn(BaseModel):
 
 class ProfileIn(BaseModel):
     name: Optional[str] = None
+    username: Optional[str] = None
     birthday: Optional[str] = None  # YYYY-MM-DD
     gender: Optional[str] = None
     looking_for: Optional[str] = None
@@ -104,6 +106,20 @@ async def meta():
     }
 
 
+@router.get("/profile/username-available")
+async def username_available(u: str, user=Depends(get_current_user)):
+    """Live check while typing in Edit Profile: {available, username, reason}."""
+    uname = normalize_username(u)
+    problem = username_problem(uname)
+    if problem:
+        return {"available": False, "username": uname, "reason": problem}
+    if uname == (user.get("username") or ""):
+        return {"available": True, "username": uname, "reason": "This is your current username", "current": True}
+    if await username_taken(uname, user["id"]):
+        return {"available": False, "username": uname, "reason": "That username is taken"}
+    return {"available": True, "username": uname, "reason": "Available"}
+
+
 @router.put("/profile")
 async def update_profile(body: ProfileIn, user=Depends(get_current_user)):
     update = {}
@@ -112,6 +128,14 @@ async def update_profile(body: ProfileIn, user=Depends(get_current_user)):
         if not (1 <= len(name) <= 30):
             raise HTTPException(status_code=400, detail="Name should be 1-30 characters")
         update["name"] = name
+    if body.username is not None:
+        uname = normalize_username(body.username)
+        problem = username_problem(uname)
+        if problem:
+            raise HTTPException(status_code=400, detail=problem)
+        if await username_taken(uname, user["id"]):
+            raise HTTPException(status_code=409, detail="That username is taken")
+        update["username"] = uname
     if body.birthday is not None:
         try:
             b = date.fromisoformat(body.birthday[:10])

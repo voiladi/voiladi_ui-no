@@ -165,7 +165,12 @@ export default function Profile() {
           <h1 className="truncate text-[clamp(23px,7cqi,28px)] font-bold leading-[1.15] tracking-[-0.02em] text-ink" data-testid="profile-name">
             {user.name}
           </h1>
-          <SoftPill className="mt-2 h-[40px] px-5 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
+          {user.username && (
+            <p className="mt-0.5 truncate text-[clamp(14px,4cqi,16px)] leading-[1.25] tracking-[-0.01em] text-mute" data-testid="profile-username">
+              @{user.username}
+            </p>
+          )}
+          <SoftPill className="mt-2.5 h-[40px] px-5 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
             Edit profile
           </SoftPill>
 

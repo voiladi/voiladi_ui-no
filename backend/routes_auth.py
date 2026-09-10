@@ -9,7 +9,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from core import (db, now, now_iso, make_token, get_current_user, own_profile, OTP_PROVIDER, is_test_phone,
+from core import (ensure_username, db, now, now_iso, make_token, get_current_user, own_profile, OTP_PROVIDER, is_test_phone,
                   hash_password, verify_password,
                   TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, TWILIO_MESSAGING_SID, TWILIO_VERIFY_SID, UPLOAD_DIR)
 from ws_manager import manager
@@ -243,6 +243,7 @@ async def verify_phone(body: VerifyIn, user=Depends(get_current_user)):
 @router.get("/me")
 async def me(user=Depends(get_current_user)):
     await db.users.update_one({"id": user["id"]}, {"$set": {"last_active": now_iso()}})
+    await ensure_username(user)
     return own_profile(user)
 
 

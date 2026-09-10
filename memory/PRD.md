@@ -73,3 +73,4 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Phase 18 (2026-09-10): Explore/Profile/Discover rebuilt to neumorphic mockups; Explore communities (topics API), Follow, search, Nearby/Creators.
   Tests iteration_17 100%. Deployed voiladi-api + voiladi-web.
 - Phase 19 (2026-09-10): Removed fit-to-canvas transform scaling; shell fully responsive (clamp/cqi units, flex scroll areas). iteration_18 100%. Deployed web.
+- Phase 20 (2026-09-10): Usernames (@handle) - unique, auto-generated for existing users, editable with live availability, shown on Profile/public profiles, searchable in Explore. Deployed.

@@ -198,6 +198,67 @@ def is_verified(user: dict) -> bool:
     return bool(user.get("phone"))
 
 
+# ---------- usernames ----------
+import re as _re
+
+USERNAME_RE = _re.compile(r"^[a-z0-9](?:[a-z0-9._]{1,18}[a-z0-9])?$")
+RESERVED_USERNAMES = {"admin", "voiladi", "support", "help", "official", "root", "api", "www", "team", "staff", "moderator", "mod", "null", "undefined"}
+
+
+def normalize_username(raw: str) -> str:
+    return (raw or "").strip().lstrip("@").lower()
+
+
+def username_problem(u: str) -> Optional[str]:
+    """Return a human message if the handle is not acceptable, else None."""
+    if len(u) < 3:
+        return "Username needs at least 3 characters"
+    if len(u) > 20:
+        return "Username can be up to 20 characters"
+    if ".." in u or "__" in u or "._" in u or "_." in u:
+        return "Use single dots or underscores between letters"
+    if not USERNAME_RE.match(u):
+        return "Only lowercase letters, numbers, dots and underscores"
+    if u in RESERVED_USERNAMES:
+        return "That username isn't available"
+    return None
+
+
+async def username_taken(u: str, exclude_id: Optional[str] = None) -> bool:
+    q = {"username": u}
+    if exclude_id:
+        q["id"] = {"$ne": exclude_id}
+    return await db.users.count_documents(q) > 0
+
+
+def _username_seed(user: dict) -> str:
+    base = _re.sub(r"[^a-z0-9]+", ".", (user.get("name") or "").lower()).strip(".")
+    if len(base) < 3:
+        local = (user.get("email") or "").split("@")[0].lower()
+        base = _re.sub(r"[^a-z0-9]+", ".", local).strip(".")
+    if len(base) < 3:
+        base = "user"
+    return base[:16]
+
+
+async def ensure_username(user: dict) -> str:
+    """Existing accounts get a handle derived from their name the first time it's needed (e.g. neo, neo.2)."""
+    if user.get("username"):
+        return user["username"]
+    base = _username_seed(user)
+    cand = base
+    n = 1
+    while username_problem(cand) or await username_taken(cand, user["id"]):
+        n += 1
+        cand = f"{base[:16]}.{n}"
+        if n > 500:
+            cand = f"{base[:10]}.{secrets.token_hex(3)}"
+            break
+    await db.users.update_one({"id": user["id"]}, {"$set": {"username": cand}})
+    user["username"] = cand
+    return cand
+
+
 def own_profile(user: dict) -> dict:
     u = {k: v for k, v in user.items() if k not in PRIVATE_FIELDS}
     u["age"] = calc_age(u.get("birthday"))
@@ -222,6 +283,7 @@ def public_profile(user: dict, viewer: Optional[dict] = None) -> dict:
     p = {
         "id": user["id"],
         "name": user.get("name") or "Someone",
+        "username": user.get("username") or "",
         "age": calc_age(user.get("birthday")),
         "gender": user.get("gender"),
         "bio": user.get("bio") or "",

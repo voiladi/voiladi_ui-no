@@ -108,6 +108,11 @@ export const ProfileSheet = ({ profile, open, onOpenChange, actions, onBlock, on
               {profile.age ? <span className="text-[22px] font-medium leading-none text-ink">{profile.age}</span> : null}
               {profile.verified && <BadgeCheck className="h-5 w-5 text-blue" fill="currentColor" stroke="white" />}
             </div>
+            {profile.username && (
+              <p className="mt-1.5 text-[15px] leading-none text-mute" data-testid="profile-sheet-username">
+                @{profile.username}
+              </p>
+            )}
             <div className="mt-2.5 space-y-1.5 text-[14px] text-mute">
               {profile.job && (
                 <div className="flex items-center gap-2">

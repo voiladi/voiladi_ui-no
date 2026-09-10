@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Check, X } from "lucide-react";
 import { Spinner } from "@/components/Loading";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
@@ -46,6 +46,7 @@ export default function EditProfile() {
   const [limitHit, flashLimit] = useFlash();
   const [form, setForm] = useState({
     name: user?.name || "",
+    username: user?.username || "",
     birthday: user?.birthday || "",
     gender: user?.gender || "",
     bio: user?.bio || "",
@@ -58,7 +59,29 @@ export default function EditProfile() {
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const toggle = (k) => setOpen((o) => (o === k ? null : k));
   const age = ageOf(form.birthday);
-  const valid = form.name.trim().length >= 1 && form.birthday && age >= 18 && age <= 100 && form.gender && form.prompts.every((p) => p.answer.trim());
+
+  /* live username check (debounced) */
+  const cleanUsername = form.username.trim().replace(/^@/, "").toLowerCase();
+  const [uCheck, setUCheck] = useState({ state: "idle", reason: "" });
+  useEffect(() => {
+    if (!cleanUsername || cleanUsername === (user?.username || "")) {
+      setUCheck({ state: "idle", reason: "" });
+      return undefined;
+    }
+    setUCheck({ state: "checking", reason: "" });
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await api.get("/profile/username-available", { params: { u: cleanUsername } });
+        setUCheck({ state: data.available ? "ok" : "bad", reason: data.reason });
+      } catch (e) {
+        setUCheck({ state: "bad", reason: errMsg(e) });
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [cleanUsername, user?.username]);
+
+  const usernameOk = cleanUsername.length > 0 && uCheck.state !== "bad" && uCheck.state !== "checking";
+  const valid = form.name.trim().length >= 1 && usernameOk && form.birthday && age >= 18 && age <= 100 && form.gender && form.prompts.every((p) => p.answer.trim());
 
   const save = async () => {
     if (!valid || saving) return;
@@ -66,6 +89,7 @@ export default function EditProfile() {
     try {
       const { data } = await api.put("/profile", {
         name: form.name.trim(),
+        username: cleanUsername,
         birthday: form.birthday,
         gender: form.gender,
         bio: form.bio.trim(),
@@ -118,6 +142,31 @@ export default function EditProfile() {
         <div className="vo-card overflow-hidden">
           <Row label="Name" value={form.name} open={open === "name"} onToggle={() => toggle("name")} testId="edit-name-row">
             <input className="vo-input bg-bg" maxLength={30} value={form.name} onChange={(e) => set({ name: e.target.value })} data-testid="edit-name-input" />
+          </Row>
+          <Row label="Username" value={cleanUsername ? `@${cleanUsername}` : "Add"} open={open === "username"} onToggle={() => toggle("username")} testId="edit-username-row">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[16px] text-mute">@</span>
+              <input
+                className="vo-input bg-bg pl-9 pr-10 lowercase"
+                maxLength={20}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="yourname"
+                value={form.username}
+                onChange={(e) => set({ username: e.target.value.replace(/^@/, "").replace(/[^A-Za-z0-9._]/g, "").toLowerCase() })}
+                aria-invalid={uCheck.state === "bad" || undefined}
+                data-testid="edit-username-input"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2" data-testid="edit-username-status">
+                {uCheck.state === "checking" && <Spinner size={16} stroke={2} />}
+                {uCheck.state === "ok" && <Check className="h-[18px] w-[18px] text-ink" strokeWidth={2.5} />}
+                {uCheck.state === "bad" && <X className="h-[18px] w-[18px] text-red" strokeWidth={2.5} />}
+              </span>
+            </div>
+            <p className={`mt-1.5 text-[12px] ${uCheck.state === "bad" ? "text-red" : "text-mute"}`} data-testid="edit-username-hint">
+              {uCheck.state === "bad" ? uCheck.reason : uCheck.state === "ok" ? "Available" : "3-20 characters: letters, numbers, dots and underscores. People can find you by it."}
+            </p>
           </Row>
           <Row label="Age" value={age ?? ""} open={open === "age"} onToggle={() => toggle("age")} testId="edit-age-row">
             <input type="date" className="vo-input bg-bg" value={form.birthday} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ birthday: e.target.value })} data-testid="edit-dob-input" />

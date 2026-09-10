@@ -175,7 +175,7 @@ async def seed(likes_for: str = None):
         phone = f"+1999000{idx:04d}"
         doc = {
             "phone": phone, "name": name, "birthday": birthday_for(age, idx), "gender": gender, "looking_for": looking,
-            "bio": bio, "job": JOBS[idx % len(JOBS)], "interests": interests, "prompts": [{"question": q, "answer": a} for q, a in prompts],
+            "bio": bio, "job": JOBS[idx % len(JOBS)], "username": name.lower().replace(" ", ".") + f".{idx + 1:02d}", "interests": interests, "prompts": [{"question": q, "answer": a} for q, a in prompts],
             "city": city, "lat": lat + (idx % 5) * 0.01, "lng": lng + (idx % 3) * 0.01, "photos": photos,
             "preferences": {"age_min": 18, "age_max": 45, "max_distance_km": ANYWHERE_KM, "show_me": looking},
             "is_seed": True, "onboarded": True, "last_active": now_iso(), "updated_at": now_iso(),
