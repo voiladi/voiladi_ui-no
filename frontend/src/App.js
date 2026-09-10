@@ -1,13 +1,6 @@
 import React, { lazy, useEffect } from "react";
 import "@/App.css";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
@@ -53,9 +46,7 @@ const Profile = screen(() => import("@/pages/Profile"));
 const EditProfile = screen(() => import("@/pages/EditProfile"));
 const Filters = screen(() => import("@/pages/Filters"));
 const Settings = screen(() => import("@/pages/Settings"));
-const VerificationSettings = screen(
-  () => import("@/pages/settings/Verification"),
-);
+const VerificationSettings = screen(() => import("@/pages/settings/Verification"));
 const ChangeEmail = screen(() => import("@/pages/settings/ChangeEmail"));
 const ChangePhone = screen(() => import("@/pages/settings/ChangePhone"));
 const Notifications = screen(() => import("@/pages/Notifications"));
@@ -66,15 +57,9 @@ const AdminVerify = screen(() => import("@/pages/AdminVerify"));
 /* Boot screen while the session is checked: logo centred, thin spinner near the bottom (as native apps do). */
 const Splash = () => (
   <div className="vo-backdrop">
-    <div
-      className="vo-shell items-center justify-center"
-      data-testid="splash-screen"
-    >
+    <div className="vo-shell items-center justify-center" data-testid="splash-screen">
       <LogoMark size={84} />
-      <div
-        className="absolute bottom-0 flex flex-col items-center gap-3 text-mute"
-        style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}
-      >
+      <div className="absolute bottom-0 flex flex-col items-center gap-3 text-mute" style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}>
         <Spinner size={22} stroke={2} />
       </div>
     </div>
@@ -93,18 +78,13 @@ const Gate = ({ need }) => {
   const { user, loading, netError, refresh } = useAuth();
   const location = useLocation();
   if (loading) return <Splash />;
-  if (!user && netError === "offline" && getToken())
-    return <OfflineScreen onRetry={refresh} />;
+  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
   const complete = !!user?.onboarded;
   if (need === "guest") {
-    if (user)
-      return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
+    if (user) return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
     return <Outlet />;
   }
-  if (!user)
-    return (
-      <Navigate to="/welcome" replace state={{ from: location.pathname }} />
-    );
+  if (!user) return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
   if (need === "onboarding") {
     if (complete) return <Navigate to="/discover" replace />;
     return <Outlet />;
@@ -116,8 +96,7 @@ const Gate = ({ need }) => {
 const Home = () => {
   const { user, loading, netError, refresh } = useAuth();
   if (loading) return <Splash />;
-  if (!user && netError === "offline" && getToken())
-    return <OfflineScreen onRetry={refresh} />;
+  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
   if (!user) return <Navigate to="/welcome" replace />;
   return <Navigate to={user.onboarded ? "/discover" : "/onboarding"} replace />;
 };
@@ -136,10 +115,7 @@ function App() {
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/login/phone" element={<PhoneLogin />} />
-                  <Route
-                    path="/auth"
-                    element={<Navigate to="/login" replace />}
-                  />
+                  <Route path="/auth" element={<Navigate to="/login" replace />} />
                 </Route>
               </Route>
               <Route element={<AppShell nav={false} />}>
@@ -163,15 +139,9 @@ function App() {
                   <Route path="/chats/:matchId" element={<ChatRoom />} />
                   <Route path="/profile/edit" element={<EditProfile />} />
                   <Route path="/filters" element={<Filters />} />
-                  <Route
-                    path="/profile/preferences"
-                    element={<Navigate to="/filters" replace />}
-                  />
+                  <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route
-                    path="/settings/verification"
-                    element={<VerificationSettings />}
-                  />
+                  <Route path="/settings/verification" element={<VerificationSettings />} />
                   <Route path="/settings/email" element={<ChangeEmail />} />
                   <Route path="/settings/phone" element={<ChangePhone />} />
                   <Route path="/notifications" element={<Notifications />} />
