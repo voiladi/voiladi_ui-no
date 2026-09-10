@@ -1,34 +1,18 @@
 [
   {
-    "content": "Backend: topics endpoints, explore aliases, seed jobs",
+    "content": "Static pre-JS splash in index.html (logo + spinner, dark-mode aware, matches React Splash)",
     "status": "completed"
   },
   {
-    "content": "Verify Unsplash cover IDs for topic tiles",
+    "content": "Route-level code splitting (React.lazy) with on-canvas RouteLoader fallback for every screen",
     "status": "completed"
   },
   {
-    "content": "Frontend Explore rewrite: soft header (brand 40), title, search bar, glass segmented People/Topics/Nearby/Creators, Trending now grid, Suggested for you + Follow, Popular interests, topic sheet",
-    "status": "in_progress"
+    "content": "Fill remaining gaps: Profile boost pill spinner; chunk-fail auto reload",
+    "status": "completed"
   },
   {
-    "content": "Frontend Profile redesign to neumorphic reference",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend Discover redesign: soft container w/ photo card (1/6 counter) + 3 round buttons, Better matches ahead card",
-    "status": "pending"
-  },
-  {
-    "content": "All 5 tabs: same brand size 40, width-only fluid scaling, nav paddings",
-    "status": "pending"
-  },
-  {
-    "content": "Compile, screenshots at 412x731/393x852/360x640, dark mode",
-    "status": "pending"
-  },
-  {
-    "content": "Testing agent, fix issues, deploy backend + web, update plan.md",
-    "status": "pending"
+    "content": "Run testing agent across all routes (lazy loading regression), then deploy",
+    "status": "completed"
   }
 ]

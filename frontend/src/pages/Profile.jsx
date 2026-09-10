@@ -10,7 +10,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { SoftHeader, SoftIconButton, SoftCard, SoftPill } from "@/components/SoftUI";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
-import { Skeleton } from "@/components/Loading";
+import { Skeleton, Spinner } from "@/components/Loading";
 
 /* ---------- profile screen, transcribed from the neumorphic reference (393 x 852 canvas) ---------- */
 
@@ -135,7 +135,7 @@ export default function Profile() {
     }
   };
 
-  const boostPill = !stats ? <Skeleton className="h-3 w-8 rounded-full" /> : stats.boost_active ? hhmmss(boostLeft) : stats.boost_next_at ? "Tomorrow" : "Start";
+  const boostPill = boosting ? <Spinner size={16} stroke={2.2} /> : !stats ? <Skeleton className="h-3 w-8 rounded-full" /> : stats.boost_active ? hhmmss(boostLeft) : stats.boost_next_at ? "Tomorrow" : "Start";
 
   return (
     <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 10px + env(safe-area-inset-bottom, 0px))" }} data-testid="profile-page">

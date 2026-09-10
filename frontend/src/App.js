@@ -1,6 +1,13 @@
-import React, { useEffect } from "react";
+import React, { lazy, useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AppShell } from "@/components/AppShell";
@@ -9,34 +16,65 @@ import { Spinner } from "@/components/Loading";
 import { OfflineScreen } from "@/components/Offline";
 import { nativeReady } from "@/lib/native";
 import { getToken } from "@/lib/api";
-import Welcome from "@/pages/Welcome";
-import Signup from "@/pages/Signup";
-import Login from "@/pages/Login";
-import PhoneLogin from "@/pages/PhoneLogin";
-import Onboarding from "@/pages/Onboarding";
-import Discover from "@/pages/Discover";
-import Explore from "@/pages/Explore";
-import Likes from "@/pages/Likes";
-import Chats from "@/pages/Chats";
-import ChatRoom from "@/pages/ChatRoom";
-import Profile from "@/pages/Profile";
-import EditProfile from "@/pages/EditProfile";
-import Filters from "@/pages/Filters";
-import Settings from "@/pages/Settings";
-import VerificationSettings from "@/pages/settings/Verification";
-import ChangeEmail from "@/pages/settings/ChangeEmail";
-import ChangePhone from "@/pages/settings/ChangePhone";
-import Notifications from "@/pages/Notifications";
-import Legal from "@/pages/Legal";
-import Verify from "@/pages/Verify";
-import AdminVerify from "@/pages/AdminVerify";
+
+/*
+ * Every screen is its own chunk: the first paint only needs the shell, and each screen loads when first opened.
+ * If a chunk fails to load (typically a stale tab after a deploy renamed the files), reload the page once.
+ */
+const CHUNK_KEY = "voiladi_chunk_reload";
+const screen = (load) =>
+  lazy(() =>
+    load()
+      .then((m) => {
+        sessionStorage.removeItem(CHUNK_KEY);
+        return m;
+      })
+      .catch((e) => {
+        const key = CHUNK_KEY;
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, "1");
+          window.location.reload();
+          return new Promise(() => {});
+        }
+        throw e;
+      }),
+  );
+const Welcome = screen(() => import("@/pages/Welcome"));
+const Signup = screen(() => import("@/pages/Signup"));
+const Login = screen(() => import("@/pages/Login"));
+const PhoneLogin = screen(() => import("@/pages/PhoneLogin"));
+const Onboarding = screen(() => import("@/pages/Onboarding"));
+const Discover = screen(() => import("@/pages/Discover"));
+const Explore = screen(() => import("@/pages/Explore"));
+const Likes = screen(() => import("@/pages/Likes"));
+const Chats = screen(() => import("@/pages/Chats"));
+const ChatRoom = screen(() => import("@/pages/ChatRoom"));
+const Profile = screen(() => import("@/pages/Profile"));
+const EditProfile = screen(() => import("@/pages/EditProfile"));
+const Filters = screen(() => import("@/pages/Filters"));
+const Settings = screen(() => import("@/pages/Settings"));
+const VerificationSettings = screen(
+  () => import("@/pages/settings/Verification"),
+);
+const ChangeEmail = screen(() => import("@/pages/settings/ChangeEmail"));
+const ChangePhone = screen(() => import("@/pages/settings/ChangePhone"));
+const Notifications = screen(() => import("@/pages/Notifications"));
+const Legal = screen(() => import("@/pages/Legal"));
+const Verify = screen(() => import("@/pages/Verify"));
+const AdminVerify = screen(() => import("@/pages/AdminVerify"));
 
 /* Boot screen while the session is checked: logo centred, thin spinner near the bottom (as native apps do). */
 const Splash = () => (
   <div className="vo-backdrop">
-    <div className="vo-shell items-center justify-center" data-testid="splash-screen">
+    <div
+      className="vo-shell items-center justify-center"
+      data-testid="splash-screen"
+    >
       <LogoMark size={84} />
-      <div className="absolute bottom-0 flex flex-col items-center gap-3 text-mute" style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}>
+      <div
+        className="absolute bottom-0 flex flex-col items-center gap-3 text-mute"
+        style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}
+      >
         <Spinner size={22} stroke={2} />
       </div>
     </div>
@@ -55,13 +93,18 @@ const Gate = ({ need }) => {
   const { user, loading, netError, refresh } = useAuth();
   const location = useLocation();
   if (loading) return <Splash />;
-  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
+  if (!user && netError === "offline" && getToken())
+    return <OfflineScreen onRetry={refresh} />;
   const complete = !!user?.onboarded;
   if (need === "guest") {
-    if (user) return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
+    if (user)
+      return <Navigate to={complete ? "/discover" : "/onboarding"} replace />;
     return <Outlet />;
   }
-  if (!user) return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
+  if (!user)
+    return (
+      <Navigate to="/welcome" replace state={{ from: location.pathname }} />
+    );
   if (need === "onboarding") {
     if (complete) return <Navigate to="/discover" replace />;
     return <Outlet />;
@@ -73,7 +116,8 @@ const Gate = ({ need }) => {
 const Home = () => {
   const { user, loading, netError, refresh } = useAuth();
   if (loading) return <Splash />;
-  if (!user && netError === "offline" && getToken()) return <OfflineScreen onRetry={refresh} />;
+  if (!user && netError === "offline" && getToken())
+    return <OfflineScreen onRetry={refresh} />;
   if (!user) return <Navigate to="/welcome" replace />;
   return <Navigate to={user.onboarded ? "/discover" : "/onboarding"} replace />;
 };
@@ -92,7 +136,10 @@ function App() {
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/login/phone" element={<PhoneLogin />} />
-                  <Route path="/auth" element={<Navigate to="/login" replace />} />
+                  <Route
+                    path="/auth"
+                    element={<Navigate to="/login" replace />}
+                  />
                 </Route>
               </Route>
               <Route element={<AppShell nav={false} />}>
@@ -116,9 +163,15 @@ function App() {
                   <Route path="/chats/:matchId" element={<ChatRoom />} />
                   <Route path="/profile/edit" element={<EditProfile />} />
                   <Route path="/filters" element={<Filters />} />
-                  <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />
+                  <Route
+                    path="/profile/preferences"
+                    element={<Navigate to="/filters" replace />}
+                  />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/settings/verification" element={<VerificationSettings />} />
+                  <Route
+                    path="/settings/verification"
+                    element={<VerificationSettings />}
+                  />
                   <Route path="/settings/email" element={<ChangeEmail />} />
                   <Route path="/settings/phone" element={<ChangePhone />} />
                   <Route path="/notifications" element={<Notifications />} />

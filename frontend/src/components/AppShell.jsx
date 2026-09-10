@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Spinner } from "@/components/Loading";
 import { useQueryClient } from "@tanstack/react-query";
 import { banner } from "@/lib/feedback";
 import { FeedbackLayer } from "@/components/Feedback";
@@ -107,6 +108,13 @@ class ScreenErrorBoundary extends React.Component {
 const TAB_PATHS = ["/discover", "/explore", "/likes", "/chats", "/profile"];
 const isTab = (path) => TAB_PATHS.includes(path);
 
+/* Fallback while a lazily loaded screen's code downloads: same soft canvas, single activity spinner (iOS). */
+const RouteLoader = () => (
+  <div className="vo-neu-page flex min-h-full flex-1 items-center justify-center" data-testid="route-loader" aria-busy="true">
+    <Spinner size={26} stroke={2.4} className="text-mute" />
+  </div>
+);
+
 export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
@@ -120,7 +128,10 @@ export const AppShell = ({ nav = false }) => {
       <div className="vo-shell" data-testid="app-shell">
         <main key={pathname} className={`vo-scroll relative ${tab ? "vo-page-fade" : "vo-page-push"}`} id="vo-main">
           <ScreenErrorBoundary key={pathname}>
-            <Outlet />
+            {/* screens are code-split; while a screen's code is still arriving, a centred spinner sits on its canvas */}
+            <Suspense fallback={<RouteLoader />}>
+              <Outlet />
+            </Suspense>
           </ScreenErrorBoundary>
         </main>
         {nav && <BottomNav />}
