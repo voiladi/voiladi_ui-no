@@ -1,75 +1,168 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Search, MoreHorizontal, X, Heart, Star, UserRound, ShieldAlert, Ban, SearchX } from "lucide-react";
+import { Search, SlidersHorizontal, X, Heart, Star, Users } from "lucide-react";
+import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { notice } from "@/lib/feedback";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
-import { Brand } from "@/components/Logo";
 import { UserPhoto } from "@/components/UserPhoto";
-import { Chip } from "@/components/Chip";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
-import { EmptyState, Skeleton } from "@/components/EmptyState";
+import { Skeleton } from "@/components/EmptyState";
+import { GlassSegmented } from "@/components/GlassSegmented";
+import { SoftHeader, SoftIconButton, SoftTitle, SoftCard, SectionHead, SoftSearch, SoftPill } from "@/components/SoftUI";
 import { kmLabel } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
 
+/*
+ * Explore, transcribed from the reference: brand header with search + filters buttons, "Explore / Find people,
+ * interests, and communities", sunken search field, glass segments People / Topics / Nearby / Creators, then
+ * "Trending now" (2x2 community photo tiles), "Suggested for you" (people with Follow) and "Popular interests" chips.
+ * Follow = a like. Tapping a community opens its members. Search filters people and communities live.
+ */
 const TABS = [
-  { key: "all", label: "All" },
-  { key: "near", label: "Near you" },
-  { key: "new", label: "New" },
-  { key: "popular", label: "Popular" },
+  { value: "people", label: "People" },
+  { value: "topics", label: "Topics" },
+  { value: "nearby", label: "Nearby" },
+  { value: "creators", label: "Creators" },
 ];
+
+const NAV_PAD = "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))";
+
+const useTopics = () =>
+  useQuery({
+    queryKey: ["explore-topics"],
+    queryFn: async () => (await api.get("/explore/topics")).data,
+    staleTime: 60_000,
+  });
+
+const usePeople = (tab) =>
+  useQuery({
+    queryKey: ["explore", tab],
+    queryFn: async () => (await api.get("/explore", { params: { tab, limit: 40 } })).data,
+    staleTime: 30_000,
+  });
+
+/* Community photo tile: title + member count over a darkened photo. */
+const TopicTile = ({ topic, onOpen, testId = "explore-topic-tile", className = "" }) => (
+  <button type="button" onClick={() => onOpen(topic)} className={`relative block overflow-hidden rounded-[18px] bg-surface2 text-left focus-visible:outline-none active:opacity-90 ${className}`} data-testid={testId}>
+    {topic.cover ? (
+      <img src={topic.cover} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" draggable={false} />
+    ) : (
+      <span className="absolute inset-0 flex items-center justify-center text-mute">
+        <Users className="h-9 w-9" strokeWidth={1.5} />
+      </span>
+    )}
+    <span className="vo-tile-fade absolute inset-x-0 bottom-0 h-[70%]" />
+    <span className="absolute inset-x-3.5 bottom-3 text-white">
+      <span className="block truncate text-[20px] font-bold leading-[24px] tracking-[-0.01em]">{topic.name}</span>
+      <span className="block text-[13px] leading-[17px] text-white/90" data-testid={`${testId}-members`}>
+        {topic.members_label}
+      </span>
+    </span>
+  </button>
+);
+
+/* Person row: avatar, name, what they do, Follow. */
+const PersonRow = ({ p, sub, onOpen, onFollow, followed, last = false, testId = "explore-person-row" }) => (
+  <div className={`flex items-center gap-4 py-3 ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
+    <button type="button" className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none" onClick={() => onOpen(p)} data-testid={`${testId}-open`}>
+      <UserPhoto src={p.photos?.[0]} name={p.name} className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[18px] font-bold leading-[22px] tracking-[-0.01em] text-ink">{p.name}</span>
+        <span className="mt-0.5 block truncate text-[15px] leading-[19px] text-mute">{sub}</span>
+      </span>
+    </button>
+    <SoftPill active={followed} onClick={() => !followed && onFollow(p)} testId={`${testId}-follow`} aria-pressed={followed} className="h-[44px] min-w-[112px] px-5">
+      {followed ? "Following" : "Follow"}
+    </SoftPill>
+  </div>
+);
+
+const RowSkeleton = ({ rows = 3 }) => (
+  <div>
+    {Array.from({ length: rows }).map((_, i) => (
+      <div key={i} className="flex items-center gap-4 py-3">
+        <Skeleton className="h-[60px] w-[60px] rounded-full" />
+        <div className="flex-1">
+          <Skeleton className="h-4 w-32 rounded-full" />
+          <Skeleton className="mt-2 h-3 w-24 rounded-full" />
+        </div>
+        <Skeleton className="h-[44px] w-[112px] rounded-full" />
+      </div>
+    ))}
+  </div>
+);
+
+const whatTheyDo = (p) => p.job || (p.city ? `Lives in ${p.city}` : "New here");
 
 export default function Explore() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
   const { meta } = useMeta();
-  const [tab, setTab] = useState("all");
-  const [searching, setSearching] = useState(false);
+  const [tab, setTab] = useState("people");
   const [q, setQ] = useState("");
   const [sheet, setSheet] = useState(null);
+  const [topic, setTopic] = useState(null);
+  const [showAllSuggested, setShowAllSuggested] = useState(false);
   const [match, setMatch] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [followed, setFollowed] = useState(() => new Set());
   const [gone, setGone] = useState(() => new Set());
+  const searchRef = useRef(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["explore", tab],
-    queryFn: async () => (await api.get("/explore", { params: { tab, limit: 40 } })).data,
+  const topics = useTopics();
+  const people = usePeople(tab === "topics" ? "people" : tab);
+  const topicPeople = useQuery({
+    queryKey: ["explore-topic", topic?.name],
+    queryFn: async () => (await api.get(`/explore/topics/${encodeURIComponent(topic.name)}`)).data,
+    enabled: !!topic,
     staleTime: 30_000,
   });
 
-  const people = useMemo(() => {
-    const list = (data?.profiles || []).filter((p) => !gone.has(p.id));
-    const s = q.trim().toLowerCase();
-    return s ? list.filter((p) => p.name.toLowerCase().includes(s)) : list;
-  }, [data, q, gone]);
+  useEffect(() => setShowAllSuggested(false), [tab]);
+
+  const list = useMemo(() => (people.data?.profiles || []).filter((p) => !gone.has(p.id)), [people.data, gone]);
+  const s = q.trim().toLowerCase();
+  const searchPeople = useMemo(() => (s ? list.filter((p) => p.name.toLowerCase().includes(s) || (p.job || "").toLowerCase().includes(s) || (p.city || "").toLowerCase().includes(s)) : []), [list, s]);
+  const searchTopics = useMemo(() => (s ? (topics.data?.topics || []).filter((t) => t.name.toLowerCase().includes(s)) : []), [topics.data, s]);
 
   const remove = (id) => setGone((g) => new Set([...g, id]));
 
-  const act = async (profile, action, reaction = null) => {
-    setSheet(null);
+  const follow = async (profile, action = "like", reaction = null) => {
     try {
       const { data: res } = await api.post("/swipe", { target_id: profile.id, action, reaction: reaction || undefined });
-      remove(profile.id);
+      setFollowed((f) => new Set([...f, profile.id]));
       qc.invalidateQueries({ queryKey: ["likes-sent"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
       if (res.matched) {
         setMatch(res.match);
         qc.invalidateQueries({ queryKey: ["matches"] });
-        qc.invalidateQueries({ queryKey: ["stats"] });
-      } else if (action === "superlike") {
-        qc.invalidateQueries({ queryKey: ["stats"] });
       }
     } catch (e) {
       notice(errMsg(e));
     }
+  };
+
+  const act = async (profile, action, reaction = null) => {
+    setSheet(null);
+    if (action === "pass") {
+      remove(profile.id);
+      try {
+        await api.post("/swipe", { target_id: profile.id, action });
+      } catch (e) {
+        notice(errMsg(e));
+      }
+      return;
+    }
+    await follow(profile, action, reaction);
   };
 
   const doBlock = async () => {
@@ -80,6 +173,7 @@ export default function Explore() {
       remove(blockTarget.id);
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["likes"] });
+      qc.invalidateQueries({ queryKey: ["explore-topics"] });
       setBlockTarget(null);
     } catch (e) {
       notice(errMsg(e));
@@ -89,7 +183,7 @@ export default function Explore() {
   };
 
   const doReport = async (reason, details) => {
-    if (!reportTarget) return;
+    if (!reportTarget) return false;
     setBusy(true);
     try {
       await api.post(`/users/${reportTarget.id}/report`, { reason, details });
@@ -102,101 +196,193 @@ export default function Explore() {
     }
   };
 
+  const openTopic = (t) => setTopic(t);
+
+  const suggested = showAllSuggested ? list.slice(0, 12) : list.slice(0, 3);
+
+  const renderPeopleList = (rows, subOf, emptyTitle, emptyText, testId) =>
+    people.isLoading ? (
+      <SoftCard className="px-5 py-2">
+        <RowSkeleton rows={5} />
+      </SoftCard>
+    ) : people.isError ? (
+      <SoftCard className="px-5 py-8 text-center" testId="error-alert">
+        <p className="text-[18px] font-bold text-ink">Couldn't load people</p>
+        <p className="mt-1 text-[15px] text-mute">Check your connection and try again.</p>
+        <SoftPill className="mt-5" onClick={() => people.refetch()} testId="explore-retry-button">
+          Try again
+        </SoftPill>
+      </SoftCard>
+    ) : rows.length === 0 ? (
+      <SoftCard className="px-5 py-8 text-center" testId={`${testId}-empty`}>
+        <p className="text-[18px] font-bold text-ink">{emptyTitle}</p>
+        <p className="mt-1 text-[15px] text-mute">{emptyText}</p>
+        <SoftPill className="mt-5" onClick={() => navigate("/filters")} testId="explore-adjust-filters-button">
+          Adjust filters
+        </SoftPill>
+      </SoftCard>
+    ) : (
+      <SoftCard className="px-5 py-1" testId={testId}>
+        {rows.map((p, i) => (
+          <PersonRow key={p.id} p={p} sub={subOf(p)} onOpen={setSheet} onFollow={follow} followed={followed.has(p.id)} last={i === rows.length - 1} />
+        ))}
+      </SoftCard>
+    );
+
   return (
-    <div className="min-h-full" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))" }} data-testid="explore-page">
-      <header className="px-4 pt-1">
-        <div className="flex h-14 items-center justify-between">
-          <Brand size={30} />
-          <button type="button" className={`vo-icon-btn ${searching ? "bg-ink text-onink hover:bg-ink" : ""}`} onClick={() => setSearching((s) => !s)} aria-label="Search" data-testid="explore-search-button">
-            <Search className="h-5 w-5" strokeWidth={2} />
-          </button>
+    <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: NAV_PAD }} data-testid="explore-page">
+      <header className="shrink-0 px-5 pt-1">
+        <SoftHeader
+          right={
+            <>
+              <SoftIconButton icon={Search} label="Search" onClick={() => searchRef.current?.focus()} testId="explore-search-button" />
+              <SoftIconButton icon={SlidersHorizontal} label="Filters" onClick={() => navigate("/filters")} testId="explore-filters-button" />
+            </>
+          }
+        />
+        <SoftTitle title="Explore" subtitle="Find people, interests, and communities" testId="explore-title" />
+        <div className="mt-4">
+          <SoftSearch inputRef={searchRef} value={q} onChange={setQ} onClear={() => setQ("")} placeholder="Search people, interests, or communities" testId="explore-search-input" />
         </div>
-        <h1 className="vo-title mt-2">Explore</h1>
-        <p className="mt-1 text-[15px] text-mute">Find people who vibe with you.</p>
-        {searching && (
-          <div className="relative mt-3">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" />
-            <input autoFocus className="vo-input h-11 pl-11 text-[15px]" style={{ height: 44 }} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} data-testid="explore-search-input" />
-          </div>
-        )}
-        <div className="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto" data-testid="explore-tabs">
-          {TABS.map((t) => (
-            <Chip key={t.key} active={tab === t.key} onClick={() => setTab(t.key)} className="shrink-0" data-testid={`explore-tab-${t.key}`}>
-              {t.label}
-            </Chip>
-          ))}
-        </div>
+        {!s && <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="explore-tab" className="mt-4" />}
       </header>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 px-4 pt-5" data-testid="explore-loading">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="aspect-[3/4] rounded-[20px]" />
-          ))}
-        </div>
-      ) : isError ? (
-        <EmptyState
-          icon={SearchX}
-          title="Couldn't load people"
-          description="Check your connection and try again."
-          testId="error-alert"
-          action={
-            <button type="button" className="vo-btn-primary w-full" onClick={() => refetch()}>
-              Try again
-            </button>
-          }
-        />
-      ) : people.length === 0 ? (
-        <EmptyState
-          icon={SearchX}
-          title={q ? `No one named "${q}"` : tab === "near" ? "No one nearby yet" : "No one to show yet"}
-          description={tab === "near" && !user?.city ? "Add your location in Edit Profile to see people near you." : "Try another tab or widen your filters."}
-          action={
-            <button type="button" className="vo-btn-primary w-full" onClick={() => navigate("/filters")} data-testid="explore-adjust-filters-button">
-              Adjust filters
-            </button>
-          }
-        />
-      ) : (
-        <div className="grid grid-cols-2 gap-3 px-4 pt-5" data-testid="explore-grid">
-          {people.map((p, i) => (
-            <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="relative aspect-[3/4] overflow-hidden rounded-[20px] bg-surface2" data-testid="explore-tile">
-              <button type="button" className="block h-full w-full text-left focus-visible:outline-none" onClick={() => setSheet(p)} data-testid="explore-tile-open">
-                <UserPhoto src={p.photos?.[0]} name={p.name} className="h-full w-full text-4xl" />
-                <div className="vo-photo-fade pointer-events-none absolute inset-x-0 bottom-0 h-1/2" />
-                <div className="pointer-events-none absolute inset-x-3 bottom-3 text-white">
-                  <div className="text-[18px] font-bold leading-tight tracking-[-0.01em]">
-                    {p.name} <span className="font-medium">{p.age}</span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-white/90">
-                    <span className={`h-2 w-2 rounded-full ${p.distance_km !== null && p.distance_km !== undefined && p.distance_km <= 5 ? "bg-amber" : "bg-white/70"}`} />
-                    {kmLabel(p.distance_km, p.city) || "Nearby"}
-                  </div>
+      <div className="mt-4 flex flex-col gap-4 px-5">
+        {s ? (
+          <>
+            {searchTopics.length > 0 && (
+              <SoftCard className="p-4" testId="explore-search-topics">
+                <SectionHead title="Communities" />
+                <div className="mt-3.5 grid grid-cols-2 gap-3">
+                  {searchTopics.slice(0, 6).map((t) => (
+                    <TopicTile key={t.name} topic={t} onOpen={openTopic} className="aspect-[1.55/1]" />
+                  ))}
                 </div>
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button type="button" className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-white focus-visible:outline-none" aria-label="More" data-testid="explore-tile-menu">
-                    <MoreHorizontal className="h-5 w-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-[16px] border-line bg-bg p-1.5 shadow-modal">
-                  <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setSheet(p)}>
-                    <UserRound className="mr-2 h-4 w-4" /> View profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="rounded-[10px] py-2.5" onClick={() => setReportTarget(p)}>
-                    <ShieldAlert className="mr-2 h-4 w-4" /> Report
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-[10px] py-2.5 text-red focus:text-red" onClick={() => setBlockTarget(p)}>
-                    <Ban className="mr-2 h-4 w-4" /> Block
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              </SoftCard>
+            )}
+            {people.isLoading ? (
+              <SoftCard className="px-5 py-2">
+                <RowSkeleton />
+              </SoftCard>
+            ) : searchPeople.length > 0 ? (
+              <SoftCard className="px-5 pt-4 pb-1" testId="explore-search-people">
+                <SectionHead title="People" />
+                {searchPeople.slice(0, 12).map((p, i) => (
+                  <PersonRow key={p.id} p={p} sub={whatTheyDo(p)} onOpen={setSheet} onFollow={follow} followed={followed.has(p.id)} last={i === Math.min(searchPeople.length, 12) - 1} />
+                ))}
+              </SoftCard>
+            ) : searchTopics.length === 0 ? (
+              <p className="pt-6 text-center text-[16px] text-mute" data-testid="explore-no-results">
+                No results for "{q.trim()}".
+              </p>
+            ) : null}
+          </>
+        ) : tab === "people" ? (
+          <>
+            {/* Trending now */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base)}>
+              <SoftCard className="p-4" testId="explore-trending">
+                <SectionHead title="Trending now" action="See all" onAction={() => setTab("topics")} actionTestId="explore-trending-see-all" />
+                <div className="mt-3.5 grid grid-cols-2 gap-3">
+                  {topics.isLoading
+                    ? [0, 1, 2, 3].map((i) => <Skeleton key={i} className="aspect-[1.55/1] rounded-[18px]" />)
+                    : (topics.data?.trending || []).map((t) => <TopicTile key={t.name} topic={t} onOpen={openTopic} className="aspect-[1.55/1]" />)}
+                </div>
+              </SoftCard>
             </motion.div>
-          ))}
-        </div>
-      )}
+
+            {/* Suggested for you */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, 0.05)}>
+              <SoftCard className="px-5 pt-4 pb-1" testId="explore-suggested">
+                <SectionHead title="Suggested for you" action={list.length > 3 ? (showAllSuggested ? "Show less" : "See all") : null} onAction={() => setShowAllSuggested((v) => !v)} actionTestId="explore-suggested-see-all" />
+                {people.isLoading ? (
+                  <RowSkeleton />
+                ) : suggested.length === 0 ? (
+                  <p className="py-6 text-center text-[15px] text-mute" data-testid="explore-suggested-empty">
+                    No suggestions right now. Try widening your filters.
+                  </p>
+                ) : (
+                  suggested.map((p, i) => <PersonRow key={p.id} p={p} sub={whatTheyDo(p)} onOpen={setSheet} onFollow={follow} followed={followed.has(p.id)} last={i === suggested.length - 1} />)
+                )}
+              </SoftCard>
+            </motion.div>
+
+            {/* Popular interests */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, 0.1)} data-testid="explore-popular">
+              <SectionHead title="Popular interests" action="See all" onAction={() => setTab("topics")} actionTestId="explore-popular-see-all" />
+              <div className="no-scrollbar -mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-2">
+                {topics.isLoading
+                  ? [0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[44px] w-24 shrink-0 rounded-full" />)
+                  : (topics.data?.popular || []).map((t) => (
+                      <SoftPill key={t.name} onClick={() => openTopic(t)} className="h-[44px] px-5 text-[16px] font-medium" testId="explore-popular-chip">
+                        {t.name}
+                      </SoftPill>
+                    ))}
+              </div>
+            </motion.div>
+          </>
+        ) : tab === "topics" ? (
+          <SoftCard className="p-4" testId="explore-topics-grid">
+            <SectionHead title="All communities" />
+            <div className="mt-3.5 grid grid-cols-2 gap-3">
+              {topics.isLoading
+                ? [0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="aspect-[1.55/1] rounded-[18px]" />)
+                : (topics.data?.topics || []).map((t) => <TopicTile key={t.name} topic={t} onOpen={openTopic} className="aspect-[1.55/1]" />)}
+            </div>
+          </SoftCard>
+        ) : tab === "nearby" ? (
+          renderPeopleList(list, (p) => kmLabel(p.distance_km, p.city) || whatTheyDo(p), "No one nearby yet", user?.city ? "Widen your distance to see more people." : "Add your location in Edit Profile to see people near you.", "explore-nearby-list")
+        ) : (
+          renderPeopleList(list, (p) => `${whatTheyDo(p)}${p.likes_count ? ` · ${p.likes_count} likes` : ""}`, "No creators yet", "Popular people will show up here.", "explore-creators-list")
+        )}
+      </div>
+
+      {/* Community members */}
+      <Drawer open={!!topic} onOpenChange={(o) => !o && setTopic(null)}>
+        <DrawerContent className="mx-auto max-h-[86dvh] max-w-[430px] rounded-t-[28px] border-0 bg-canvas" data-testid="topic-drawer">
+          {topic && (
+            <>
+              <div className="relative mx-4 mt-3 h-[140px] overflow-hidden rounded-[22px] bg-surface2">
+                {topic.cover && <img src={topic.cover} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+                <span className="vo-tile-fade absolute inset-x-0 bottom-0 h-[75%]" />
+                <span className="absolute inset-x-5 bottom-4 text-white">
+                  <DrawerTitle className="text-[28px] font-bold leading-[32px] tracking-[-0.02em] text-white">{topic.name}</DrawerTitle>
+                  <DrawerDescription className="text-[15px] text-white/90" data-testid="topic-members">
+                    {topicPeople.data?.members_label || topic.members_label}
+                  </DrawerDescription>
+                </span>
+              </div>
+              <div className="vo-scroll px-5 pb-8 pt-2">
+                {topicPeople.isLoading ? (
+                  <RowSkeleton rows={4} />
+                ) : (topicPeople.data?.profiles || []).filter((p) => !gone.has(p.id)).length === 0 ? (
+                  <p className="py-10 text-center text-[16px] text-mute" data-testid="topic-empty">
+                    No one you can follow here yet.
+                  </p>
+                ) : (
+                  topicPeople.data.profiles
+                    .filter((p) => !gone.has(p.id))
+                    .map((p, i, arr) => (
+                      <PersonRow
+                        key={p.id}
+                        p={p}
+                        sub={whatTheyDo(p)}
+                        onOpen={(pp) => {
+                          setTopic(null);
+                          setTimeout(() => setSheet(pp), 200);
+                        }}
+                        onFollow={follow}
+                        followed={followed.has(p.id)}
+                        last={i === arr.length - 1}
+                        testId="topic-person-row"
+                      />
+                    ))
+                )}
+              </div>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
 
       <ProfileSheet
         profile={sheet}
@@ -220,8 +406,8 @@ export default function Explore() {
               <button type="button" className="vo-action h-16 w-16" onClick={() => act(sheet, "like")} aria-label="Like" data-testid="sheet-like-button">
                 <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
               </button>
-              <button type="button" className="vo-action h-14 w-14 text-blue" onClick={() => act(sheet, "superlike")} aria-label="Super Like" data-testid="sheet-superlike-button">
-                <Star className="h-6 w-6" fill="currentColor" strokeWidth={2} />
+              <button type="button" className="vo-action h-14 w-14" onClick={() => act(sheet, "superlike")} aria-label="Super Like" data-testid="sheet-superlike-button">
+                <Star className="h-6 w-6" strokeWidth={2.2} />
               </button>
             </div>
           )

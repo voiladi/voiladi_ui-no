@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Heart, Star, SlidersHorizontal, RefreshCw, SquareStack } from "lucide-react";
+import { X, Heart, Star, SlidersHorizontal, RefreshCw, SquareStack, Sparkles, ChevronRight } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
 import { useStats } from "@/hooks/useStats";
-import { Brand } from "@/components/Logo";
+import { SoftHeader, SoftIconButton, SoftTitle, SoftCard, SoftPill } from "@/components/SoftUI";
+import { completion } from "@/pages/Profile";
 import { SwipeCard } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
-import { EmptyState, Skeleton } from "@/components/EmptyState";
+import { Skeleton } from "@/components/EmptyState";
 
 export default function Discover() {
   const navigate = useNavigate();
@@ -145,74 +146,79 @@ export default function Discover() {
   const current = queue[0];
   const next = queue[1];
 
-  return (
-    <div className="flex h-full flex-col" data-testid="discover-page">
-      <header className="flex h-14 items-center justify-between px-4 pt-1">
-        <Brand size={30} />
-        <button type="button" className="vo-icon-btn" onClick={() => navigate("/filters")} aria-label="Filters" data-testid="filters-open-button">
-          <SlidersHorizontal className="h-5 w-5" strokeWidth={2} />
-        </button>
-      </header>
+  const { pct } = completion(user);
+  const tipCard = pct < 100;
 
-      <div className="relative mx-4 mt-2 min-h-0 flex-1" data-testid="discover-card-stack">
-        {loading && queue.length === 0 ? (
-          <Skeleton className="absolute inset-0 rounded-[24px]" />
-        ) : error ? (
-          <EmptyState
-            icon={RefreshCw}
-            title="Couldn't load people"
-            description={error}
-            testId="error-alert"
-            action={
-              <button type="button" className="vo-btn-primary w-full" onClick={() => load()} data-testid="discover-retry-button">
-                Try again
-              </button>
-            }
-          />
-        ) : empty ? (
-          <EmptyState
-            icon={SquareStack}
-            title="You've seen everyone nearby"
-            description="New people join every day. Widen your distance or age range to see more."
-            action={
-              <button type="button" className="vo-btn-primary w-full" onClick={() => navigate("/filters")} data-testid="discover-adjust-filters-button">
-                Adjust filters
-              </button>
-            }
-            secondary={
-              <button type="button" className="vo-btn-ghost w-full" onClick={() => load()} data-testid="discover-refresh-button">
-                <RefreshCw className="h-4 w-4" /> Refresh
-              </button>
-            }
-          />
-        ) : (
-          <>
-            {next && <div className="absolute inset-0 scale-[0.96] translate-y-2 overflow-hidden rounded-[24px] bg-surface2" aria-hidden="true" />}
-            <SwipeCard
-              key={current.id}
-              ref={topRef}
-              profile={current}
-              onSwipe={onSwipe}
-              onOpen={(p) => setSheet(p)}
-              onReport={(p) => setReportTarget(p)}
-              onBlock={(p) => setBlockTarget(p)}
-            />
-          </>
+  const message = (icon, title, text, primary, onPrimary, primaryTestId, secondary, onSecondary, secondaryTestId, testId) => {
+    const Icon = icon;
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center" data-testid={testId}>
+        <span className="vo-soft-tile h-16 w-16 rounded-[20px] text-ink">
+          <Icon className="h-7 w-7" strokeWidth={1.8} />
+        </span>
+        <p className="mt-5 text-[22px] font-bold leading-[28px] tracking-[-0.02em] text-ink">{title}</p>
+        <p className="mt-1.5 max-w-[280px] text-[16px] leading-[22px] text-mute">{text}</p>
+        <SoftPill className="mt-6 h-[50px] px-7" onClick={onPrimary} testId={primaryTestId}>
+          {primary}
+        </SoftPill>
+        {secondary && (
+          <button type="button" className="mt-4 text-[16px] font-medium text-mute active:opacity-60" onClick={onSecondary} data-testid={secondaryTestId}>
+            {secondary}
+          </button>
         )}
       </div>
+    );
+  };
 
-      {/* Three round actions */}
-      <div className="flex items-center justify-center gap-7 pt-4" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 12px + env(safe-area-inset-bottom, 0px))" }} data-testid="discover-action-dock">
-        <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-action h-16 w-16" aria-label="Pass" data-testid="discover-pass-button">
-          <X className="h-7 w-7" strokeWidth={2.5} />
-        </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-action h-[76px] w-[76px]" aria-label="Like" data-testid="discover-like-button">
-          <Heart className="h-8 w-8" fill="currentColor" strokeWidth={2} />
-        </button>
-        <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-action h-16 w-16 text-blue" aria-label="Super Like" data-testid="discover-voila-button">
-          <Star className="h-7 w-7" fill="currentColor" strokeWidth={2} />
-        </button>
-      </div>
+  return (
+    <div className="vo-neu-page flex h-full flex-col" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))" }} data-testid="discover-page">
+      <header className="shrink-0 px-5 pt-1">
+        <SoftHeader right={<SoftIconButton icon={SlidersHorizontal} label="Filters" onClick={() => navigate("/filters")} testId="filters-open-button" />} />
+        <SoftTitle title="Discover" subtitle="Find people who vibe with you" testId="discover-title" />
+      </header>
+
+      {/* photo card + the three round actions live on one raised surface */}
+      <SoftCard className="mx-4 mt-4 flex min-h-0 flex-1 flex-col p-2.5 pb-4" testId="discover-deck">
+        <div className="relative min-h-0 flex-1" data-testid="discover-card-stack">
+          {loading && queue.length === 0 ? (
+            <Skeleton className="absolute inset-0 rounded-[26px]" />
+          ) : error ? (
+            message(RefreshCw, "Couldn't load people", error, "Try again", () => load(), "discover-retry-button", null, null, null, "error-alert")
+          ) : empty ? (
+            message(SquareStack, "You've seen everyone nearby", "New people join every day. Widen your distance or age range to see more.", "Adjust filters", () => navigate("/filters"), "discover-adjust-filters-button", "Refresh", () => load(), "discover-refresh-button", "empty-state")
+          ) : (
+            <>
+              {next && <div className="absolute inset-0 translate-y-2 scale-[0.96] overflow-hidden rounded-[26px] bg-surface2" aria-hidden="true" />}
+              <SwipeCard key={current.id} ref={topRef} profile={current} onSwipe={onSwipe} onOpen={(p) => setSheet(p)} />
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 flex shrink-0 items-center justify-center gap-[34px]" data-testid="discover-action-dock">
+          <button type="button" disabled={empty || loading} onClick={() => trigger("pass")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Pass" data-testid="discover-pass-button">
+            <X className="h-8 w-8" strokeWidth={2.4} />
+          </button>
+          <button type="button" disabled={empty || loading} onClick={() => trigger("like")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Like" data-testid="discover-like-button">
+            <Heart className="h-[34px] w-[34px]" fill="currentColor" strokeWidth={2} />
+          </button>
+          <button type="button" disabled={empty || loading} onClick={() => trigger("superlike")} className="vo-soft-round h-[76px] w-[76px]" aria-label="Super Like" data-testid="discover-voila-button">
+            <Star className="h-8 w-8" strokeWidth={2.2} />
+          </button>
+        </div>
+      </SoftCard>
+
+      {tipCard && (
+        <SoftCard as="button" type="button" className="mx-4 mt-4 flex shrink-0 items-center gap-4 p-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="discover-tip-card">
+          <span className="vo-soft-tile h-[60px] w-[60px] rounded-[18px]">
+            <Sparkles className="h-7 w-7" strokeWidth={1.8} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-bold leading-[22px] tracking-[-0.01em] text-ink">Better matches ahead</span>
+            <span className="mt-0.5 block text-[15px] leading-[20px] text-mute">Complete your profile to get more relevant matches.</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-mute" strokeWidth={2} />
+        </SoftCard>
+      )}
 
       <MatchModal match={match} me={user} onClose={() => setMatch(null)} onSayHi={() => navigate(`/chats/${match.id}`)} />
       <ProfileSheet
@@ -236,8 +242,8 @@ export default function Discover() {
             <button type="button" className="vo-action h-16 w-16" onClick={() => fromSheet("like")} aria-label="Like" data-testid="sheet-like-button">
               <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
             </button>
-            <button type="button" className="vo-action h-14 w-14 text-blue" onClick={() => fromSheet("superlike")} aria-label="Super Like" data-testid="sheet-superlike-button">
-              <Star className="h-6 w-6" fill="currentColor" strokeWidth={2} />
+            <button type="button" className="vo-action h-14 w-14" onClick={() => fromSheet("superlike")} aria-label="Super Like" data-testid="sheet-superlike-button">
+              <Star className="h-6 w-6" strokeWidth={2.2} />
             </button>
           </div>
         }

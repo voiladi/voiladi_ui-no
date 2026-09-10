@@ -1,7 +1,6 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { MoreHorizontal, BadgeCheck, Briefcase, MapPin, UserRound, ShieldAlert, Ban } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { BadgeCheck, MapPin } from "lucide-react";
 import { UserPhoto } from "@/components/UserPhoto";
 import { distanceLabel } from "@/lib/format";
 import { EASE, SETTLE } from "@/lib/motion";
@@ -10,10 +9,11 @@ const THRESHOLD = 110;
 const EXIT = { duration: 0.3, ease: EASE };
 
 /**
- * The Discover card as photographed: rounded photo card, bottom fade, name + age + verified badge,
- * job line, distance line, interest chips and a "..." menu. Drag left/right to pass/like, tap to see the next photo.
+ * The Discover card as photographed: rounded photo card, "1/6" photo counter, bottom fade, "Maya, 24", what they do,
+ * and the distance line. Drag left/right to pass/like, tap the photo to see the next one, tap the caption to open
+ * the full profile (report / block live there).
  */
-export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlock }, ref) => {
+export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen }, ref) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-8, 8]);
@@ -22,7 +22,6 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
   const [idx, setIdx] = useState(0);
   const exiting = useRef(false);
   const photos = profile.photos?.length ? profile.photos : [null];
-  const chips = (profile.interests || []).slice(0, 3);
 
   const fly = useCallback(
     (action, reaction = null) => {
@@ -56,7 +55,7 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
 
   return (
     <motion.article
-      className="vo-gpu absolute inset-0 overflow-hidden rounded-[24px] bg-surface2 shadow-action"
+      className="vo-gpu absolute inset-0 overflow-hidden rounded-[26px] bg-surface2"
       style={{ x, y, rotate }}
       drag="x"
       dragElastic={0.9}
@@ -68,32 +67,9 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
       <UserPhoto src={photos[idx]} name={profile.name} className="h-full w-full text-8xl" data-testid="discover-card-photo" />
       <div className="vo-photo-fade pointer-events-none absolute inset-x-0 bottom-0 h-[55%]" />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            aria-label="More"
-            data-testid="discover-card-menu-button"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52 rounded-[16px] border-line bg-bg p-1.5 shadow-modal" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem className="rounded-[10px] py-2.5 text-[15px]" onClick={() => onOpen(profile)} data-testid="discover-card-open-profile">
-            <UserRound className="mr-2 h-4 w-4" /> View full profile
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="rounded-[10px] py-2.5 text-[15px]" onClick={() => onReport(profile)} data-testid="discover-report-button">
-            <ShieldAlert className="mr-2 h-4 w-4" /> Report
-          </DropdownMenuItem>
-          <DropdownMenuItem className="rounded-[10px] py-2.5 text-[15px] text-red focus:text-red" onClick={() => onBlock(profile)} data-testid="discover-block-button">
-            <Ban className="mr-2 h-4 w-4" /> Block
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <span className="absolute right-4 top-4 rounded-full bg-black/35 px-3 py-1.5 text-[14px] font-semibold tabular-nums text-white backdrop-blur-md" data-testid="discover-card-counter">
+        {idx + 1}/{photos.length}
+      </span>
 
       {/* drag feedback */}
       <motion.span style={{ opacity: likeOp }} className="pointer-events-none absolute left-5 top-12 rounded-full border-2 border-white px-3 py-1 text-[14px] font-bold uppercase tracking-wide text-white">
@@ -103,32 +79,29 @@ export const SwipeCard = forwardRef(({ profile, onSwipe, onOpen, onReport, onBlo
         Nope
       </motion.span>
 
-      <div className="pointer-events-none absolute inset-x-5 bottom-5 text-white">
-        <div className="flex items-center gap-2">
-          <h2 className="text-[32px] font-bold leading-none tracking-[-0.02em]" data-testid="discover-card-name">
+      <button
+        type="button"
+        className="absolute inset-x-5 bottom-5 text-left text-white focus-visible:outline-none"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (Math.abs(x.get()) < 6) onOpen(profile);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label={`Open ${profile.name}'s profile`}
+        data-testid="discover-card-open-profile"
+      >
+        <span className="flex items-center gap-2">
+          <h2 className="text-[28px] font-bold leading-[32px] tracking-[-0.02em]" data-testid="discover-card-name">
             {profile.name}
+            {profile.age ? `, ${profile.age}` : ""}
           </h2>
-          {profile.age ? <span className="text-[26px] font-medium leading-none">{profile.age}</span> : null}
-          {profile.verified && <BadgeCheck className="ml-0.5 h-7 w-7 text-blue" fill="currentColor" stroke="white" strokeWidth={1.75} data-testid="discover-card-verified" />}
-        </div>
-        {profile.job && (
-          <div className="mt-3 flex items-center gap-2 text-[16px] font-medium">
-            <Briefcase className="h-[18px] w-[18px]" strokeWidth={1.75} /> {profile.job}
-          </div>
-        )}
-        <div className="mt-1.5 flex items-center gap-2 text-[16px] font-medium" data-testid="discover-card-distance">
-          <MapPin className="h-[18px] w-[18px]" strokeWidth={1.75} /> {distanceLabel(profile.distance_km, profile.city)}
-        </div>
-        {chips.length > 0 && (
-          <div className="mt-3.5 flex flex-wrap gap-2">
-            {chips.map((c) => (
-              <span key={c} className="vo-chip-glass">
-                {c}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+          {profile.verified && <BadgeCheck className="h-6 w-6 text-blue" fill="currentColor" stroke="white" strokeWidth={1.75} data-testid="discover-card-verified" />}
+        </span>
+        {profile.job && <span className="mt-1 block text-[17px] leading-[22px] tracking-[-0.01em] text-white/95">{profile.job}</span>}
+        <span className="mt-1.5 flex items-center gap-1.5 text-[15px] leading-[20px] text-white/95" data-testid="discover-card-distance">
+          <MapPin className="h-4 w-4" strokeWidth={2} /> {distanceLabel(profile.distance_km, profile.city)}
+        </span>
+      </button>
     </motion.article>
   );
 });

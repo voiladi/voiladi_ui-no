@@ -37,6 +37,12 @@ CITY = {
     "Pune": (18.5204, 73.8567), "Hyderabad": (17.3850, 78.4867), "Chicago": (41.8781, -87.6298),
 }
 
+# What each sample person does (shown under their name on Explore "Suggested for you"), by PEOPLE index.
+JOBS = ["Film student", "Marathon runner", "Software engineer", "Product Designer", "Poet & writer", "Photographer",
+        "Content creator", "Graphic Designer", "Architect", "Music producer", "Chef", "Fitness coach",
+        "Illustrator", "Data analyst", "Fashion stylist", "Medical student", "Founder", "Barista",
+        "UX researcher", "Travel blogger", "Dancer", "Game developer", "Journalist", "Interior designer"]
+
 # name, age, gender, looking_for, city, interests, bio, prompts[(q, a)]
 PEOPLE = [
     ("Aanya", 21, "woman", "men", "Mumbai", ["Matcha", "Photography", "Indie", "Thrifting", "Sunsets"],
@@ -169,7 +175,7 @@ async def seed(likes_for: str = None):
         phone = f"+1999000{idx:04d}"
         doc = {
             "phone": phone, "name": name, "birthday": birthday_for(age, idx), "gender": gender, "looking_for": looking,
-            "bio": bio, "interests": interests, "prompts": [{"question": q, "answer": a} for q, a in prompts],
+            "bio": bio, "job": JOBS[idx % len(JOBS)], "interests": interests, "prompts": [{"question": q, "answer": a} for q, a in prompts],
             "city": city, "lat": lat + (idx % 5) * 0.01, "lng": lng + (idx % 3) * 0.01, "photos": photos,
             "preferences": {"age_min": 18, "age_max": 45, "max_distance_km": ANYWHERE_KM, "show_me": looking},
             "is_seed": True, "onboarded": True, "last_active": now_iso(), "updated_at": now_iso(),

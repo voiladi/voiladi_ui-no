@@ -70,3 +70,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   confirmations are iOS glass action sheets (components/Dialogs.jsx). VOILADI+ shows a "Soon" pill. Tests iteration_15 17/17. NOT yet redeployed to Railway.
 - Phase 17 (2026-09-10): Likes + Messages tabs rebuilt 1:1 from soft-UI mockups (components/SoftUI.jsx), floating rounded bottom nav app-wide,
   Chats tabs All/Matches/Unread + search toggle, Likes "..." sort/filter menu + heart count pill. Tests iteration_16 100%. Deployed voiladi-web.
+- Phase 18 (2026-09-10): Explore/Profile/Discover rebuilt to neumorphic mockups; Explore communities (topics API), Follow, search, Nearby/Creators.
+  Tests iteration_17 100%. Deployed voiladi-api + voiladi-web.

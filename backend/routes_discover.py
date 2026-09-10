@@ -8,13 +8,16 @@ from pydantic import BaseModel
 
 from core import (db, now, now_iso, get_current_user, public_profile, get_prefs, calc_age, distance_between,
                   ANYWHERE_KM, SHOW_ME_TO_GENDER)
+from content import INTERESTS, TOPIC_COVERS
 from ws_manager import manager
 
 router = APIRouter(prefix="/api", tags=["discover"])
 
 # Voila (superlike) is scarce on purpose: a fixed weekly allowance makes it mean something.
 VOILA_WEEKLY_LIMIT = 5
-EXPLORE_TABS = ("all", "near", "new", "popular")
+EXPLORE_TABS = ("all", "near", "new", "popular", "people", "nearby", "creators")
+# Explore screen names -> ranking
+EXPLORE_ALIAS = {"people": "all", "nearby": "near", "creators": "popular"}
 
 
 async def voilas_used_this_week(user_id: str) -> int:
@@ -190,6 +193,7 @@ async def explore(tab: str = "all", limit: int = 40, user=Depends(get_current_us
     """Grid of people for the Explore tab. all=best match, near=closest first, new=recently joined, popular=most liked."""
     if tab not in EXPLORE_TABS:
         raise HTTPException(status_code=400, detail="Unknown tab")
+    tab = EXPLORE_ALIAS.get(tab, tab)
     scored = await _candidates(user)
     if tab == "near":
         scored = [t for t in scored if t[1].get("distance_km") is not None]
@@ -209,6 +213,63 @@ async def explore(tab: str = "all", limit: int = 40, user=Depends(get_current_us
             p["likes_count"] = counts.get(c["id"], 0)
         scored.sort(key=lambda t: (t[1]["likes_count"], t[0]), reverse=True)
     return {"profiles": [p for _, p, _ in scored[:limit]], "total": len(scored), "tab": tab}
+
+
+def _compact(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}".rstrip("0").rstrip(".") + "M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}".rstrip("0").rstrip(".") + "K"
+    return str(n)
+
+
+async def _topic_rows(user: dict):
+    """Interest communities: every curated interest with how many real members share it (excluding blocked people)."""
+    blocks = await db.blocks.find({"$or": [{"from_id": user["id"]}, {"to_id": user["id"]}]}, {"_id": 0}).to_list(None)
+    hidden = set()
+    for b in blocks:
+        hidden.add(b["from_id"])
+        hidden.add(b["to_id"])
+    hidden.discard(user["id"])
+    rows = await db.users.aggregate([
+        {"$match": {"onboarded": True, "id": {"$nin": list(hidden)}, "interests": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$interests"},
+        {"$group": {"_id": "$interests", "members": {"$sum": 1}, "photo": {"$first": {"$arrayElemAt": ["$photos", 0]}}}},
+    ]).to_list(None)
+    counts = {r["_id"]: r for r in rows}
+    mine = set(user.get("interests") or [])
+    topics = []
+    for name in INTERESTS:
+        r = counts.get(name, {})
+        n = int(r.get("members") or 0)
+        topics.append({
+            "name": name,
+            "members": n,
+            "members_label": f"{_compact(n)} member" + ("" if n == 1 else "s"),
+            "cover": TOPIC_COVERS.get(name) or r.get("photo") or None,
+            "joined": name in mine,
+        })
+    topics.sort(key=lambda t: (-t["members"], INTERESTS.index(t["name"])))
+    return topics
+
+
+@router.get("/explore/topics")
+async def explore_topics(user=Depends(get_current_user)):
+    """Communities for the Explore tab: trending (top 4), popular (top 10 chips) and the full list."""
+    topics = await _topic_rows(user)
+    return {"trending": topics[:4], "popular": topics[:10], "topics": topics}
+
+
+@router.get("/explore/topics/{name}")
+async def explore_topic(name: str, limit: int = 40, user=Depends(get_current_user)):
+    """People in one community (mutual preference match), best match first."""
+    if name not in INTERESTS:
+        raise HTTPException(status_code=404, detail="Unknown community")
+    scored = await _candidates(user)
+    people = [p for _, p, c in scored if name in (c.get("interests") or [])]
+    total = await db.users.count_documents({"onboarded": True, "interests": name})
+    return {"name": name, "members": total, "members_label": f"{_compact(total)} member" + ("" if total == 1 else "s"),
+            "cover": TOPIC_COVERS.get(name), "joined": name in (user.get("interests") or []), "profiles": people[:limit]}
 
 
 @router.post("/swipe")

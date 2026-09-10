@@ -7,58 +7,56 @@ import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useStats } from "@/hooks/useStats";
 import { useNotifications } from "@/hooks/useNotifications";
-import { Brand } from "@/components/Logo";
+import { SoftHeader, SoftIconButton, SoftCard, SoftPill } from "@/components/SoftUI";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Skeleton } from "@/components/Loading";
 
-/* ---------- profile screen, transcribed from the reference image (393 x 852 canvas) ---------- */
+/* ---------- profile screen, transcribed from the neumorphic reference (393 x 852 canvas) ---------- */
 
 const Stat = ({ label, value, testId }) => (
   <div className="flex min-w-0 flex-1 flex-col items-center">
-    <span className="flex h-[22px] items-center text-[20px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
+    <span className="flex h-[24px] items-center text-[20px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
       {value ?? <Skeleton className="h-4 w-7 rounded-full" />}
     </span>
-    <span className="mt-1 whitespace-nowrap text-[14px] leading-none text-mute">{label}</span>
+    <span className="mt-1 whitespace-nowrap text-[13px] leading-none text-mute">{label}</span>
   </div>
 );
 
 const StatDivider = () => <span className="h-8 w-px shrink-0 bg-line" aria-hidden="true" />;
 
-/* Boost / Super Likes / VOILADI+ : grey icon tile, bold title, muted subtitle, grey value pill, chevron. */
-const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId, pillTestId, soon = false }) => (
-  <button type="button" onClick={onClick} className="vo-prow h-[60px]" aria-disabled={soon || undefined} data-testid={testId}>
-    <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-surface2 text-ink">
+/* Boost / Super Likes / VOILADI+ : raised icon tile, bold title, muted subtitle, raised value pill, chevron. */
+const FeatureRow = ({ icon: Icon, title, sub, pill, onClick, testId, pillTestId, soon = false, last = false }) => (
+  <button type="button" onClick={onClick} className={`flex h-[60px] w-full items-center gap-2.5 px-3.5 text-left focus-visible:outline-none active:opacity-80 ${last ? "" : "border-b border-line/80"}`} aria-disabled={soon || undefined} data-testid={testId}>
+    <span className="vo-soft-tile h-[40px] w-[40px] rounded-[12px]">
       <Icon className="h-5 w-5" fill="currentColor" strokeWidth={1.5} />
     </span>
     <span className="min-w-0 flex-1">
-      <span className="block truncate text-[18px] font-bold leading-[22px] tracking-[-0.01em] text-ink">{title}</span>
-      <span className="block truncate text-[12.5px] leading-[17px] tracking-[-0.02em] text-mute">{sub}</span>
+      <span className="block truncate text-[17px] font-bold leading-[21px] tracking-[-0.01em] text-ink">{title}</span>
+      <span className="block truncate text-[12.5px] leading-[16px] tracking-[-0.02em] text-mute">{sub}</span>
     </span>
     {soon ? (
-      <span className="inline-flex h-[26px] shrink-0 items-center rounded-full bg-surface2 px-2.5 text-[13px] font-semibold tracking-[-0.01em] text-mute" data-testid={pillTestId}>
+      <span className="vo-soft inline-flex h-[32px] shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold tracking-[-0.01em] text-mute" data-testid={pillTestId}>
         Soon
       </span>
     ) : (
-      <>
-        {pill !== undefined && (
-          <span className="inline-flex h-[26px] shrink-0 items-center rounded-full bg-surface2 px-2.5 text-[14px] font-semibold tabular-nums tracking-[-0.01em] text-ink" data-testid={pillTestId}>
-            {pill}
-          </span>
-        )}
-        <ChevronRight className="h-4 w-4 shrink-0 text-mute" strokeWidth={2.2} />
-      </>
+      pill !== undefined && (
+        <span className="vo-soft inline-flex h-[32px] min-w-[32px] shrink-0 items-center justify-center rounded-full px-2.5 text-[14px] font-semibold tabular-nums tracking-[-0.01em] text-ink" data-testid={pillTestId}>
+          {pill}
+        </span>
+      )
     )}
+    <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} />
   </button>
 );
 
 /* Account / Privacy & Safety / Preferences / Help & Support */
-const MenuRow = ({ icon: Icon, label, onClick, testId }) => (
-  <button type="button" onClick={onClick} className="vo-prow h-[42px]" data-testid={testId}>
-    <span className="flex w-[38px] shrink-0 items-center justify-center text-ink">
+const MenuRow = ({ icon: Icon, label, onClick, testId, last = false }) => (
+  <button type="button" onClick={onClick} className={`flex h-[48px] w-full items-center gap-2.5 px-3.5 text-left focus-visible:outline-none active:opacity-80 ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
+    <span className="flex w-[40px] shrink-0 items-center justify-center text-ink">
       <Icon className="h-6 w-6" strokeWidth={1.75} />
     </span>
-    <span className="flex-1 truncate text-[17px] font-medium tracking-[-0.01em] text-ink">{label}</span>
-    <ChevronRight className="h-4 w-4 shrink-0 text-mute" strokeWidth={2.2} />
+    <span className="flex-1 truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">{label}</span>
+    <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} />
   </button>
 );
 
@@ -138,40 +136,40 @@ export default function Profile() {
   const boostPill = !stats ? <Skeleton className="h-3 w-8 rounded-full" /> : stats.boost_active ? hhmmss(boostLeft) : stats.boost_next_at ? "Tomorrow" : "Start";
 
   return (
-    <div className="flex min-h-full flex-col bg-canvas" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 8px + env(safe-area-inset-bottom, 0px))" }} data-testid="profile-page">
+    <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: "calc(var(--nav-h) + var(--nav-gap) + 10px + env(safe-area-inset-bottom, 0px))" }} data-testid="profile-page">
       {/* header: brand left, bell (red dot when there is something new) + gear right */}
-      <header className="flex h-[52px] items-center justify-between px-3 pt-1">
-        <Brand size={34} />
-        <div className="flex items-center gap-3">
-          <button type="button" className="vo-icon-btn relative h-[38px] w-[38px] bg-surface2/70" onClick={() => navigate("/notifications")} aria-label="Notifications" data-testid="profile-notifications-button">
-            <Bell className="h-5 w-5" strokeWidth={1.9} />
-            {unseen > 0 && <span className="absolute right-[6px] top-[5px] h-2 w-2 rounded-full bg-red" data-testid="profile-notifications-dot" />}
-          </button>
-          <button type="button" className="vo-icon-btn h-[38px] w-[38px] bg-surface2/70" onClick={() => navigate("/settings")} aria-label="Settings" data-testid="profile-settings-button">
-            <Settings className="h-5 w-5" strokeWidth={1.9} />
-          </button>
-        </div>
+      <header className="shrink-0 px-5 pt-1">
+        <SoftHeader
+          right={
+            <>
+              <span className="relative">
+                <SoftIconButton icon={Bell} label="Notifications" onClick={() => navigate("/notifications")} testId="profile-notifications-button" strokeWidth={1.9} />
+                {unseen > 0 && <span className="pointer-events-none absolute right-[9px] top-[8px] h-2 w-2 rounded-full bg-red ring-2 ring-[color:var(--soft-bg)]" data-testid="profile-notifications-dot" />}
+              </span>
+              <SoftIconButton icon={Settings} label="Settings" onClick={() => navigate("/settings")} testId="profile-settings-button" strokeWidth={1.9} />
+            </>
+          }
+        />
       </header>
 
-      {/* avatar + name / tagline / stats */}
-      <section className="mt-4 flex items-start gap-4 px-3" data-testid="profile-summary-card">
-        <button type="button" className="relative shrink-0" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
-          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[102px] w-[102px] rounded-full text-[34px]" />
-          <span className="absolute -bottom-0.5 -right-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-bg text-ink shadow-action">
+      {/* avatar + name / edit / stats */}
+      <section className="mt-3 flex items-start gap-4 px-4" data-testid="profile-summary-card">
+        <button type="button" className="vo-soft relative flex h-[96px] w-[96px] shrink-0 items-center justify-center rounded-full" onClick={() => navigate("/profile/edit")} aria-label="Change photo" data-testid="profile-avatar-button">
+          <UserPhoto src={user.photos?.[0]} name={user.name} className="h-[76px] w-[76px] rounded-[22px] text-[30px]" />
+          <span className="vo-soft absolute -bottom-0.5 right-0 flex h-[34px] w-[34px] items-center justify-center rounded-full text-ink">
             <Camera className="h-4 w-4" strokeWidth={2} />
           </span>
         </button>
 
-        <div className="min-w-0 flex-1 pt-1.5">
-          <h1 className="truncate text-[26px] font-bold leading-[30px] tracking-[-0.02em] text-ink" data-testid="profile-name">
+        <div className="min-w-0 flex-1 pt-1">
+          <h1 className="truncate text-[28px] font-bold leading-[32px] tracking-[-0.02em] text-ink" data-testid="profile-name">
             {user.name}
           </h1>
-          <button type="button" className="mt-1 flex w-full items-center gap-1.5 text-left" onClick={() => navigate("/profile/edit")} data-testid="profile-edit-button">
-            <span className="truncate text-[14px] leading-[20px] tracking-[-0.01em] text-mute">{user.bio || "Good people. Better connections."}</span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-mute" strokeWidth={2} />
-          </button>
+          <SoftPill className="mt-2 h-[40px] px-5 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
+            Edit profile
+          </SoftPill>
 
-          <div className="mt-4 flex items-center" data-testid="profile-stats">
+          <div className="mt-3.5 flex items-center" data-testid="profile-stats">
             <Stat label="Followers" value={stats?.followers} testId="profile-stat-likes" />
             <StatDivider />
             <Stat label="Following" value={stats?.following} testId="profile-stat-following" />
@@ -182,43 +180,41 @@ export default function Profile() {
       </section>
 
       {/* profile completion */}
-      <section className="mx-2.5 mt-5">
-        <button type="button" className="vo-pcard w-full p-3.5 text-left" onClick={() => navigate("/profile/edit")} data-testid="profile-completion-card">
-          <span className="block text-[11px] font-semibold uppercase leading-none tracking-[0.08em] text-mute">Profile completion</span>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="truncate text-[22px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{complete ? "Your profile is complete" : "You're almost there"}</span>
-            <span className="flex shrink-0 items-center gap-2">
-              <span className="text-[22px] font-bold leading-none tracking-[-0.02em] text-ink" data-testid="profile-strength">
+      <section className="mx-4 mt-3.5">
+        <SoftCard as="button" type="button" className="w-full px-4 py-3 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="profile-completion-card">
+          <span className="block text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-mute">Profile completion</span>
+          <div className="mt-2.5 flex items-center justify-between gap-3">
+            <span className="truncate text-[21px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{complete ? "Your profile is complete" : "You're almost there"}</span>
+            <span className="vo-soft flex h-[38px] shrink-0 items-center gap-1.5 rounded-full pl-3.5 pr-2.5">
+              <span className="text-[19px] font-bold leading-none tracking-[-0.02em] text-ink" data-testid="profile-strength">
                 {pct}%
               </span>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2 text-mute">
-                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
-              </span>
+              <ChevronRight className="h-[18px] w-[18px] text-mute" strokeWidth={2.2} />
             </span>
           </div>
-          <p className="mt-1 max-w-[290px] text-[14px] leading-[19px] text-mute">
+          <p className="mt-1.5 max-w-[300px] text-[14px] leading-[19px] text-mute">
             {complete ? "Nice. You're set up to get the best matches on VOILADI." : "Add a few more details to get better matches on VOILADI."}
           </p>
-          <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+          <div className="mt-3.5 h-[7px] w-full overflow-hidden rounded-full bg-surface2">
             <div className="h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: `${pct}%` }} />
           </div>
-        </button>
+        </SoftCard>
       </section>
 
       {/* boost / super likes / plus */}
-      <section className="vo-pcard mx-2.5 mt-3.5 overflow-hidden" data-testid="profile-features">
+      <SoftCard className="mx-4 mt-3 overflow-hidden" testId="profile-features">
         <FeatureRow icon={Zap} title="Boost" sub="Be seen by more people" pill={boostPill} onClick={startBoost} testId="profile-boost-row" pillTestId="profile-boost-pill" />
         <FeatureRow icon={Star} title="Super Likes" sub="Show someone you're really interested" pill={stats ? stats.voilas_left : <Skeleton className="h-3 w-4 rounded-full" />} onClick={() => navigate("/discover")} testId="profile-superlikes-row" pillTestId="profile-superlikes-pill" />
-        <FeatureRow icon={Crown} title="VOILADI+" sub="Unlock premium features" soon testId="profile-plus-row" pillTestId="profile-plus-pill" />
-      </section>
+        <FeatureRow icon={Crown} title="VOILADI+" sub="Unlock premium features" soon testId="profile-plus-row" pillTestId="profile-plus-pill" last />
+      </SoftCard>
 
       {/* account menu */}
-      <section className="vo-pcard mx-2.5 mt-3 overflow-hidden" data-testid="profile-menu">
+      <SoftCard className="mx-4 mt-3 overflow-hidden" testId="profile-menu">
         <MenuRow icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="profile-menu-account" />
         <MenuRow icon={Lock} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="profile-menu-privacy" />
         <MenuRow icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="profile-menu-preferences" />
-        <MenuRow icon={CircleHelp} label="Help & Support" onClick={() => navigate("/legal/help")} testId="profile-menu-help" />
-      </section>
+        <MenuRow icon={CircleHelp} label="Help & Support" onClick={() => navigate("/legal/help")} testId="profile-menu-help" last />
+      </SoftCard>
     </div>
   );
 }

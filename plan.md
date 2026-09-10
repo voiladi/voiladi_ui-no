@@ -234,6 +234,16 @@ Instagram glass notice bar ONLY for errors / must-know; (D) iOS action sheets (g
 - Pass 6: components/GlassSegmented.jsx - iOS 26 liquid-glass segmented control (press = lens lifts w/ blur+sheen, drag follows finger w/ rubber-band,
   labels light up under lens, release snaps w/ jelly spring, haptic via navigator.vibrate, keyboard arrows). Used on Likes/Chats. Deployed web.
 
+## Phase 18 — Explore / Profile / Discover 1:1 from neumorphic mockups + communities (P0) — COMPLETED 2026-09-10
+- Backend: GET /explore/topics (63 interest communities, real member counts, Unsplash covers in content.TOPIC_COVERS - all verified 200),
+  GET /explore/topics/{name} (members), explore tab aliases people/nearby/creators, seed JOBS ("what they do").
+- Explore.jsx rewrite: SoftHeader (brand 40) + search/filters, sunken search (live people+communities), GlassSegmented People/Topics/Nearby/Creators,
+  Trending now 2x2 tiles, Suggested for you + Follow(=like)/Following, Popular interests chips, community Drawer.
+- Profile.jsx: neumorphic (Edit profile pill, stats w/ dividers, completion card w/ % pill, raised icon tiles, menu). Fits 393x852 (7px).
+- Discover.jsx + SwipeCard: title/subtitle, raised deck card holding photo card (1/6 counter, "Name, Age", job, distance; caption opens profile)
+  + 3 raised round actions; "Better matches ahead" card while profile incomplete. All tabs width-only fluid scaling.
+- Tests iteration_17: backend 58/58, frontend 100%. Deployed api + web; prod reseeded (jobs).
+
 ## 3) Next Actions
 1) ~~Deploy Phase 9 build to Railway~~ DONE.
 2) ~~Post-deploy smoke test~~ DONE (API + web). Remaining manual check by user on a real phone:

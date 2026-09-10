@@ -358,6 +358,84 @@ class VoiladiTester:
         assert data['tab'] == 'popular', f"Expected tab=popular, got {data['tab']}"
         print(f"  ✓ Explore (popular) returned {len(data['profiles'])} profiles")
 
+    def test_explore_topics(self):
+        """Test GET /explore/topics returns trending, popular, topics arrays"""
+        status, data = self.req('GET', '/explore/topics', 200)
+        assert 'trending' in data, "trending not in response"
+        assert 'popular' in data, "popular not in response"
+        assert 'topics' in data, "topics not in response"
+        assert len(data['trending']) == 4, f"Expected 4 trending topics, got {len(data['trending'])}"
+        assert len(data['popular']) <= 10, f"Expected <= 10 popular topics, got {len(data['popular'])}"
+        assert len(data['topics']) == 63, f"Expected 63 topics, got {len(data['topics'])}"
+        
+        # Check topic structure
+        if len(data['topics']) > 0:
+            t = data['topics'][0]
+            assert 'name' in t, "topic missing name"
+            assert 'members' in t, "topic missing members"
+            assert 'members_label' in t, "topic missing members_label"
+            assert 'cover' in t, "topic missing cover"
+            assert 'joined' in t, "topic missing joined"
+            assert isinstance(t['members'], int), "members should be int"
+            assert isinstance(t['joined'], bool), "joined should be bool"
+            assert 'member' in t['members_label'].lower(), "members_label should contain 'member'"
+        
+        print(f"  ✓ Explore topics: {len(data['trending'])} trending, {len(data['popular'])} popular, {len(data['topics'])} total")
+        # Store a topic name for next test
+        if len(data['topics']) > 0:
+            self.topic_name = data['topics'][0]['name']
+
+    def test_explore_topic_detail(self):
+        """Test GET /explore/topics/{name} returns topic details with profiles"""
+        if not hasattr(self, 'topic_name'):
+            # Use a known topic from INTERESTS
+            self.topic_name = 'Travel'
+        
+        status, data = self.req('GET', f'/explore/topics/{self.topic_name}', 200)
+        assert 'name' in data, "name not in response"
+        assert 'members' in data, "members not in response"
+        assert 'members_label' in data, "members_label not in response"
+        assert 'cover' in data, "cover not in response"
+        assert 'joined' in data, "joined not in response"
+        assert 'profiles' in data, "profiles not in response"
+        assert data['name'] == self.topic_name, f"Expected name={self.topic_name}, got {data['name']}"
+        assert isinstance(data['profiles'], list), "profiles should be a list"
+        print(f"  ✓ Topic '{self.topic_name}': {data['members']} members, {len(data['profiles'])} profiles returned")
+
+    def test_explore_topic_not_found(self):
+        """Test GET /explore/topics/NotAnInterest returns 404"""
+        status, data = self.req('GET', '/explore/topics/NotAnInterest', 404)
+        assert 'unknown' in data.get('detail', '').lower() or 'not found' in data.get('detail', '').lower(), "Should mention unknown/not found"
+        print(f"  ✓ Unknown topic rejected (404): {data.get('detail')}")
+
+    def test_explore_alias_people(self):
+        """Test GET /explore?tab=people (alias for all)"""
+        status, data = self.req('GET', '/explore?tab=people', 200)
+        assert data['tab'] == 'all', f"Expected tab=all (alias), got {data['tab']}"
+        print(f"  ✓ Explore (people) aliased to 'all', returned {len(data['profiles'])} profiles")
+
+    def test_explore_alias_nearby(self):
+        """Test GET /explore?tab=nearby (alias for near)"""
+        status, data = self.req('GET', '/explore?tab=nearby', 200)
+        assert data['tab'] == 'near', f"Expected tab=near (alias), got {data['tab']}"
+        print(f"  ✓ Explore (nearby) aliased to 'near', returned {len(data['profiles'])} profiles")
+
+    def test_explore_alias_creators(self):
+        """Test GET /explore?tab=creators (alias for popular)"""
+        status, data = self.req('GET', '/explore?tab=creators', 200)
+        assert data['tab'] == 'popular', f"Expected tab=popular (alias), got {data['tab']}"
+        # Check that profiles have likes_count
+        if len(data['profiles']) > 0:
+            p = data['profiles'][0]
+            assert 'likes_count' in p, "creators profiles should have likes_count"
+        print(f"  ✓ Explore (creators) aliased to 'popular', returned {len(data['profiles'])} profiles")
+
+    def test_explore_unknown_tab(self):
+        """Test GET /explore?tab=unknown returns 400"""
+        status, data = self.req('GET', '/explore?tab=unknown', 400)
+        assert 'unknown' in data.get('detail', '').lower(), "Should mention unknown tab"
+        print(f"  ✓ Unknown tab rejected (400): {data.get('detail')}")
+
     # ========== SWIPE TESTS ==========
     def test_swipe_self(self):
         """Test POST /swipe on self returns 400"""
@@ -629,6 +707,15 @@ def main():
     tester.test("Explore: tab=near", tester.test_explore_near)
     tester.test("Explore: tab=new", tester.test_explore_new)
     tester.test("Explore: tab=popular", tester.test_explore_popular)
+    
+    # Explore topics tests (NEW)
+    tester.test("Explore: GET /explore/topics", tester.test_explore_topics)
+    tester.test("Explore: GET /explore/topics/{name}", tester.test_explore_topic_detail)
+    tester.test("Explore: GET /explore/topics/NotAnInterest (404)", tester.test_explore_topic_not_found)
+    tester.test("Explore: tab=people (alias)", tester.test_explore_alias_people)
+    tester.test("Explore: tab=nearby (alias)", tester.test_explore_alias_nearby)
+    tester.test("Explore: tab=creators (alias)", tester.test_explore_alias_creators)
+    tester.test("Explore: tab=unknown (400)", tester.test_explore_unknown_tab)
     
     # Swipe tests
     tester.test("Swipe: Self (400)", tester.test_swipe_self)

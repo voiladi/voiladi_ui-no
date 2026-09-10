@@ -860,6 +860,58 @@
         box-shadow: var(--neu-seg-on);
     }
 
+    /* sunken field (search) */
+    .vo-soft-sunken {
+        background: var(--soft-bg-2);
+        box-shadow: var(--neu-inset);
+    }
+
+    /* small raised pill button */
+    .vo-soft-pill {
+        @apply inline-flex h-[44px] shrink-0 items-center justify-center gap-2 rounded-full px-6 text-[17px] font-semibold tracking-[-0.01em] text-ink select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-50;
+        background: var(--neu-surface);
+        box-shadow: var(--soft-shadow);
+        transition-property: transform, opacity, background-color, box-shadow, color;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .vo-soft-pill:active {
+        transform: scale(0.96);
+    }
+
+    .vo-soft-pill.is-on {
+        background: var(--soft-bg-2);
+        box-shadow: var(--neu-inset);
+        color: var(--muted);
+    }
+
+    /* raised icon tile (Boost / Super Likes / VOILADI+ / Better matches) */
+    .vo-soft-tile {
+        @apply inline-flex shrink-0 items-center justify-center rounded-[14px] text-ink;
+        background: var(--neu-surface);
+        box-shadow: var(--soft-shadow);
+    }
+
+    /* big round raised action (Discover: pass / like / super like) */
+    .vo-soft-round {
+        @apply inline-flex items-center justify-center rounded-full text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue disabled:opacity-40 disabled:pointer-events-none;
+        background: var(--neu-surface);
+        box-shadow: var(--soft-shadow-btn);
+        transition-property: transform, opacity;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .vo-soft-round:active {
+        transform: scale(0.92);
+    }
+
+    /* photo tile caption */
+    .vo-tile-fade {
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.30) 50%, rgba(0, 0, 0, 0) 100%);
+    }
+
     /* liquid-glass segmented control (Likes / Messages) */
     .vo-gseg {
         position: relative;

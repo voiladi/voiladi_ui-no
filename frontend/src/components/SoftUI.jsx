@@ -57,6 +57,61 @@ export const SoftEmpty = ({ art, title, description, actionIcon: ActionIcon, act
   </motion.section>
 );
 
+/* Raised section card (Trending now / Suggested for you / profile cards). */
+export const SoftCard = ({ className = "", children, testId, as: Tag = "section", ...rest }) => (
+  <Tag className={`vo-soft-lg rounded-[26px] ${className}`} data-testid={testId} {...rest}>
+    {children}
+  </Tag>
+);
+
+/* "Trending now ........ See all" */
+export const SectionHead = ({ title, action, onAction, actionTestId, className = "" }) => (
+  <div className={`flex items-center justify-between ${className}`}>
+    <h2 className="text-[22px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{title}</h2>
+    {action && (
+      <button type="button" className="text-[15px] font-medium text-mute active:opacity-60" onClick={onAction} data-testid={actionTestId}>
+        {action}
+      </button>
+    )}
+  </div>
+);
+
+/* Sunken search field. */
+export const SoftSearch = ({ value, onChange, placeholder, testId, inputRef, onClear }) => (
+  <div className="vo-soft-sunken relative flex h-[52px] items-center rounded-full">
+    <span className="pointer-events-none absolute left-5 text-ink">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+    </span>
+    <input
+      ref={inputRef}
+      type="search"
+      enterKeyHint="search"
+      className="h-full w-full rounded-full bg-transparent pl-[54px] pr-12 text-[16px] tracking-[-0.01em] text-ink outline-none placeholder:text-mute"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      data-testid={testId}
+    />
+    {value && (
+      <button type="button" className="absolute right-4 flex h-7 w-7 items-center justify-center rounded-full bg-surface2 text-mute" onClick={onClear} aria-label="Clear search" data-testid={`${testId}-clear`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    )}
+  </div>
+);
+
+/* Small raised pill button ("Follow" / "Following" / "Edit profile"). */
+export const SoftPill = ({ children, onClick, active = false, testId, className = "", disabled, ...rest }) => (
+  <button type="button" onClick={onClick} disabled={disabled} className={`vo-soft-pill ${active ? "is-on" : ""} ${className}`} data-testid={testId} {...rest}>
+    {children}
+  </button>
+);
+
 /* Art: two soft chat bubbles, the front one with three dots. Filter regions are oversized so shadows never clip to a box. */
 export const BubblesArt = () => (
   <svg viewBox="0 0 200 180" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">

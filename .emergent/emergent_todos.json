@@ -1,34 +1,34 @@
 [
   {
-    "content": "Build feedback system: lib/feedback.js store + NoticeBar (glass snackbar, errors only) + iOS-style realtime Banner inside shell",
+    "content": "Backend: topics endpoints, explore aliases, seed jobs",
     "status": "completed"
   },
   {
-    "content": "Rebuild Dialogs.jsx: ConfirmDialog -> iOS glass action sheet; ReportDialog -> bottom sheet with inline 'Thanks' done state",
+    "content": "Verify Unsplash cover IDs for topic tiles",
     "status": "completed"
   },
   {
-    "content": "Convert all ~45 toast call sites to inline state / notice",
-    "status": "completed"
-  },
-  {
-    "content": "Remove Sonner Toaster from App.js, add CSS tokens (Apple font stack, glass)",
-    "status": "completed"
-  },
-  {
-    "content": "Compile check + screenshots (action sheet, notice, VOILADI+ Soon pill, report done state)",
-    "status": "completed"
-  },
-  {
-    "content": "Remove /__preview route",
-    "status": "completed"
-  },
-  {
-    "content": "Run testing agent, fix issues",
+    "content": "Frontend Explore rewrite: soft header (brand 40), title, search bar, glass segmented People/Topics/Nearby/Creators, Trending now grid, Suggested for you + Follow, Popular interests, topic sheet",
     "status": "in_progress"
   },
   {
-    "content": "Update plan.md + PRD.md",
+    "content": "Frontend Profile redesign to neumorphic reference",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend Discover redesign: soft container w/ photo card (1/6 counter) + 3 round buttons, Better matches ahead card",
+    "status": "pending"
+  },
+  {
+    "content": "All 5 tabs: same brand size 40, width-only fluid scaling, nav paddings",
+    "status": "pending"
+  },
+  {
+    "content": "Compile, screenshots at 412x731/393x852/360x640, dark mode",
+    "status": "pending"
+  },
+  {
+    "content": "Testing agent, fix issues, deploy backend + web, update plan.md",
     "status": "pending"
   }
 ]
