@@ -72,14 +72,16 @@ const PhoneCarousel = ({ index, setIndex, width }) => {
     const d = wrap(i - index, n);
     return d === 0 ? 0 : d === 1 ? 1 : d === n - 1 ? -1 : 2;
   };
+  // No transform: scale() anywhere - the phones animate their real width, so rounded corners, bezels and the
+  // captures are rasterised crisp at every size (scaled layers with overflow clipping render jagged on Android).
   const pose = (s) =>
     s === 0
-      ? { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, zIndex: 3 }
+      ? { x: -centerW / 2, y: 0, width: centerW, rotate: 0, opacity: 1, zIndex: 3 }
       : s === -1
-        ? { x: -sideShift, y: 22, scale: sideW / centerW, rotate: -6, opacity: 1, zIndex: 2 }
+        ? { x: -sideShift - sideW / 2, y: 22, width: sideW, rotate: -6, opacity: 1, zIndex: 2 }
         : s === 1
-          ? { x: sideShift, y: 22, scale: sideW / centerW, rotate: 6, opacity: 1, zIndex: 2 }
-          : { x: 0, y: 40, scale: 0.7, rotate: 0, opacity: 0, zIndex: 1 };
+          ? { x: sideShift - sideW / 2, y: 22, width: sideW, rotate: 6, opacity: 1, zIndex: 2 }
+          : { x: -sideW / 2, y: 40, width: sideW, rotate: 0, opacity: 0, zIndex: 1 };
 
   return (
     <motion.div
@@ -101,15 +103,16 @@ const PhoneCarousel = ({ index, setIndex, width }) => {
         return (
           <motion.div
             key={s.key}
-            className="absolute left-1/2 top-0"
-            style={{ width: centerW, marginLeft: -centerW / 2, transformOrigin: "50% 60%" }}
+            className="vo-phone-slot absolute left-1/2 top-0"
+            style={{ transformOrigin: "50% 60%" }}
+            initial={false}
             animate={pose(sl)}
             transition={SPRING}
             onClick={() => sl !== 0 && sl !== 2 && setIndex(i)}
             data-testid={`landing-phone-${s.key}`}
             data-slot={sl}
           >
-            <Phone screen={s} width={centerW} priority={i === 0} />
+            <Phone screen={s} priority={i === 0} />
           </motion.div>
         );
       })}

@@ -413,7 +413,11 @@
   via `#vo-main > *` background-image in index.css (one viewport tall, anchored top; `.dark` variant). No component/font changes.
 - Landing phone captures refreshed to `*-v2.webp` to show the haze.
 
-### 26.4 Testing
+### 26.4 Smooth phone bezels (user, 2026-09-11)
+- Phones no longer use transform: scale(); they animate real width and are fully fluid (cqi units via `.vo-phone-slot` container).
+  Clip uses mask-image + translateZ(0) so rounded corners stay anti-aliased on rotated frames (Android Chrome fix).
+
+### 26.5 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---
