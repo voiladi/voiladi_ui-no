@@ -408,7 +408,12 @@
 - Backend housekeeping: chat-media in-flight chunks now go to the OS temp dir (`MEDIA_TMP_DIR`, default `/tmp/voiladi_media_tmp`);
   finished media still on the Railway volume (`UPLOAD_DIR/media`).
 
-### 26.3 Testing
+### 26.3 Ambient haze (user, 2026-09-11)
+- The landing page's soft light (white glow top, pale blue left, pale rose right) is now painted behind EVERY app screen
+  via `#vo-main > *` background-image in index.css (one viewport tall, anchored top; `.dark` variant). No component/font changes.
+- Landing phone captures refreshed to `*-v2.webp` to show the haze.
+
+### 26.4 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

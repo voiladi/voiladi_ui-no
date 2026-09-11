@@ -30,10 +30,10 @@ const StatusBar = () => (
 );
 
 export const SCREENS = [
-  { key: "explore", src: "/landing/explore.webp", alt: "Voiladi Explore screen", title: "Explore your world", sub: "Discover people, interests, and communities." },
-  { key: "chat", src: "/landing/chat.webp", alt: "Voiladi Messages screen", title: "Chat your way", sub: "Text, photos, or video - however you feel like it." },
-  { key: "likes", src: "/landing/likes.webp", alt: "Voiladi Likes screen", title: "See who notices you", sub: "Likes and interest, all in one glance." },
-  { key: "profile", src: "/landing/profile-rin.webp", alt: "Voiladi Profile screen", title: "Own your profile", sub: "Customize your identity, settings, and presence." },
+  { key: "explore", src: "/landing/explore-v2.webp", alt: "Voiladi Explore screen", title: "Explore your world", sub: "Discover people, interests, and communities." },
+  { key: "chat", src: "/landing/chat-v2.webp", alt: "Voiladi Messages screen", title: "Chat your way", sub: "Text, photos, or video - however you feel like it." },
+  { key: "likes", src: "/landing/likes-v2.webp", alt: "Voiladi Likes screen", title: "See who notices you", sub: "Likes and interest, all in one glance." },
+  { key: "profile", src: "/landing/profile-v2.webp", alt: "Voiladi Profile screen", title: "Own your profile", sub: "Customize your identity, settings, and presence." },
 ];
 
 /* Phone frame: soft white body with a thin bezel; the 390x888 screen (status bar + capture) is scaled to fit and clipped. */
