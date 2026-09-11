@@ -31,8 +31,20 @@ const PAGES = {
     ],
   },
   about: {
-    title: "About VOILADI",
-    body: ["Good people. Better connections.", "Voiladi is a dating app made for 18 to 30-year-olds who want real conversations, not endless scrolling.", "Version 2.0"],
+    title: "About Voiladi",
+    body: [
+      { h: "A more human internet." },
+      "Voiladi is a social space built around one idea: the internet should bring you closer to people, not just to content. Here you meet people, follow interests and join communities as yourself, with real conversations at the centre of everything.",
+      { h: "Our story" },
+      "Voiladi began with a simple observation. Most of what we scroll through every day is designed to be watched, not shared. We wanted a place where saying hello matters more than going viral, where a profile is a person and not a performance, and where the quiet, everyday moments count as much as the highlights.",
+      { h: "Our vision" },
+      "A calmer, kinder internet where people feel seen. No noise, no algorithms pushing outrage, no pressure to perform. Just people, interests and communities that feel like they were made for you.",
+      { h: "Our mission" },
+      "To make meeting people online feel as natural as meeting them in real life. We do this through verified profiles, private-first messaging, thoughtful discovery and communities that grow around shared interests rather than follower counts.",
+      { h: "What we stand for" },
+      "Be real: one real name, real photos, real you. Be kind: respect is the baseline, not a bonus. Be present: less scrolling, more talking. Be safe: your privacy and comfort come before growth.",
+      "Voiladi is for people aged 18 and over. Version 2.0.",
+    ],
   },
   help: {
     title: "Help & Support",
@@ -57,9 +69,15 @@ const PAGES = {
 const Body = ({ page }) => (
   <div className="space-y-4 px-5 pb-10 pt-4 text-[15px] leading-relaxed text-ink" data-testid="legal-body">
     {page === "about" && <LogoMark size={64} className="mb-2" />}
-    {PAGES[page].body.map((p, i) => (
-      <p key={i}>{p}</p>
-    ))}
+    {PAGES[page].body.map((p, i) =>
+      typeof p === "string" ? (
+        <p key={i}>{p}</p>
+      ) : (
+        <h2 key={i} className="pt-2 text-[20px] font-bold leading-tight tracking-[-0.02em] text-ink" data-testid="legal-heading">
+          {p.h}
+        </h2>
+      )
+    )}
   </div>
 );
 

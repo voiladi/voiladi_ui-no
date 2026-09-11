@@ -404,7 +404,7 @@
 - `index.css`: `.vo-landing`, `.vo-glass-pill`, `.vo-glass-icon`, `.vo-landing-next`, `.vo-phone*`, `.vo-landing-menu/backdrop` (+ `.dark` variants).
 - Routing (`App.js`): `/` = Landing for signed-out browsers (Android shell -> `/login`; signed-in -> app);
   `/login` = Welcome chooser; `/login/email` = email form; `/login/phone` unchanged; `/welcome` -> `/login`; `/auth` -> `/login/email`.
-- `Legal.jsx`: added `guidelines` page (Community Guidelines).
+- `Legal.jsx`: added `guidelines` page; About rewritten as a social platform ("A more human internet" - story, vision, mission, values). No "dating" wording anywhere in web copy or meta tags.
 - Backend housekeeping: chat-media in-flight chunks now go to the OS temp dir (`MEDIA_TMP_DIR`, default `/tmp/voiladi_media_tmp`);
   finished media still on the Railway volume (`UPLOAD_DIR/media`).
 

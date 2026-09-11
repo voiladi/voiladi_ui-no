@@ -1,7 +1,7 @@
 {
   "name": "Voiladi",
   "short_name": "voiladi",
-  "description": "Good people. Better connections.",
+  "description": "A more human internet. Chat. Share. Explore. Be real.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",

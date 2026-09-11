@@ -211,7 +211,7 @@ export default function Profile() {
             </span>
           </div>
           <p className="mt-1.5 max-w-[300px] text-[14px] leading-[19px] text-mute">
-            {complete ? "Nice. You're set up to get the best matches on VOILADI." : "Add a few more details to get better matches on VOILADI."}
+            {complete ? "Nice. Your profile is complete and ready for people to discover." : "Add a few more details so people can get to know you."}
           </p>
           <div className="mt-3.5 h-[7px] w-full overflow-hidden rounded-full bg-surface2">
             <div className="h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: `${pct}%` }} />
