@@ -59,6 +59,32 @@ async def resolve_report(report_id: str, x_admin_key: Optional[str] = Header(def
     return {"ok": True}
 
 
+# ---------- registered users (operator roster) ----------
+@router.get("/users")
+async def list_users(include_seed: bool = False, limit: int = 500, x_admin_key: Optional[str] = Header(default=None)):
+    """Every registered account, newest first. Sample profiles are excluded unless include_seed=true."""
+    require_admin(x_admin_key)
+    q = {} if include_seed else {"is_seed": {"$ne": True}}
+    fields = {"_id": 0, "id": 1, "name": 1, "username": 1, "email": 1, "phone": 1, "phone_verified": 1, "birthday": 1,
+              "gender": 1, "city": 1, "onboarded": 1, "verified": 1, "verification_status": 1, "photos": 1,
+              "created_at": 1, "last_seen": 1, "last_active": 1, "is_seed": 1}
+    rows = await db.users.find(q, fields).sort("created_at", -1).to_list(min(max(limit, 1), 2000))
+    out = []
+    for u in rows:
+        out.append({
+            "id": u.get("id"), "name": u.get("name"), "username": u.get("username"), "email": u.get("email"),
+            "phone": u.get("phone"), "phone_verified": bool(u.get("phone_verified") or u.get("phone")),
+            "age": calc_age(u.get("birthday")), "gender": u.get("gender"), "city": u.get("city"),
+            "onboarded": bool(u.get("onboarded")), "verified": bool(u.get("verified")),
+            "verification_status": u.get("verification_status"), "photos": len(u.get("photos") or []),
+            "created_at": u.get("created_at"), "last_seen": u.get("last_seen") or u.get("last_active"),
+            "is_seed": bool(u.get("is_seed")),
+        })
+    return {"users": out, "count": len(out),
+            "total_real": await db.users.count_documents({"is_seed": {"$ne": True}}),
+            "total_sample": await db.users.count_documents({"is_seed": True})}
+
+
 # ---------- demo data (sample profiles flagged is_seed) ----------
 @router.get("/seed")
 async def seed_status(x_admin_key: Optional[str] = Header(default=None)):
