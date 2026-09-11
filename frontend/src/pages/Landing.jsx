@@ -229,14 +229,18 @@ export default function Landing() {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [menu, setMenu] = useState(false);
-  const [width, setWidth] = useState(360);
+  const [frame, setFrame] = useState({ width: 360, padL: 20, padR: 20 });
   const frameRef = useRef(null);
   const featuresRef = useRef(null);
 
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return undefined;
-    const measure = () => setWidth(Math.min(el.clientWidth, 560));
+    // full frame width (padding included) so the fanned phones are centred on the screen, not on the padded column
+    const measure = () => {
+      const cs = getComputedStyle(el);
+      setFrame({ width: Math.min(el.clientWidth, 560), padL: parseFloat(cs.paddingLeft) || 0, padR: parseFloat(cs.paddingRight) || 0 });
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -298,8 +302,8 @@ export default function Landing() {
         </section>
 
         {/* phones */}
-        <section ref={featuresRef} id="features" className="mt-[clamp(14px,4cqi,26px)] scroll-mt-4">
-          <PhoneCarousel index={index} setIndex={setIndex} width={width} />
+        <section ref={featuresRef} id="features" className="mt-[clamp(14px,4cqi,26px)] scroll-mt-4" style={{ marginLeft: -frame.padL, marginRight: -frame.padR }}>
+          <PhoneCarousel index={index} setIndex={setIndex} width={frame.width} />
         </section>
 
         {/* caption */}
