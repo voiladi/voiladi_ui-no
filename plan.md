@@ -399,7 +399,8 @@
 - No creative liberties; no AI features.
 
 ### 26.2 Implementation
-- `frontend/src/pages/Landing.jsx` + `components/landing/PhoneScreens.jsx` (static Explore / Messages / Likes / Profile replicas).
+- `frontend/src/pages/Landing.jsx` + `components/landing/PhoneScreens.jsx`: phones show REAL captures of the live app
+  (`public/landing/{explore,chat,likes,profile}.webp`, 390x844 @2x, fresh onboarded account) - re-capture after UI changes (see deploy/README.md).
 - `index.css`: `.vo-landing`, `.vo-glass-pill`, `.vo-glass-icon`, `.vo-landing-next`, `.vo-phone*`, `.vo-landing-menu/backdrop` (+ `.dark` variants).
 - Routing (`App.js`): `/` = Landing for signed-out browsers (Android shell -> `/login`; signed-in -> app);
   `/login` = Welcome chooser; `/login/email` = email form; `/login/phone` unchanged; `/welcome` -> `/login`; `/auth` -> `/login/email`.

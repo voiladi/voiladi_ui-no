@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { Menu, X, ArrowLeft, ArrowRight, ChevronRight, House, Shapes, Lock, CircleHelp, UserRound } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
-import { SCREENS, Phone } from "@/components/landing/PhoneScreens";
+import { SCREENS, Phone, SCREEN_W, SCREEN_H } from "@/components/landing/PhoneScreens";
 import { notice } from "@/lib/feedback";
 
 /*
@@ -65,7 +65,7 @@ const PhoneCarousel = ({ index, setIndex, width }) => {
   const centerW = Math.round(width * 0.5);
   const sideW = Math.round(width * 0.43);
   const sideShift = Math.round(width * 0.29);
-  const height = Math.round((820 / 390) * centerW) + 16;
+  const height = Math.round((SCREEN_H / SCREEN_W) * centerW) + 16;
 
   // where each screen sits relative to the active one: -1 left, 0 centre, 1 right, 2 hidden behind
   const slot = (i) => {
@@ -109,7 +109,7 @@ const PhoneCarousel = ({ index, setIndex, width }) => {
             data-testid={`landing-phone-${s.key}`}
             data-slot={sl}
           >
-            <Phone Screen={s.Screen} width={centerW} />
+            <Phone screen={s} width={centerW} priority={i === 0} />
           </motion.div>
         );
       })}

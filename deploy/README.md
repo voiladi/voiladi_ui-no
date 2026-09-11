@@ -98,3 +98,8 @@ API token (Edit zone DNS only) in deploy/.env.cloudflare (gitignored). Verify: c
 - APK v1.3.0 signed with the RELEASE keystore (android-build/voiladi-release.keystore, password in android-build/release.env,
   both gitignored - BACK THEM UP; losing them means users must reinstall). Installs of the old debug-signed APK cannot
   update in place: uninstall + reinstall once.
+
+## Landing page phone captures
+The phones on voiladi.com show REAL screenshots of the app (`frontend/public/landing/{explore,chat,likes,profile}.webp`, 390x844 @2x).
+Re-capture after UI changes: log in as a fresh onboarded account (e.g. arin.landing@voiladi.com on preview), screenshot /explore /chats /likes /profile
+at viewport 390x844 device_scale_factor=2, convert to WebP q82, then redeploy voiladi-web.
