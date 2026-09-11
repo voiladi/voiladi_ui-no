@@ -429,7 +429,14 @@
 - Feature pills: Start / Available tomorrow / countdown, Super Likes count, `Coming soon`; sub 'Show stronger interest'. Roomy spacing, page scrolls.
 - Landing capture refreshed: profile-v3.webp.
 
-### 26.7 Testing
+### 26.7 Verification flow rebuilt to the owner's 6 reference screens (2026-09-11)
+- `components/verification/VerifyUI.jsx`: FlowPage (bare back chevron + bottom black CTA), FlowTitle/Sub, StatusCircle (neutral/ok/bad), TipsCard, FlowButton.
+- `/settings/verification` states: none -> 'Verified profile' intro (Not verified pill, WHAT TO EXPECT, Get verified >); pending -> 'Under review' (Done);
+  rejected -> 'Try again' (red X, tips, Try again); approved -> "You're verified!" (green check, Great).
+- `/verify` steps: tips ('Verify your identity', Take selfie) -> camera (square frame, shutter; device picker fallback) -> 'Review your photo' (Retake / Use this photo) -> 'Under review'.
+- Tokens added: --ok/--ok-soft/--red-soft (+ Tailwind ok, ok-soft, red-soft). Verified end-to-end on preview incl. admin reject/approve.
+
+### 26.8 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

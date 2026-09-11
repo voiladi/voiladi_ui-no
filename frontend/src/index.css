@@ -15,6 +15,9 @@
         --line: #E5E5EA;
         --blue: #3478F6;
         --red: #FF3B30;
+        --ok: #1B8A3A;
+        --ok-soft: #E3F6E9;
+        --red-soft: #FDE4E4;
         --on-ink: #FFFFFF;
         --backdrop: #F2F2F7;
         --overlay: rgba(0, 0, 0, 0.45);
@@ -95,6 +98,9 @@
         --line: #2C2C2E;
         --blue: #4C8DFF;
         --red: #FF453A;
+        --ok: #30D158;
+        --ok-soft: rgba(48, 209, 88, 0.16);
+        --red-soft: rgba(255, 69, 58, 0.16);
         --ios-blue: #0A84FF;
         --glass: rgba(37, 37, 40, 0.78);
         --glass-solid: rgba(44, 44, 46, 0.98);
