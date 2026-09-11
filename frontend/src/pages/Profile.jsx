@@ -186,7 +186,7 @@ export default function Profile() {
               </>
             )}
           </div>
-          <SoftPill className="vo-glass-tint mt-3 h-[40px] px-6 text-[16px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
+          <SoftPill className="vo-glass-tint mt-2.5 h-[34px] px-4 text-[15px]" onClick={() => navigate("/profile/edit")} testId="profile-edit-button">
             Edit profile
           </SoftPill>
         </div>
