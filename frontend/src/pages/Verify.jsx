@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, RotateCcw, Clock, Sun, Glasses, ScanFace, Scan } from "lucide-react";
+import { Camera, RotateCcw, Clock, Sun, Glasses, ScanFace, Scan, CameraOff } from "lucide-react";
 import { Spinner } from "@/components/Loading";
 import { SoftCard } from "@/components/SoftUI";
 import { notice } from "@/lib/feedback";
@@ -29,10 +29,9 @@ export default function Verify() {
   const { user, refresh } = useAuth();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const fileRef = useRef(null);
   const status = user?.verified ? "approved" : user?.verification?.status || "none";
   const [step, setStep] = useState(status === "pending" ? "sent" : "tips"); // tips | camera | review | sent
-  const [camera, setCamera] = useState("idle"); // idle | starting | live | unavailable
+  const [camera, setCamera] = useState("idle"); // idle | starting | live | denied | unsupported
   const [shot, setShot] = useState(null); // { blob, url }
   const [sending, setSending] = useState(false);
 
@@ -54,7 +53,8 @@ export default function Verify() {
       }
       setCamera("live");
     } catch (e) {
-      setCamera("unavailable");
+      // Live camera only - there is deliberately no gallery/file fallback (the selfie must be taken right now).
+      setCamera(e && (e.name === "NotAllowedError" || e.name === "SecurityError" || e.name === "PermissionDeniedError") ? "denied" : navigator.mediaDevices?.getUserMedia ? "denied" : "unsupported");
     }
   };
 
@@ -90,13 +90,6 @@ export default function Verify() {
       "image/jpeg",
       0.9
     );
-  };
-
-  const onFile = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setShot({ blob: f, url: URL.createObjectURL(f) });
-    setStep("review");
   };
 
   const retake = () => {
@@ -182,9 +175,9 @@ export default function Verify() {
         testId="verify-page"
         data-step="camera"
         cta={
-          camera === "unavailable" ? (
-            <FlowButton onClick={() => fileRef.current?.click()} testId="verify-open-camera-button">
-              <Camera className="h-6 w-6" strokeWidth={2.2} /> Open camera
+          camera === "denied" || camera === "unsupported" ? (
+            <FlowButton onClick={start} disabled={camera === "unsupported"} testId="verify-allow-camera-button">
+              <Camera className="h-6 w-6" strokeWidth={2.2} /> Allow camera
             </FlowButton>
           ) : (
             <div className="flex justify-center">
@@ -200,21 +193,28 @@ export default function Verify() {
           <FlowSub>Centre your face in the frame and look at the camera.</FlowSub>
           <div className="relative mt-6 aspect-square w-full max-w-[340px] overflow-hidden rounded-[32px] bg-surface2 shadow-[var(--soft-shadow)]" data-testid="verify-camera-card">
             <video ref={videoRef} playsInline muted autoPlay className={`h-full w-full object-cover ${camera === "live" ? "" : "opacity-0"}`} style={{ transform: "scaleX(-1)" }} data-testid="verify-video" />
-            {camera !== "live" && camera !== "unavailable" && (
+            {(camera === "starting" || camera === "idle") && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Spinner size={28} stroke={2.5} />
               </div>
             )}
-            {camera === "unavailable" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center" data-testid="verify-camera-unavailable">
-                <Camera className="h-10 w-10 text-mute" strokeWidth={1.6} />
-                <p className="mt-3 text-[17px] font-semibold text-ink">Camera not available here</p>
-                <p className="mt-1 text-[14px] text-mute">Use your phone's camera instead.</p>
+            {camera === "denied" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-7 text-center" data-testid="verify-camera-denied">
+                <CameraOff className="h-11 w-11 text-mute" strokeWidth={1.6} />
+                <p className="mt-4 text-[19px] font-semibold tracking-[-0.01em] text-ink">Camera access needed</p>
+                <p className="mt-1.5 text-[15px] leading-[20px] text-mute">Verification uses a live selfie, so photos from your gallery can't be used. Allow camera access to continue.</p>
+                <p className="mt-3 text-[13px] leading-[17px] text-mute">If you've blocked it before, turn it on in your phone's Settings › Apps › Voiladi › Permissions.</p>
+              </div>
+            )}
+            {camera === "unsupported" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-7 text-center" data-testid="verify-camera-unsupported">
+                <CameraOff className="h-11 w-11 text-mute" strokeWidth={1.6} />
+                <p className="mt-4 text-[19px] font-semibold tracking-[-0.01em] text-ink">Camera not available</p>
+                <p className="mt-1.5 text-[15px] leading-[20px] text-mute">This browser can't open a live camera. Please use the Voiladi app or a recent Chrome / Safari.</p>
               </div>
             )}
             {camera === "live" && <span className="pointer-events-none absolute left-1/2 top-1/2 h-[74%] w-[62%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-white/85" aria-hidden="true" />}
           </div>
-          <input ref={fileRef} type="file" accept="image/*" capture="user" className="hidden" onChange={onFile} data-testid="verify-file-input" />
         </div>
       </FlowPage>
     );

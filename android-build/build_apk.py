@@ -136,7 +136,7 @@ def build_manifest():
     x.start("uses-sdk", [(A, "minSdkVersion", (T_DEC, 24)), (A, "targetSdkVersion", (T_DEC, 34))])
     x.end("uses-sdk")
     for perm in ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.ACCESS_FINE_LOCATION",
-                 "android.permission.ACCESS_COARSE_LOCATION", "android.permission.CAMERA", "android.permission.POST_NOTIFICATIONS",
+                 "android.permission.ACCESS_COARSE_LOCATION", "android.permission.CAMERA", "android.permission.RECORD_AUDIO", "android.permission.MODIFY_AUDIO_SETTINGS", "android.permission.POST_NOTIFICATIONS",
                  "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]:
         x.start("uses-permission", [(A, "name", (T_STR, perm))])
         x.end("uses-permission")

@@ -436,7 +436,12 @@
 - `/verify` steps: tips ('Verify your identity', Take selfie) -> camera (square frame, shutter; device picker fallback) -> 'Review your photo' (Retake / Use this photo) -> 'Under review'.
 - Tokens added: --ok/--ok-soft/--red-soft (+ Tailwind ok, ok-soft, red-soft). Verified end-to-end on preview incl. admin reject/approve.
 
-### 26.8 Testing
+### 26.8 Live-camera-only verification + APK 1.2.0 (2026-09-11)
+- Verify.jsx: removed the gallery/file fallback entirely. getUserMedia denied -> 'Camera access needed' state with Allow camera (re-prompts) + settings hint; unsupported browser -> message.
+- Android shell (MainActivity.onPermissionRequest): asks the system CAMERA / RECORD_AUDIO runtime permission first, then grants to the page; REQ_CAMERA result handler. Manifest adds RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (ready for calls).
+- APK 1.2.0 (versionCode 3) built with the release keystore -> frontend/public/voiladi.apk + deploy/android/voiladi-1.2.0.apk; deployed.
+
+### 26.9 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     static final String PREFS = "voiladi";
     private static final int REQ_FILE = 1;
     private static final int REQ_LOCATION = 2;
+    private static final int REQ_CAMERA = 3;
     private static final int REQ_NOTIFICATIONS = 3;
     static final int RES_ICON = 0x7f010000;
 
@@ -62,6 +63,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private String geoOrigin;
     private GeolocationPermissions.Callback geoCallback;
+    private PermissionRequest pendingMediaRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -219,9 +221,30 @@ public class MainActivity extends Activity {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQ_LOCATION);
             }
 
+            /* Live camera / mic for the web page (selfie verification, calls). The WebView can only use the camera once
+               the app itself holds the Android CAMERA permission, so ask the system first, then grant to the page. */
             @Override
             public void onPermissionRequest(PermissionRequest request) {
-                request.grant(request.getResources());
+                boolean wantsCamera = false;
+                boolean wantsMic = false;
+                for (String r : request.getResources()) {
+                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r)) wantsCamera = true;
+                    if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) wantsMic = true;
+                }
+                if (!wantsCamera && !wantsMic) {
+                    request.deny();
+                    return;
+                }
+                java.util.ArrayList<String> need = new java.util.ArrayList<String>();
+                if (wantsCamera && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.CAMERA);
+                if (wantsMic && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.RECORD_AUDIO);
+                if (need.isEmpty()) {
+                    request.grant(request.getResources());
+                    return;
+                }
+                if (pendingMediaRequest != null) pendingMediaRequest.deny();
+                pendingMediaRequest = request;
+                requestPermissions(need.toArray(new String[0]), REQ_CAMERA);
             }
         });
     }
@@ -400,6 +423,13 @@ public class MainActivity extends Activity {
             geoCallback.invoke(geoOrigin, granted, false);
             geoCallback = null;
             geoOrigin = null;
+        }
+        if (requestCode == REQ_CAMERA && pendingMediaRequest != null) {
+            boolean all = grantResults.length > 0;
+            for (int g : grantResults) if (g != PackageManager.PERMISSION_GRANTED) all = false;
+            if (all) pendingMediaRequest.grant(pendingMediaRequest.getResources());
+            else pendingMediaRequest.deny();
+            pendingMediaRequest = null;
         }
     }
 
