@@ -288,23 +288,54 @@ async def me(user=Depends(get_current_user)):
     return own_profile(user)
 
 
-@router.delete("/account")
-async def delete_account(user=Depends(get_current_user)):
+async def purge_user(user: dict) -> dict:
+    """Erase an account and everything it owns: chats + media files, swipes, blocks, reports, OTP sessions, photos,
+    verification selfie, pending uploads. Match partners get an `unmatch` so their inbox updates live."""
     uid = user["id"]
     matches = await db.matches.find({"users": uid}, {"_id": 0}).to_list(None)
     for m in matches:
         other = [u for u in m["users"] if u != uid]
         if other:
-            await manager.send(other[0], {"type": "unmatch", "match_id": m["id"]})
+            try:
+                await manager.send(other[0], {"type": "unmatch", "match_id": m["id"]})
+            except Exception:
+                pass
     match_ids = [m["id"] for m in matches]
-    await db.messages.delete_many({"match_id": {"$in": match_ids}})
-    await db.matches.delete_many({"users": uid})
-    await db.swipes.delete_many({"$or": [{"from_id": uid}, {"to_id": uid}]})
-    await db.blocks.delete_many({"$or": [{"from_id": uid}, {"to_id": uid}]})
-    for url in user.get("photos") or []:
+    media_dir = UPLOAD_DIR / "media"
+    files_removed = 0
+    async for msg in db.messages.find({"match_id": {"$in": match_ids}, "media": {"$exists": True}}, {"_id": 0, "media": 1}):
+        media = msg.get("media") or {}
+        for key in ("file", "poster_file"):
+            if media.get(key):
+                try:
+                    (media_dir / media[key].split("/")[-1]).unlink(missing_ok=True)
+                    files_removed += 1
+                except Exception:
+                    pass
+    counts = {
+        "messages": (await db.messages.delete_many({"match_id": {"$in": match_ids}})).deleted_count,
+        "matches": (await db.matches.delete_many({"users": uid})).deleted_count,
+        "swipes": (await db.swipes.delete_many({"$or": [{"from_id": uid}, {"to_id": uid}]})).deleted_count,
+        "blocks": (await db.blocks.delete_many({"$or": [{"from_id": uid}, {"to_id": uid}]})).deleted_count,
+        "reports": (await db.reports.delete_many({"$or": [{"from_id": uid}, {"to_id": uid}]})).deleted_count,
+        "pending_uploads": (await db.media_uploads.delete_many({"user_id": uid})).deleted_count,
+    }
+    if user.get("phone"):
+        counts["otp_sessions"] = (await db.otp_sessions.delete_many({"phone": user["phone"]})).deleted_count
+    for url in list(user.get("photos") or []) + [((user.get("verification") or {}).get("selfie_url"))]:
+        if not url:
+            continue
         try:
             (UPLOAD_DIR / url.split("/")[-1]).unlink(missing_ok=True)
+            files_removed += 1
         except Exception:
             pass
-    await db.users.delete_one({"id": uid})
+    counts["files_removed"] = files_removed
+    counts["user"] = (await db.users.delete_one({"id": uid})).deleted_count
+    return counts
+
+
+@router.delete("/account")
+async def delete_account(user=Depends(get_current_user)):
+    await purge_user(user)
     return {"ok": True}

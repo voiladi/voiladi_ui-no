@@ -417,7 +417,13 @@
 - Phones no longer use transform: scale(); they animate real width and are fully fluid (cqi units via `.vo-phone-slot` container).
   Clip uses mask-image + translateZ(0) so rounded corners stay anti-aliased on rotated frames (Android Chrome fix).
 
-### 26.5 Testing
+### 26.5 Operator user roster + hard delete (user, 2026-09-11)
+- `GET /api/admin/users` (x-admin-key): every real account, newest first (include_seed=true for samples).
+- `DELETE /api/admin/users/{id}`: full purge via shared `purge_user()` in routes_auth (also used by self-service delete):
+  messages + chat media files, matches (partners get `unmatch`), swipes, blocks, reports, pending uploads, OTP sessions, photos, selfie.
+- Deployed; deleted account `paulsamrat678@gmail.com` (+917086948523) on production per owner request.
+
+### 26.6 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

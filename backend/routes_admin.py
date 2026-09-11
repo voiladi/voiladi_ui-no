@@ -85,6 +85,19 @@ async def list_users(include_seed: bool = False, limit: int = 500, x_admin_key: 
             "total_sample": await db.users.count_documents({"is_seed": True})}
 
 
+@router.delete("/users/{user_id}")
+async def admin_delete_user(user_id: str, x_admin_key: Optional[str] = Header(default=None)):
+    """Permanently erase an account and all of its data (same routine as self-service account deletion)."""
+    require_admin(x_admin_key)
+    from routes_auth import purge_user  # local import avoids a circular import at module load
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    removed = await purge_user(user)
+    return {"ok": True, "deleted": {"id": user_id, "name": user.get("name"), "email": user.get("email"), "phone": user.get("phone")},
+            "removed": removed}
+
+
 # ---------- demo data (sample profiles flagged is_seed) ----------
 @router.get("/seed")
 async def seed_status(x_admin_key: Optional[str] = Header(default=None)):
