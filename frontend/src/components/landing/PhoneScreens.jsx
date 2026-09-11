@@ -34,7 +34,7 @@ export const SCREENS = [
   { key: "explore", src: "/landing/explore-v2.webp", alt: "Voiladi Explore screen", title: "Explore your world", sub: "Discover people, interests, and communities." },
   { key: "chat", src: "/landing/chat-v2.webp", alt: "Voiladi Messages screen", title: "Chat your way", sub: "Text, photos, or video - however you feel like it." },
   { key: "likes", src: "/landing/likes-v2.webp", alt: "Voiladi Likes screen", title: "See who notices you", sub: "Likes and interest, all in one glance." },
-  { key: "profile", src: "/landing/profile-v2.webp", alt: "Voiladi Profile screen", title: "Own your profile", sub: "Customize your identity, settings, and presence." },
+  { key: "profile", src: "/landing/profile-v3.webp", alt: "Voiladi Profile screen", title: "Own your profile", sub: "Customize your identity, settings, and presence." },
 ];
 
 /*

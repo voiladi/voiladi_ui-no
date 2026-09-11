@@ -423,7 +423,13 @@
   messages + chat media files, matches (partners get `unmatch`), swipes, blocks, reports, pending uploads, OTP sessions, photos, selfie.
 - Deployed; deleted account `paulsamrat678@gmail.com` (+917086948523) on production per owner request.
 
-### 26.6 Testing
+### 26.6 Profile tab realigned to the owner's reference (2026-09-11)
+- Header wrapper identical to Explore/Likes/Chats (`px-[clamp(14px,5cqi,20px)] pt-1`, Brand 40).
+- Round 88px avatar + camera badge; name 26px; `@handle · Not verified >` inline; Edit profile pill; full-width Followers / Following / Profile views row.
+- Feature pills: Start / Available tomorrow / countdown, Super Likes count, `Coming soon`; sub 'Show stronger interest'. Roomy spacing, page scrolls.
+- Landing capture refreshed: profile-v3.webp.
+
+### 26.7 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---
