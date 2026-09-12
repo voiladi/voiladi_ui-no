@@ -983,22 +983,23 @@
         backdrop-filter: blur(10px);
     }
 
-    /* composer: a floating glass pill. Frosted enough to stay legible over black bubbles, still see-through. */
+    /* composer: the floating, see-through iPhone glass pill (messages scroll underneath and stay visible through it) */
     .vo-chat-composer {
         border-radius: 9999px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.72) 100%);
-        -webkit-backdrop-filter: blur(26px) saturate(170%);
-        backdrop-filter: blur(26px) saturate(170%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.18) 100%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        backdrop-filter: blur(18px) saturate(180%);
         box-shadow:
-            0 0 0 1.5px rgba(255, 255, 255, 0.9),
+            0 0 0 1.5px rgba(255, 255, 255, 0.85),
             0 0 22px rgba(255, 255, 255, 0.55),
             0 16px 40px rgba(28, 28, 38, 0.14),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.35);
     }
 
     .vo-chat-input {
-        background: rgba(255, 255, 255, 0.82);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.22);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.6);
     }
 
     /* flat blue "+" (no shadow: the button sits in a clipped animation wrapper, a shadow would show a hard edge) */
@@ -1033,12 +1034,12 @@
     }
 
     .dark .vo-chat-composer {
-        background: linear-gradient(180deg, rgba(50, 50, 56, 0.78) 0%, rgba(28, 28, 32, 0.7) 100%);
+        background: linear-gradient(180deg, rgba(60, 60, 66, 0.45) 0%, rgba(30, 30, 34, 0.35) 100%);
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22), 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
 
     .dark .vo-chat-input {
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.10);
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
     }
 

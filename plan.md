@@ -465,7 +465,7 @@
 - Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
 
 ### 26.12 Composer legibility + flat plus (2026-09-12)
-- Composer glass 86%->72% white, blur 26px; input pill 82% white -> readable over black bubbles. `.vo-plus-btn` shadow removed (it was clipped by the animation wrapper -> hard edge).
+- Owner rejected the more-opaque bar: composer REVERTED to the see-through iPhone glass (white 34%->18%, blur 18px, rim + glow; input 22%). `.vo-plus-btn` shadow removed (it was clipped by the animation wrapper -> hard edge) - keep.
 - Testing agent iteration 26: all pass (floating bar, plus, legibility, focus expansion, open-at-bottom, bot reply).
 
 ### 26.13 Testing
