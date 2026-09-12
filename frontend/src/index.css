@@ -983,20 +983,32 @@
         backdrop-filter: blur(10px);
     }
 
-    /* composer: fully clear floating bar (no frosted fill, no glow, no fade) - only a thin edge, messages scroll straight under it */
+    /* composer: the floating frosted iPhone glass pill. NO outer glow / smoke / fade - the glass stops at the edge of the bar.
+       The blur lives on a ::before layer with its own compositing layer - on some Android WebViews a backdrop-filter set
+       directly on an element that has children is skipped, which left the bar transparent but not frosted. */
     .vo-chat-composer {
-        position: relative;
+        position: relative; /* transform below also makes it a stacking context, so ::before (z -1) stays inside it */
         border-radius: 9999px;
         transform: translateZ(0);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+        box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
     }
 
-    /* the message pill is the one whiter surface so what sits under it is not readable through it */
+    .vo-chat-composer::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.24) 100%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        backdrop-filter: blur(18px) saturate(180%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+        transform: translateZ(0);
+    }
+
     .vo-chat-input {
-        background: rgba(255, 255, 255, 0.92);
-        -webkit-backdrop-filter: blur(12px);
-        backdrop-filter: blur(12px);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.34);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6);
     }
 
     /* flat blue "+" (no shadow: the button sits in a clipped animation wrapper, a shadow would show a hard edge) */
@@ -1034,8 +1046,13 @@
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
     }
 
+    .dark .vo-chat-composer::before {
+        background: linear-gradient(180deg, rgba(60, 60, 66, 0.55) 0%, rgba(30, 30, 34, 0.45) 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
     .dark .vo-chat-input {
-        background: rgba(44, 44, 48, 0.85);
+        background: rgba(255, 255, 255, 0.10);
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
     }
 
