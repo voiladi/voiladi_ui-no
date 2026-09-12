@@ -459,6 +459,7 @@
 - Header: bare chevron, 46px avatar with official-tint gradient ring + online dot, 20px bold name, 'Active now' presence, glass Phone / Video (coming-soon notice) / More buttons; frosted header (`.vo-chat-header`).
 - Messages: glass 'Today' pill; incoming = frosted white bubbles with 38px avatar on first of group; outgoing = black bubbles; 13.5px time under every bubble, violet double tick (--tick) when read, 'Seen' under last own message; typing bubble with avatar.
 - Composer: one transparent glass bar (`.vo-chat-composer`): glossy blue + (photo/video), 'Message...' pill, smile (vibe prompts), image, mic (coming soon) that turns into the black send arrow when typing.
+- Composer floats (absolute, z-20) over the message list with see-through glass (white 34%->18%, blur 18px, bright rim + glow); list gets 104px bottom padding.
 - Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
 
 ### 26.12 Testing

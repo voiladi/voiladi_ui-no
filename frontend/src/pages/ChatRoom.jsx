@@ -475,7 +475,7 @@ export default function ChatRoom() {
   const composerHidden = isRequestForMe;
 
   return (
-    <div className="vo-neu-page flex h-full flex-col" data-testid="chat-room" data-kind={match?.kind} data-status={match?.status}>
+    <div className="vo-neu-page relative flex h-full flex-col" data-testid="chat-room" data-kind={match?.kind} data-status={match?.status}>
       {/* header: bare chevron, ringed avatar + name / presence, glass call + more buttons */}
       <header className="vo-chat-header z-10 flex h-[72px] shrink-0 items-center gap-2 px-3">
         <button type="button" className="-ml-1 flex h-11 w-10 shrink-0 items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
@@ -550,7 +550,7 @@ export default function ChatRoom() {
       )}
 
       {/* messages */}
-      <div className="vo-scroll px-3.5 pb-3 pt-2" data-testid="chat-messages">
+      <div className={`vo-scroll px-3.5 pt-2 ${composerHidden || !user?.verified || loading ? "pb-3" : "pb-[104px]"}`} data-testid="chat-messages">
         {loading ? (
           <div className="flex h-full min-h-[40vh] items-center justify-center text-ink" data-testid="chat-loading">
             <Spinner size={28} stroke={2.5} />
@@ -682,8 +682,8 @@ export default function ChatRoom() {
         </div>
       ) : (
         <form
-          className="px-3 pt-2"
-          style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4"
+          style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage();
@@ -702,11 +702,11 @@ export default function ChatRoom() {
             data-testid="chat-media-input"
           />
           {/* one transparent glass bar: + | message pill | smile · photo · mic/send */}
-          <div className="vo-chat-composer flex items-end gap-2 p-2" data-testid="chat-composer">
+          <div className="vo-chat-composer pointer-events-auto flex items-end gap-2.5 p-[9px]" data-testid="chat-composer">
             <button type="button" className="vo-plus-btn flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" data-testid="chat-attach-button">
-              <Plus className="h-7 w-7" strokeWidth={2.6} />
+              <Plus className="h-7 w-7" strokeWidth={2.2} />
             </button>
-            <div className="vo-chat-input flex min-h-[50px] flex-1 items-end rounded-full px-4">
+            <div className="vo-chat-input flex min-h-[48px] flex-1 items-end rounded-full px-4">
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -719,8 +719,8 @@ export default function ChatRoom() {
                   }
                 }}
                 placeholder="Message..."
-                className="max-h-[120px] w-full resize-none bg-transparent py-[14px] text-[17px] leading-[22px] text-ink outline-none placeholder:text-mute"
-                style={{ height: Math.min(120, 28 + 22 * Math.max(1, text.split("\n").length)) }}
+                className="max-h-[120px] w-full resize-none bg-transparent py-[13px] text-[17px] leading-[22px] text-ink outline-none placeholder:text-mute/80"
+                style={{ height: Math.min(120, 26 + 22 * Math.max(1, text.split("\n").length)) }}
                 data-testid="chat-message-input"
               />
             </div>
