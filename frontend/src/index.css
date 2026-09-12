@@ -1248,6 +1248,42 @@
         animation: shimmer 1.6s ease infinite;
     }
 
+    /* ---------- Discover feed (full-screen posts) ---------- */
+    /* the feed paints its own black canvas: no ambient haze, no page padding */
+    #vo-main > .vo-feed {
+        background-image: none;
+        background-color: #000;
+    }
+
+    .vo-feed-scroller {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        overscroll-behavior-y: contain;
+    }
+
+    .vo-feed-scroller::-webkit-scrollbar {
+        display: none;
+    }
+
+    .vo-post {
+        scroll-snap-stop: always;
+    }
+
+    /* grey shimmer where the photo will be (dark canvas) */
+    .vo-post-shimmer {
+        background: linear-gradient(90deg, #1c1c1e 25%, #2c2c2e 37%, #1c1c1e 63%);
+        background-size: 400% 100%;
+        animation: shimmer 1.6s ease infinite;
+    }
+
+    .vo-post-shade-top {
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    .vo-post-shade-bottom {
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.28) 45%, rgba(0, 0, 0, 0.55) 100%);
+    }
+
     /* screen entrance: resting state is fully visible; the animation only plays on top of it */
     .vo-page-fade {
         animation: vo-page-fade 160ms ease-out both;

@@ -1,18 +1,19 @@
-# plan.md — Voiladi (Gen‑Z dating app)
+# plan.md — Voiladi (Gen‑Z social app: “a more human internet”)
 
 ## 1) Objectives
-- Deliver **Voiladi**: a **mobile-first** dating app for ages **18–30** with:
+- Deliver **Voiladi**: a **mobile-first** Gen‑Z social platform for ages **18–30** with:
   - **Account creation + login (Email + Password)**
   - **Phone number + OTP verification**
   - **Profile + photo upload**
-  - **Swipe cards** (like/pass + **Voila** superlike quota)
+  - **Discover (Feed)**: full-screen vertical **Instagram-style** feed of **Posts** (one per screen, upward snap scroll)
   - **Explore grid** (tabs + global @username search)
-  - **Likes** views
+  - **Likes** views (people who liked you; legacy matching layer)
   - **Real-time chat** (WebSockets + fallback polling)
-  - **Filters** (age/distance/show-me)
+  - **Filters** (age/distance/show-me) — still used by matching/search surfaces
   - **Manual selfie verification** (human review) → **black tick** + unlock messaging
   - **Direct messages (DM Requests)**: **verified users can message any profile**; recipient sees it under **Requests** until they reply/accept
   - **Chat media**: **image + video sharing** in chat, with quality caps (720p now; 1080p for Plus later)
+  - **Android APK shell** with permissions for **CAMERA/RECORD_AUDIO** and in-place update fallback for old shells
 - **STRICTLY NO AI RELATED FEATURES** in UX/UI, copy, or flows.
 - **Top priority**: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
   - No “AI generated” look, no creative liberties.
@@ -47,7 +48,7 @@
 ---
 
 ### Phase 3 — Hardening, UX polish, and deploy readiness
-**Status: PARTIALLY DONE**
+**Status: COMPLETED**
 - WS reconnect/backoff + offline banners + polling fallback.
 - Upload limits and server-side image optimisation.
 
@@ -273,14 +274,8 @@
 
 ### 24.3 APK hardening (Android)
 **Implemented**
-- **v1.3.0 APK** built and copied to `frontend/public/voiladi.apk`.
-- **Release signing**:
-  - Uses `android-build/release.env` and `android-build/voiladi-release.keystore` (both gitignored).
-  - **Backup required**: losing the keystore prevents in-place updates.
-  - Old debug-signed installs cannot update in place (uninstall+reinstall once).
-- WebView lockdown:
-  - https-only exact-host allow-list: `voiladi.com`, `www.voiladi.com`, `api.voiladi.com`
-  - Disable file/content access, disable 3rd-party cookies, disable WebView debugging
+- Release signing pipeline (keystore gitignored).
+- WebView lockdown (https-only allow-list, no file/content access, no 3rd-party cookies, no debugging).
 
 ### 24.4 Deliverables
 - Deployed to Railway + Cloudflare.
@@ -289,217 +284,174 @@
 ---
 
 ## Phase 25 — Chat Media (Images + Video) (P0)
-**Status: IN PROGRESS (planned; not implemented yet)**
-
-### 25.1 Binding decisions (user, 2026-09-10)
-- **Chat only** (no profile video in this phase).
-- **Quality caps:**
-  - Everyone: **720p** max
-  - Later: **1080p** for Plus members
-  - Build as **per-user cap** (e.g. `media_quality_max: 720|1080`) so Plus is just a switch.
-- **Video duration:** up to **5 minutes**.
-- **Storage:** keep on **Railway disk** for now (`UPLOAD_DIR/media`).
-- **Modes:** both
-  - **Permanent** media messages
-  - **View once** media messages
-
-### 25.2 Constraints to design around
-- **Cloudflare Free upload limit** (request body ~100MB): use **chunked uploads**.
-- Must support **HTTP Range** for streaming video in iOS Safari.
-- Must integrate with existing chat rules:
-  - sender must be verified
-  - blocks prevent sending
-  - unsend deletes media
-  - requests flow should still work (first media message creates a request thread)
-
-### 25.3 Backend (FastAPI) — implementation plan
-1) **Schema extensions**
-   - `users`: add `media_quality_max` (default 720)
-   - `messages`: add `kind: 'text'|'reaction'|'media'` and `media` object
-     - `media.type: 'image'|'video'`
-     - `media.url`, `media.thumb_url`, `media.duration_s`, `media.width`, `media.height`, `media.view_once`, `media.status: 'processing'|'ready'|'failed'`
-     - `media.size_bytes`, `media.codec` (video)
-
-2) **Chunked upload endpoints**
-   - `POST /api/media/init` → returns `upload_id`, chunk size, max bytes
-   - `POST /api/media/chunk` → `{upload_id, index}` + binary chunk
-   - `POST /api/media/complete` → validates and schedules processing, returns `media_id`
-   - Enforce rate limits and auth (verified users only).
-
-3) **Processing pipeline**
-   - **Images:** PIL re-encode and downscale to cap, JPEG/WebP output, EXIF stripped.
-   - **Videos:** async **ffmpeg** transcode to MP4 H.264/AAC:
-     - 720p cap now
-     - 1080p cap later based on user cap
-     - `-movflags +faststart` for instant streaming start
-     - generate poster frame thumbnail
-   - Background job runner:
-     - initial: asyncio task queue in the API process
-     - later: move to a proper worker if needed
-
-4) **Message lifecycle**
-   - Create a chat message with `media.status='processing'` immediately.
-   - When ready/failed, emit WS event `message_updated` (or reuse `message` with same id) so UI updates.
-
-5) **Secure serving**
-   - Media served via an API endpoint that supports Range:
-     - `GET /api/media/{id}` (checks match membership + view-once rules)
-     - `GET /api/media/{id}/thumb`
-   - **View-once**:
-     - Open via **signed short-lived token** (e.g. 60s) → first successful open marks consumed and schedules deletion
-   - **Permanent**:
-     - cacheable at edge (immutable URLs) where allowed
-
-6) **Deletion rules**
-   - Unsend removes the message and deletes the associated files (and thumbs).
-   - Deleting a thread deletes any view-once not yet consumed (optional cleanup job).
-
-7) **Rate limiting**
-   - Add rules for:
-     - media init/chunk/complete
-     - video processing concurrency
-
-8) **Dependencies / build**
-   - Add **ffmpeg** to the backend Docker image.
-
-### 25.4 Frontend (React) — implementation plan
-1) **Composer**
-   - Add attach button in ChatRoom.
-   - Bottom sheet: pick **Photo** / **Video**, preview, toggle **View once**.
-
-2) **Upload UX**
-   - Chunked uploader (progress bar, cancel).
-   - Send shows a temporary bubble with progress / “Processing…” state.
-
-3) **Rendering**
-   - Image bubble: soft tile preview, tap → full-screen viewer (zoom).
-   - Video bubble: poster + duration badge, tap → full-screen player (streaming Range).
-   - View-once bubble: shows “View once” pill; after viewing it becomes “Opened” and media is unavailable.
-
-4) **Inbox preview text**
-   - Chats list preview shows: “Photo” / “Video” / “View once photo” / “View once video”.
-
-5) **Socket events**
-   - Handle `message_updated` to swap processing → ready.
-
-### 25.5 Testing plan
-- Backend: chunked upload happy path, oversized chunk rejection, Range streaming, view-once consumption, unsend deletes.
-- Frontend: upload progress, rendering, view-once behaviour, request thread integration.
+**Status: COMPLETED**
+- Chunked uploads + ffmpeg compression + view-once + Range streaming.
+- WS `message_updated` swaps processing → ready.
 
 ---
 
 ## Phase 26 — voiladi.com Web Landing Page (Apple glass) + /login rename (P0)
 **Status: COMPLETED (2026-09-10)**
+- Landing page exact replica + ambient haze behind every app screen.
+- Operator admin endpoints for listing/purging users.
+- 6-step verification flow using live camera only.
+- Android shell permissions + “Update app” fallback for old shells.
+- Final chat UI (floating glass composer) with **outer-glare removed** (no smoke/glow outside the bar).
 
-### 26.1 Binding decisions (user)
-- Exact replica of the reference mock: pale glass canvas, glass hamburger, "A more human internet." hero,
-  frosted App Store / Google Play pills, fanned 3-phone carousel (drag / arrows / dots) with caption + counter,
-  frosted right-side menu (About, Features, Safety & Privacy, Help Center, Log in, store pills, footer).
-- `voiladi.com/welcome` -> `voiladi.com/login` (old link redirects).
-- No creative liberties; no AI features.
+---
 
-### 26.2 Implementation
-- `frontend/src/pages/Landing.jsx` + `components/landing/PhoneScreens.jsx`: phones show REAL captures of the live app
-  (`public/landing/{explore,chat,likes,profile}.webp`, 390x844 @2x, fresh onboarded account) - re-capture after UI changes (see deploy/README.md).
-- `index.css`: `.vo-landing`, `.vo-glass-pill`, `.vo-glass-icon`, `.vo-landing-next`, `.vo-phone*`, `.vo-landing-menu/backdrop` (+ `.dark` variants).
-- Routing (`App.js`): `/` = Landing for signed-out browsers (Android shell -> `/login`; signed-in -> app);
-  `/login` = Welcome chooser; `/login/email` = email form; `/login/phone` unchanged; `/welcome` -> `/login`; `/auth` -> `/login/email`.
-- `Legal.jsx`: added `guidelines` page; About rewritten as a social platform ("A more human internet" - story, vision, mission, values). No "dating" wording anywhere in web copy or meta tags.
-- Backend housekeeping: chat-media in-flight chunks now go to the OS temp dir (`MEDIA_TMP_DIR`, default `/tmp/voiladi_media_tmp`);
-  finished media still on the Railway volume (`UPLOAD_DIR/media`).
+## Phase 27 — Discover Feed (Posts) — Instagram-style vertical feed (P0)
+**Status: COMPLETED (2026-09-12) — tests iteration_27, deployed api + web, sample posts seeded on prod**
 
-### 26.3 Ambient haze (user, 2026-09-11)
-- The landing page's soft light (white glow top, pale blue left, pale rose right) is now painted behind EVERY app screen
-  via `#vo-main > *` background-image in index.css (one viewport tall, anchored top; `.dark` variant). No component/font changes.
-- Landing phone captures refreshed to `*-v2.webp` to show the haze.
+### 27.1 Binding decisions (user)
+- **Discover replaces the swipe-card deck completely.**
+- **Posts are real**:
+  - Users upload a **photo + caption + location** from a **Profile “+” button**.
+  - Feed shows everyone’s posts.
+- **UI must match reference exactly**:
+  - Full-screen post image/video area (image for v1)
+  - White **“Discover”** title top-left
+  - Right rail icons (exact):
+    - **Heart (pink)** + count
+    - **Comment** + count
+    - **Share** + count
+    - **Bookmark** + count
+    - **•••**
+  - Bottom-left: avatar, username, verified tick, **Follow** pill, location pin + text, caption.
+  - Keep existing floating bottom nav.
+- Icon actions:
+  - Heart = **like post**
+  - Comment = opens **real comments sheet**
+  - Share = **send post into a chat** (new message kind **`post`**)
+  - Bookmark = **saved posts** list in Profile
+  - ••• = **Report / Not interested / Copy link**
+- Loading: **Instagram spinner first**, then **grey shimmer skeleton** per post; photo **fades in**.
+- Follow: **just button UI + follower count** on profile (no feed filtering).
 
-### 26.4 Smooth phone bezels (user, 2026-09-11)
-- Phones no longer use transform: scale(); they animate real width and are fully fluid (cqi units via `.vo-phone-slot` container).
-  Clip uses mask-image + translateZ(0) so rounded corners stay anti-aliased on rotated frames (Android Chrome fix).
+### 27.2 Backend (FastAPI + MongoDB)
+**Goal:** add Posts with likes/saves/comments + feed + moderation/hide.
 
-### 26.5 Operator user roster + hard delete (user, 2026-09-11)
-- `GET /api/admin/users` (x-admin-key): every real account, newest first (include_seed=true for samples).
-- `DELETE /api/admin/users/{id}`: full purge via shared `purge_user()` in routes_auth (also used by self-service delete):
-  messages + chat media files, matches (partners get `unmatch`), swipes, blocks, reports, pending uploads, OTP sessions, photos, selfie.
-- Deployed; deleted account `paulsamrat678@gmail.com` (+917086948523) on production per owner request.
+**Collections**
+- `posts`:
+  - `id`, `user_id`, `photo_url` (uploads), `caption`, `location`, `created_at`,
+  - `like_count`, `comment_count`, `save_count` (denormalised counters)
+- `post_likes`: `post_id`, `user_id`, `created_at` (unique index on `(post_id,user_id)`)
+- `post_saves`: `post_id`, `user_id`, `created_at` (unique index)
+- `post_comments`: `id`, `post_id`, `user_id`, `text`, `created_at` (+ soft delete optional)
+- `post_hidden`: `post_id`, `user_id`, `created_at` (Not interested)
 
-### 26.6 Profile tab realigned to the owner's reference (2026-09-11)
-- Header wrapper identical to Explore/Likes/Chats (`px-[clamp(14px,5cqi,20px)] pt-1`, Brand 40).
-- Round 88px avatar + camera badge; name 26px; `@handle · Not verified >` inline; Edit profile pill; full-width Followers / Following / Profile views row.
-- Feature pills: Start / Available tomorrow / countdown, Super Likes count, `Coming soon`; sub 'Show stronger interest'. Roomy spacing, page scrolls.
-- Landing capture refreshed: profile-v3.webp.
+**Routes (`routes_posts.py`)**
+- `POST   /api/posts` — create post (verified-only optional; or allow all onboarded)
+- `GET    /api/feed` — discover feed (exclude hidden; cursor pagination)
+- `GET    /api/posts/{id}` — single post (for deep link `/p/:id`)
+- `POST   /api/posts/{id}/like` / `DELETE .../like`
+- `POST   /api/posts/{id}/save` / `DELETE .../save`
+- `GET    /api/posts/{id}/comments` — list comments
+- `POST   /api/posts/{id}/comments` — create comment
+- `POST   /api/posts/{id}/hide` — Not interested
+- `POST   /api/posts/{id}/report` — report post (reuse reports collection or add `post_reports`)
+- `DELETE /api/posts/{id}` — delete own post
 
-### 26.7 Verification flow rebuilt to the owner's 6 reference screens (2026-09-11)
-- `components/verification/VerifyUI.jsx`: FlowPage (bare back chevron + bottom black CTA), FlowTitle/Sub, StatusCircle (neutral/ok/bad), TipsCard, FlowButton.
-- `/settings/verification` states: none -> 'Verified profile' intro (Not verified pill, WHAT TO EXPECT, Get verified >); pending -> 'Under review' (Done);
-  rejected -> 'Try again' (red X, tips, Try again); approved -> "You're verified!" (green check, Great).
-- `/verify` steps: tips ('Verify your identity', Take selfie) -> camera (square frame, shutter; device picker fallback) -> 'Review your photo' (Retake / Use this photo) -> 'Under review'.
-- Tokens added: --ok/--ok-soft/--red-soft (+ Tailwind ok, ok-soft, red-soft). Verified end-to-end on preview incl. admin reject/approve.
+**Share into chat**
+- Add message kind: `kind: "post"` with payload:
+  - `post_id`, `post_owner_id`, `post_photo`, `post_caption`, `post_location`, `post_username`
+- Endpoint option A (recommended): client sends a normal message `POST /api/matches/{id}/messages` with `kind="post"`.
+  - Update `MessageIn` schema to accept `kind` + `post` object.
 
-### 26.8 Live-camera-only verification + APK 1.2.0 (2026-09-11)
-- Verify.jsx: removed the gallery/file fallback entirely. getUserMedia denied -> 'Camera access needed' state with Allow camera (re-prompts) + settings hint; unsupported browser -> message.
-- Android shell (MainActivity.onPermissionRequest): asks the system CAMERA / RECORD_AUDIO runtime permission first, then grants to the page; REQ_CAMERA result handler. Manifest adds RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (ready for calls).
-- APK 1.2.0 (versionCode 3) built with the release keystore -> frontend/public/voiladi.apk + deploy/android/voiladi-1.2.0.apk; deployed.
+**Indexes**
+- `posts`: `created_at` desc, `user_id`.
+- `post_comments`: `post_id` + `created_at`.
 
-### 26.9 Camera spinner fix + APK 1.3.0 (2026-09-12)
-- Root cause of endless spinner: shells before 1.4 never answer the page's camera request. Web now detects the shell via `VoiladiNative.hasCamera()`
-  (nativeSupportsCamera) and shows 'Update the Voiladi app' + Download update (REACT_APP_APK_UPDATE_URL -> Railway host, which old shells open in Chrome).
-  getUserMedia also has a 20s timeout -> 'Camera didn't respond' with retry; error name shown small for support.
-- Shell 1.3.0 (versionCode 4, UA VoiladiApp/1.4): hasCamera()/shellVersion() bridge, DownloadListener -> system browser, runtime CAMERA/RECORD_AUDIO prompt.
-- Dockerfile passes REACT_APP_APK_UPDATE_URL build arg; Railway var set on voiladi-web.
+**Seed data**
+- Admin: `POST /api/admin/seed/posts` (idempotent) to create sample posts for `is_seed` users so feed is not empty.
 
-### 26.10 Test bots for chat (2026-09-12)
-- `backend/bots.py`: `seed_chats_for(user)` builds a full inbox with the 24 sample profiles (8 convos w/ history + unread, 2 fresh matches,
-  3 incoming DM requests, 1 outgoing request, 10 likes); `schedule_bot_reply` makes sample profiles read + type + reply 2-5s after any
-  text/media the real person sends (scripted replies, no AI). Hooked into routes_chat.send_message and routes_media complete.
-- Admin: `POST/DELETE /api/admin/seed/chats?username=arin`, `POST /api/admin/verifications/{id}/grant` (operator verify override).
-- Production: @arin seeded + granted verification so messaging works.
+### 27.3 Frontend (React)
+**Routing / screens**
+- Rewrite `pages/Discover.jsx` → feed screen (vertical snap):
+  - `PostCard` full-screen
+  - Right rail buttons + counts
+  - Bottom-left author block + Follow
+  - Top-left title “Discover”
+  - Loading sequence: spinner → skeleton → image fade
+- New:
+  - `pages/NewPost.jsx` (`/posts/new`) — upload + caption + location
+  - `pages/PostView.jsx` (`/p/:id`) — opens single post (from shared message / copy link)
+  - `pages/Saved.jsx` (`/saved`) — saved posts list
 
-### 26.11 Final chat room UI (owner reference, 2026-09-12)
-- Header: bare chevron, 46px avatar with official-tint gradient ring + online dot, 20px bold name, 'Active now' presence, glass Phone / Video (coming-soon notice) / More buttons; frosted header (`.vo-chat-header`).
-- Messages: glass 'Today' pill; incoming = frosted white bubbles with 38px avatar on first of group; outgoing = black bubbles; 13.5px time under every bubble, violet double tick (--tick) when read, 'Seen' under last own message; typing bubble with avatar.
-- Composer: one transparent glass bar (`.vo-chat-composer`): glossy blue + (photo/video), 'Message...' pill, smile (vibe prompts), image, mic (coming soon) that turns into the black send arrow when typing.
-- Composer floats (absolute, z-20) over the message list with see-through glass (white 34%->18%, blur 18px, bright rim + glow); compact 52px bar, flat iOS-blue 40px +, 22px icons; list gets 84px bottom padding.
-- Focus/typing expands the field to the full bar (framer width/opacity 220ms): +, smile, image, mic collapse; only the black send arrow remains. Send keeps keyboard focus; collapses on blur when empty.
-- Open-at-bottom: instant jump on first render (+ retries while media loads, ResizeObserver keeps pinned); new messages glide down only when already near the bottom (stickToBottom).
-- Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
+**Components**
+- `CommentsSheet` (Radix/vaul-style sheet): list + composer.
+- `ShareSheet`: choose a chat thread and send the post.
+- `MoreSheet`: Report / Not interested / Copy link.
 
-### 26.12 Composer legibility + flat plus (2026-09-12)
-- Owner rejected the more-opaque bar: composer REVERTED to the see-through iPhone glass (white 34%->18%, blur 18px, rim + glow; input 22%). `.vo-plus-btn` shadow removed (it was clipped by the animation wrapper -> hard edge) - keep.
-- Testing agent iteration 26: all pass (floating bar, plus, legibility, focus expansion, open-at-bottom, bot reply).
+**Profile integration**
+- Add Profile “+” entry point (exact per reference):
+  - Opens `/posts/new`.
+- Add Profile menu row → **Saved**.
+- Add Posts grid (optional v1.1) or keep minimal: Saved list only.
 
-### 26.13 Glass composer legibility - final approach (2026-09-12)
-- Finding: in Chromium (headless + Android WebView) the composer's backdrop-filter blurs bubble edges but NOT bubble text (text stays sharp behind
-  the glass) -> a see-through bar over a black bubble was unreadable. Not fixable via blur alone (tested ::before layer, translateZ, isolation, removing children/transforms).
-- Fix: keep the iPhone glass (white 42%->24%, blur 18px on ::before, rim + glow; input 34%) and add `.vo-chat-fade` under the bar: an 84px (tight, owner rejected a taller glow)
-  canvas-coloured fade (0 -> 94%) so bubbles dissolve as they pass beneath (iMessage-style). Glass stays see-through at the fade's top edge.
+**Chat integration**
+- Update `ChatRoom.jsx` renderer:
+  - New bubble type for `m.kind === "post"` → card with image thumbnail + caption + location + “View post”
+  - Tap opens `/p/:id`.
 
-### 26.14 Testing
-- Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
+### 27.4 Testing plan
+- Backend:
+  - Create post, fetch feed, pagination, like/unlike, save/unsave, comment create/list, hide removes from feed, delete own post.
+  - Share message kind `post` appears in chat history and inbox preview.
+- Frontend:
+  - Discover opens with spinner, then skeleton, then image fade.
+  - Snap-scroll one-by-one behaviour matches reference.
+  - Right rail taps update counts.
+  - Comments sheet works and persists.
+  - Share into chat produces correct post card in chat.
+  - Saved list shows bookmarked posts.
+- Visual validation:
+  - Screenshot comparison against user reference (icons, spacing, typography).
+
+### 27.5 Deploy plan
+- Deploy **API + Web** (Railway) after tests.
+- Verify Cloudflare caching does not break feed freshness (post images remain immutable; feed JSON no-store or short max-age).
+
+---
+
+## Phase 28 — Voice + Video calls (WebRTC) (P0)
+**Status: BLOCKED (waiting on UI mockups from user)**
+- Planned: Instagram-style voice/video calling in chat via WebRTC + Cloudflare TURN.
+- **Do not implement** until exact incoming/ongoing call UI designs are provided.
 
 ---
 
 ## 3) Next Actions
-1) **Change Password (Settings → Account)**
+1) **Phase 27: Discover Feed (Posts)**
+   - Implement backend `routes_posts.py` + DB collections + admin seeding for posts.
+   - Rewrite Discover UI to match reference exactly.
+   - Add New Post flow from Profile “+”.
+   - Add comments/share/save/more sheets.
+   - Add chat `kind="post"` rendering.
+   - Test + deploy api+web.
+2) **Change Password (Settings → Account)**
    - Add UI row + backend endpoint to change password (with re-auth).
 3) **Move servers to Singapore (Asia)** (optional but biggest speed gain for India)
    - Requires explicit approval + maintenance window to migrate volumes (db + uploads).
 4) **Cloudflare WAF / Bot protection rules**
    - Requires a Cloudflare token with additional permissions (Zone Settings/Rules) beyond DNS.
-5) **Google Play ready**
-   - Produce a signed **AAB** (and/or Play App Signing) pipeline; align versioning.
 
 ---
 
 ## 4) Success Criteria
 - UI matches user references pixel-for-pixel.
+- Discover feed behaves like reference:
+  - full-screen vertical snap
+  - exact icons + placements
+  - spinner → shimmer → fade-in
+- Posts system works end-to-end:
+  - create post, feed, like, comment, save, hide, report, delete
+  - saved posts list in profile
+  - share post into chat renders a proper post card
 - Verified-only DM requests work:
   - Verified user can message any profile → recipient sees in Requests until accepted.
 - Chat feels professional:
-  - typing + seen + unsend + safety actions
-- Chat media works end-to-end:
-  - photo + video send, stream, progress, processing state, view-once consumption, unsend delete
-  - 720p cap enforced now; design supports 1080p cap later (Plus)
+  - typing + seen + unsend + safety actions + media + post cards
 - App loads fast on Indian networks:
   - thumbnails + edge caching + reduced first paint
 - Security hardened:
@@ -514,13 +466,18 @@
 - Phase 23: **COMPLETED** (DM Requests + Requests tab + Chat polish)
 - Phase 24: **COMPLETED** (Security hardening server + web + APK)
 - Phase 25: **COMPLETED** (Chat media: images + videos, view-once)
-- Phase 26: **COMPLETED** (voiladi.com glass landing page + /login rename)
+- Phase 26: **COMPLETED** (voiladi.com landing + haze + 6-step live camera verification + bots + final chat UI; outer composer glare removed)
+- Phase 27: **COMPLETED** (Discover Feed / Posts)
+- Phase 28: **BLOCKED** (WebRTC calls pending UI)
 
 ---
 
 ## 6) Future backlog
+- P0 WebRTC voice/video calls UI + integration (after mockups)
 - P1 Google Play ready (signed AAB)
 - P1 iPhone app packaging
+- P2 Admin Reports screen UI (currently API exists; UI at `/admin/verify` can be expanded)
+- P2 Community join (from Explore topic sheet → shows on profile)
 - P2 Notification settings
 - P2 Unblock list
 - P3 Recent searches

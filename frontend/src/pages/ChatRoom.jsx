@@ -193,6 +193,34 @@ const Bubble = ({ m, mine, onActions }) => {
   );
 };
 
+/** A post shared into the chat (Instagram-style card): photo, author line, caption. Tapping opens the post. */
+const PostBubble = ({ m, mine }) => {
+  const navigate = useNavigate();
+  const p = m.post || {};
+  return (
+    <button
+      type="button"
+      onClick={() => p.id && navigate(`/p/${p.id}`)}
+      className={`w-[228px] overflow-hidden rounded-[20px] text-left focus-visible:outline-none active:opacity-90 ${mine ? "vo-bubble-out" : "vo-bubble-in"} ${m.pending ? "opacity-60" : ""}`}
+      style={{ transitionProperty: "opacity", transitionDuration: "120ms" }}
+      data-testid="chat-post-bubble"
+      data-mine={mine ? "true" : "false"}
+    >
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-2">
+        <UserPhoto src={p.photo} name={p.name} size="xs" className="h-7 w-7 rounded-full text-[11px]" />
+        <span className={`truncate text-[14px] font-semibold ${mine ? "" : "text-ink"}`}>{p.username ? `@${p.username}` : p.name}</span>
+      </div>
+      <UserPhoto src={p.image} name={p.name} size="sm" className="aspect-[4/5] w-full" />
+      {(p.caption || p.location) && (
+        <div className="px-3 py-2.5">
+          {p.caption && <p className={`line-clamp-2 text-[14px] leading-[18px] ${mine ? "" : "text-ink"}`}>{p.caption}</p>}
+          {p.location && <p className={`mt-0.5 truncate text-[12.5px] ${mine ? "opacity-70" : "text-mute"}`}>{p.location}</p>}
+        </div>
+      )}
+    </button>
+  );
+};
+
 export default function ChatRoom() {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -995,6 +1023,8 @@ export default function ChatRoom() {
                             />
                           )}
                         </LongPress>
+                      ) : r.m.kind === "post" ? (
+                        <PostBubble m={r.m} mine={mine} />
                       ) : (
                         <Bubble m={r.m} mine={mine} onActions={setActionMsg} />
                       )}

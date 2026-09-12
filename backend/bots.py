@@ -56,6 +56,7 @@ REPLIES = [
 QUESTION_REPLIES = ["yes! definitely", "honestly, not sure yet. you?", "i'd say yes", "maybe... convince me", "depends who's asking 👀"]
 GREET_REPLIES = ["hey you 👋", "hi! how's your day going?", "hello hello", "heyy, finally"]
 PHOTO_REPLIES = ["oh wow", "ok that's a great photo", "saving that", "you look great", "where is this?"]
+POST_REPLIES = ["oh I saw this one", "okay this is so good", "wait where is that", "saving this", "love this post"]
 
 
 def _hours_ago(h: float) -> str:
@@ -189,6 +190,8 @@ def _pick_reply(text: str, kind: str) -> str:
     t = (text or "").strip().lower()
     if kind in ("image", "video"):
         return random.choice(PHOTO_REPLIES)
+    if kind == "post":
+        return random.choice(POST_REPLIES)
     if t in ("hi", "hey", "hello", "heyy", "hii", "yo", "hola") or t.startswith(("hi ", "hey ", "hello ")):
         return random.choice(GREET_REPLIES)
     if t.endswith("?"):

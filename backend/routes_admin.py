@@ -129,6 +129,75 @@ async def unseed_chats(username: Optional[str] = None, user_id: Optional[str] = 
     return {"ok": True, "removed": await clear_chats_for(user["id"])}
 
 
+# ---------- sample posts for the Discover feed ----------
+SAMPLE_POSTS = [
+    ("1506905925346-21bda4d32df4", "Good places make better days.", "Lake Como, Italy"),
+    ("1469474968028-56623f02e42e", "Chasing the last light.", "Dolomites, Italy"),
+    ("1507525428034-b723cf961d3e", "Salt in the air, nowhere to be.", "Goa, India"),
+    ("1476514525535-07fb3b4ae5f1", "Somewhere between here and there.", "Lofoten, Norway"),
+    ("1500530855697-b586d89ba3ee", "Left the city for this.", "Manali, India"),
+    ("1493246507139-91e8fad9978e", "Slow mornings.", "Ubud, Bali"),
+    ("1470770841072-f978cf4d019e", "The lake was louder than the city.", "Lake Bled, Slovenia"),
+    ("1501785888041-af3ef285b470", "Woke up early for once.", "Kashmir, India"),
+    ("1519681393784-d120267933ba", "Cold hands, warm heart.", "Banff, Canada"),
+    ("1502082553048-f009c37129b9", "Nothing else mattered up here.", "Yosemite, USA"),
+    ("1464822759023-fed622ff2c3b", "Coffee first, then the mountain.", "Chamonix, France"),
+    ("1433086966358-54859d0ed716", "Just water and noise.", "Iceland"),
+    ("1518098268026-4e89f1a2cd8e", "Made it before the rain.", "Munnar, India"),
+    ("1504893524553-b855bce32c67", "Long roads, short stories.", "Ladakh, India"),
+    ("1516483638261-f4dbaf036963", "Sunday feels like this.", "Amalfi, Italy"),
+    ("1499346030926-9a72daac6c63", "One more reason to stay.", "Santorini, Greece"),
+    ("1472214103451-9374bd1c798e", "Green for days.", "Coorg, India"),
+    ("1449034446853-66c86144b0ad", "Streetlights and a good song.", "Tokyo, Japan"),
+    ("1506744038136-46273834b3fb", "Quiet is underrated.", "Lake Louise, Canada"),
+    ("1447752875215-b2761acb3c5d", "Another way home.", "Black Forest, Germany"),
+    ("1682687982501-1e58ab814714", "Post-swim thoughts.", "Maldives"),
+    ("1508233620467-f79f1e317a05", "Better than the photos.", "Hampi, India"),
+    ("1454496522488-7a8e488e8606", "Up before the town.", "Zermatt, Switzerland"),
+    ("1526772662000-3f88f10405ff", "Warmer than it looks.", "Rishikesh, India"),
+]
+
+
+@router.post("/seed/posts")
+async def seed_posts(x_admin_key: Optional[str] = Header(default=None)):
+    """Give every sample profile one post so Discover has a full feed (idempotent; posts are tagged is_seed)."""
+    require_admin(x_admin_key)
+    import random
+    import uuid as _uuid
+    from datetime import datetime, timezone, timedelta
+    seeds = await db.users.find({"is_seed": True}, {"_id": 0, "id": 1}).to_list(None)
+    if not seeds:
+        from seed import seed as seed_profiles
+        await seed_profiles()
+        seeds = await db.users.find({"is_seed": True}, {"_id": 0, "id": 1}).to_list(None)
+    rnd = random.Random(11)
+    created = 0
+    for i, u in enumerate(seeds):
+        if await db.posts.count_documents({"user_id": u["id"], "is_seed": True}):
+            continue
+        pid, caption, place = SAMPLE_POSTS[i % len(SAMPLE_POSTS)]
+        at = (datetime.now(timezone.utc) - timedelta(hours=rnd.uniform(1, 240))).isoformat()
+        await db.posts.insert_one({
+            "id": str(_uuid.uuid4()), "user_id": u["id"], "is_seed": True,
+            "image": f"https://images.unsplash.com/photo-{pid}?w=1080&q=80&auto=format&fit=crop",
+            "width": 1080, "height": 1620, "caption": caption, "location": place, "created_at": at,
+            "likes": rnd.randint(120, 14000), "comments": rnd.randint(4, 420), "shares": rnd.randint(10, 900), "saves": rnd.randint(20, 1300),
+        })
+        created += 1
+    return {"ok": True, "created": created, "total_sample_posts": await db.posts.count_documents({"is_seed": True})}
+
+
+@router.delete("/seed/posts")
+async def unseed_posts(x_admin_key: Optional[str] = Header(default=None)):
+    require_admin(x_admin_key)
+    ids = [p["id"] for p in await db.posts.find({"is_seed": True}, {"_id": 0, "id": 1}).to_list(None)]
+    await db.posts.delete_many({"id": {"$in": ids}})
+    for coll in (db.post_likes, db.post_saves, db.post_comments, db.post_hidden):
+        await coll.delete_many({"post_id": {"$in": ids}})
+    return {"ok": True, "removed": len(ids)}
+
+
+
 # ---------- demo data (sample profiles flagged is_seed) ----------
 @router.get("/seed")
 async def seed_status(x_admin_key: Optional[str] = Header(default=None)):

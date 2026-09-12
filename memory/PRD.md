@@ -90,3 +90,18 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - `voiladi.com/` shows the Apple-glass landing page (hero, glass store pills, 3-phone carousel, frosted side menu with Log in) to signed-out web visitors; Android shell and signed-in users skip it.
 - `/welcome` renamed to `/login` (redirect kept). Email form moved to `/login/email`; phone OTP at `/login/phone`.
 - Deployed to Railway (voiladi-web + voiladi-api) and verified live.
+
+## 2026-09-12 — Chat composer glare + Discover Feed (Posts) — Phase 27
+- Chat composer: removed the outer white glow + fade band behind the floating glass message bar (box itself unchanged). Deployed web.
+- Phase 27 DONE: Discover is now a full-screen vertical POSTS feed (one post per screen, snap-scroll), exact to the user's reference:
+  white "Discover" title, right rail (pink heart+count, comment+count, share+count, bookmark+count, ...), bottom-left avatar / username / black tick /
+  outlined Follow pill / pin + place / caption. Spinner on black first, then grey shimmer per post, photo fades in. Swipe deck removed.
+  Backend `routes_posts.py`: collections posts / post_likes / post_saves / post_comments / post_hidden; endpoints GET /api/posts/feed (cursor `before`),
+  /posts/mine, /posts/saved, /users/{id}/posts, POST /posts (multipart file+caption+location, 201), DELETE /posts/{id}, GET /posts/{id},
+  POST /posts/{id}/like|save|hide|report (toggles), GET/POST /posts/{id}/comments, DELETE comments/{cid}, POST /posts/{id}/share {match_id} ->
+  chat message kind="post" with snapshot (inbox preview "Shared a post"; bots reply). Follow = existing POST /api/swipe like.
+  Admin: POST/DELETE /api/admin/seed/posts gives every sample profile one Unsplash post (is_seed) so the feed is full.
+  Frontend: pages/Discover.jsx (feed), components/feed/PostCard.jsx, PostSheets.jsx (Comments drawer, Share-to-chat drawer, iOS "..." sheet),
+  PostsGrid.jsx, hooks/usePostActions.js, pages/NewPost.jsx (/posts/new, from Profile "+" header button and Posts section), pages/PostView.jsx (/p/:id,
+  used by shared messages + Copy link), pages/Saved.jsx (/saved, Profile menu "Saved"). ChatRoom renders kind="post" as a tappable card.
+  Tests iteration_27 (backend 24/25 -> fixed 201; frontend 100%). Deployed api + web.

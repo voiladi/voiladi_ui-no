@@ -40,6 +40,9 @@ const Login = screen(() => import("@/pages/Login"));
 const PhoneLogin = screen(() => import("@/pages/PhoneLogin"));
 const Onboarding = screen(() => import("@/pages/Onboarding"));
 const Discover = screen(() => import("@/pages/Discover"));
+const NewPost = screen(() => import("@/pages/NewPost"));
+const PostView = screen(() => import("@/pages/PostView"));
+const Saved = screen(() => import("@/pages/Saved"));
 const Explore = screen(() => import("@/pages/Explore"));
 const Likes = screen(() => import("@/pages/Likes"));
 const Chats = screen(() => import("@/pages/Chats"));
@@ -153,6 +156,9 @@ function App() {
                 </Route>
                 <Route element={<AppShell nav={false} />}>
                   <Route path="/chats/:matchId" element={<ChatRoom />} />
+                  <Route path="/posts/new" element={<NewPost />} />
+                  <Route path="/p/:postId" element={<PostView />} />
+                  <Route path="/saved" element={<Saved />} />
                   <Route path="/profile/edit" element={<EditProfile />} />
                   <Route path="/filters" element={<Filters />} />
                   <Route path="/profile/preferences" element={<Navigate to="/filters" replace />} />

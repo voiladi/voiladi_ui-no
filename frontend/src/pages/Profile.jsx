@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp } from "lucide-react";
+import { Bell, Settings, Camera, ChevronRight, Zap, Star, Crown, User, Lock, SlidersHorizontal, CircleHelp, Plus, Bookmark } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { PostsGrid } from "@/components/feed/PostsGrid";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -111,6 +113,7 @@ export default function Profile() {
   const unseen = notif?.unseen_count || 0;
   const [boosting, setBoosting] = useState(false);
   const boostLeft = useCountdown(stats?.boost_active ? stats.boost_until : null);
+  const myPosts = useQuery({ queryKey: ["my-posts"], queryFn: async () => (await api.get("/posts/mine")).data.posts, enabled: !!user });
 
   useEffect(() => {
     if (stats?.boost_active && boostLeft <= 0) qc.invalidateQueries({ queryKey: ["stats"] });
@@ -144,6 +147,7 @@ export default function Profile() {
         <SoftHeader
           right={
             <>
+              <SoftIconButton icon={Plus} label="New post" onClick={() => navigate("/posts/new")} testId="profile-new-post-button" strokeWidth={2.2} />
               <span className="relative">
                 <SoftIconButton icon={Bell} label="Notifications" onClick={() => navigate("/notifications")} testId="profile-notifications-button" strokeWidth={1.9} />
                 {unseen > 0 && <span className="pointer-events-none absolute right-[9px] top-[8px] h-2 w-2 rounded-full bg-red ring-2 ring-[color:var(--soft-bg)]" data-testid="profile-notifications-dot" />}
@@ -201,6 +205,21 @@ export default function Profile() {
         <Stat label="Profile views" value={stats?.profile_views} testId="profile-stat-views" />
       </section>
 
+      {/* posts */}
+      <section className="mx-4 mt-5" data-testid="profile-posts">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="text-[19px] font-bold leading-[1.2] tracking-[-0.02em] text-ink">
+            Posts{myPosts.data?.length ? <span className="ml-1.5 text-mute">{myPosts.data.length}</span> : null}
+          </h2>
+          <button type="button" onClick={() => navigate("/posts/new")} className="inline-flex h-[32px] items-center gap-1 rounded-full px-3 text-[15px] font-semibold text-ink active:opacity-60" data-testid="profile-posts-new-button">
+            <Plus className="h-4 w-4" strokeWidth={2.4} /> New
+          </button>
+        </div>
+        <div className="mt-2.5">
+          <PostsGrid posts={myPosts.data} loading={myPosts.isLoading} emptyTitle="No posts yet" emptyText="Share a photo of your day from the + button." testId="profile-posts-grid" />
+        </div>
+      </section>
+
       {/* profile completion */}
       <section className="mx-4 mt-4">
         <SoftCard as="button" type="button" className="w-full px-4 py-3.5 text-left focus-visible:outline-none active:opacity-90" onClick={() => navigate("/profile/edit")} testId="profile-completion-card">
@@ -233,6 +252,7 @@ export default function Profile() {
       {/* account menu */}
       <SoftCard className="mx-4 mt-3 overflow-hidden" testId="profile-menu">
         <MenuRow icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="profile-menu-account" />
+        <MenuRow icon={Bookmark} label="Saved" onClick={() => navigate("/saved")} testId="profile-menu-saved" />
         <MenuRow icon={Lock} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="profile-menu-privacy" />
         <MenuRow icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="profile-menu-preferences" />
         <MenuRow icon={CircleHelp} label="Help & Support" onClick={() => navigate("/legal/help")} testId="profile-menu-help" last />

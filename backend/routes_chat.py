@@ -45,6 +45,8 @@ def media_preview_text(kind: str, view_once: bool) -> str:
 
 
 def _message_preview(m: dict) -> str:
+    if m.get("kind") == "post":
+        return "Shared a post"
     if m.get("media"):
         return media_preview_text(m["media"].get("kind", "image"), bool(m["media"].get("view_once")))
     return m.get("text") or ""

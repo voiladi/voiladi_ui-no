@@ -15,6 +15,7 @@ import routes_admin
 import routes_notifications
 import routes_verification
 import routes_media
+import routes_posts
 import ws_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -46,6 +47,7 @@ app.include_router(routes_admin.router)
 app.include_router(routes_notifications.router)
 app.include_router(routes_verification.router)
 app.include_router(routes_media.router)
+app.include_router(routes_posts.router)
 app.include_router(ws_manager.router)
 
 # middleware order: the last one added runs first. Rate limit + body size run before CORS so abusive
@@ -92,6 +94,7 @@ async def ensure_indexes():
         await db.messages.create_index("id", unique=True)
         await db.media_uploads.create_index("id", unique=True)
         await routes_media.sweep_uploads()
+        await routes_posts.ensure_indexes()
         logger.info("Indexes ready. OTP provider: %s (sms_enabled=%s)", OTP_PROVIDER, SMS_ENABLED)
     except Exception as e:
         logger.warning(f"Index creation issue: {e}")

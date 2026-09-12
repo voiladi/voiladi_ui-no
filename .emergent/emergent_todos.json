@@ -1,22 +1,34 @@
 [
   {
-    "content": "Explore App.js / AppShell.jsx routing and existing Landing.jsx + PhoneScreens.jsx",
+    "content": "Backend routes_posts.py + indexes + admin seed posts",
     "status": "completed"
   },
   {
-    "content": "Route / to Landing (web, unauthenticated), rename /welcome -> /login with redirect",
+    "content": "Chat: ChatRoom post card for kind=post",
     "status": "completed"
   },
   {
-    "content": "Build check (esbuild) + screenshots of landing, carousel, hamburger side login",
+    "content": "Frontend Discover.jsx full-screen snap feed matching reference + loading sequence",
     "status": "completed"
   },
   {
-    "content": "Frontend regression test via testing agent",
+    "content": "Comments / Share / More sheets",
     "status": "completed"
   },
   {
-    "content": "Update plan.md and deploy",
+    "content": "NewPost page, PostView (/p/:id), Saved page, Profile + button, posts grid, Saved menu row",
+    "status": "completed"
+  },
+  {
+    "content": "Compile, screenshot verify vs reference",
+    "status": "completed"
+  },
+  {
+    "content": "Testing agent run + fix",
+    "status": "completed"
+  },
+  {
+    "content": "Deploy api + web to Railway",
     "status": "completed"
   }
 ]
