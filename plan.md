@@ -468,7 +468,13 @@
 - Owner rejected the more-opaque bar: composer REVERTED to the see-through iPhone glass (white 34%->18%, blur 18px, rim + glow; input 22%). `.vo-plus-btn` shadow removed (it was clipped by the animation wrapper -> hard edge) - keep.
 - Testing agent iteration 26: all pass (floating bar, plus, legibility, focus expansion, open-at-bottom, bot reply).
 
-### 26.13 Testing
+### 26.13 Glass composer legibility - final approach (2026-09-12)
+- Finding: in Chromium (headless + Android WebView) the composer's backdrop-filter blurs bubble edges but NOT bubble text (text stays sharp behind
+  the glass) -> a see-through bar over a black bubble was unreadable. Not fixable via blur alone (tested ::before layer, translateZ, isolation, removing children/transforms).
+- Fix: keep the iPhone glass (white 42%->24%, blur 18px on ::before, rim + glow; input 34%) and add `.vo-chat-fade` under the bar: a 128px
+  canvas-coloured fade (0 -> 94%) so bubbles dissolve as they pass beneath (iMessage-style). Glass stays see-through at the fade's top edge.
+
+### 26.14 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---
