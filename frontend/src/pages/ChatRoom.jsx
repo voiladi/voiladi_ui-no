@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, MessageSquareText, Trash2, Copy, Undo2, ImagePlus } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, Trash2, Copy, Undo2, Plus, Smile, Image as ImageIcon, Mic, Phone, Video } from "lucide-react";
 import { notice } from "@/lib/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -117,8 +117,8 @@ const Bubble = ({ m, mine, onActions }) => {
           onActions(m);
         }
       }}
-      className={`select-none whitespace-pre-wrap break-words px-4 py-2.5 text-[15.5px] leading-[1.35] tracking-[-0.005em] ${
-        mine ? "rounded-[20px] rounded-br-[8px] bg-ink text-onink" : "vo-soft rounded-[20px] rounded-bl-[8px] text-ink"
+      className={`select-none whitespace-pre-wrap break-words rounded-[22px] px-4 py-[11px] text-[16.5px] leading-[1.3] tracking-[-0.005em] ${
+        mine ? "vo-bubble-out" : "vo-bubble-in text-ink"
       } ${m.pending ? "opacity-60" : ""}`}
       style={{ WebkitTouchCallout: "none" }}
       data-testid="chat-message-bubble"
@@ -451,15 +451,17 @@ export default function ChatRoom() {
         lastDay = day;
       }
       const nextM = messages[idx + 1];
+      const prevM = messages[idx - 1];
       const endOfGroup = !nextM || nextM.sender_id !== m.sender_id || new Date(nextM.created_at) - new Date(m.created_at) > 5 * 60 * 1000;
-      out.push({ type: "msg", key: m.id, m, endOfGroup });
+      const startOfGroup = !prevM || prevM.sender_id !== m.sender_id || new Date(m.created_at) - new Date(prevM.created_at) > 5 * 60 * 1000;
+      out.push({ type: "msg", key: m.id, m, endOfGroup, startOfGroup });
     });
     return out;
   }, [messages]);
 
   const lastMine = [...messages].reverse().find((m) => m.sender_id === user?.id);
   const noTextYet = messages.every((m) => m.kind === "reaction");
-  const status = typing ? "typing..." : match?.online ? "Online" : activeLabel(other?.last_active) || "";
+  const status = typing ? "typing..." : match?.online ? "Active now" : activeLabel(other?.last_active) || "";
 
   const intro = () => {
     if (!other) return null;
@@ -474,24 +476,26 @@ export default function ChatRoom() {
 
   return (
     <div className="vo-neu-page flex h-full flex-col" data-testid="chat-room" data-kind={match?.kind} data-status={match?.status}>
-      {/* header */}
-      <header className="flex h-[64px] shrink-0 items-center gap-2.5 px-3">
-        <button type="button" className="vo-soft-icon h-[44px] w-[44px] shrink-0" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
-          <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
+      {/* header: bare chevron, ringed avatar + name / presence, glass call + more buttons */}
+      <header className="vo-chat-header z-10 flex h-[72px] shrink-0 items-center gap-2 px-3">
+        <button type="button" className="-ml-1 flex h-11 w-10 shrink-0 items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => navigate("/chats")} aria-label="Back" data-testid="chat-back-button">
+          <ChevronLeft className="h-8 w-8" strokeWidth={2.4} />
         </button>
         {other ? (
-          <button type="button" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full py-1 text-left active:opacity-70" onClick={() => setSheet(true)} data-testid="chat-header-profile">
+          <button type="button" className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left active:opacity-70 focus-visible:outline-none" onClick={() => setSheet(true)} data-testid="chat-header-profile">
             <span className="relative shrink-0">
-              <UserPhoto src={other.photos?.[0]} name={other.name} size="xs" className="h-[40px] w-[40px] rounded-full text-sm" />
-              {match.online && <span className="vo-dot-online h-2.5 w-2.5" />}
+              <span className="vo-avatar-ring block">
+                <UserPhoto src={other.photos?.[0]} name={other.name} size="xs" className="h-[46px] w-[46px] rounded-full text-[17px]" />
+              </span>
+              {match.online && <span className="vo-dot-online bottom-0.5 right-0.5 h-3.5 w-3.5 border-[2.5px]" data-testid="chat-header-online" />}
             </span>
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-[17px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+              <span className="flex items-center gap-1.5 text-[20px] font-bold leading-[1.15] tracking-[-0.02em] text-ink">
                 <span className="truncate">{other.name}</span>
-                {other.verified && <VerifiedBadge size={16} testId="chat-header-verified" />}
+                {other.verified && <VerifiedBadge size={17} testId="chat-header-verified" />}
               </span>
               {status && (
-                <span className="block text-[12.5px] leading-tight text-mute" data-testid="chat-header-status">
+                <span className="block truncate whitespace-nowrap text-[14px] leading-[1.2] tracking-[-0.01em] text-mute" data-testid="chat-header-status">
                   {status}
                 </span>
               )}
@@ -499,14 +503,20 @@ export default function ChatRoom() {
           </button>
         ) : (
           <div className="flex flex-1 items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-[46px] w-[46px] rounded-full" />
             <Skeleton className="h-4 w-28" />
           </div>
         )}
+        <button type="button" className="vo-glass-icon h-[44px] w-[44px]" onClick={() => notice("Voice calls are coming soon")} aria-label="Voice call" data-testid="chat-call-button">
+          <Phone className="h-[21px] w-[21px]" strokeWidth={2} />
+        </button>
+        <button type="button" className="vo-glass-icon h-[44px] w-[44px]" onClick={() => notice("Video calls are coming soon")} aria-label="Video call" data-testid="chat-video-call-button">
+          <Video className="h-[22px] w-[22px]" strokeWidth={2} />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="vo-soft-icon h-[44px] w-[44px] shrink-0" aria-label="More" data-testid="chat-menu-button">
-              <MoreHorizontal className="h-5 w-5" strokeWidth={2.2} />
+            <button type="button" className="vo-glass-icon h-[44px] w-[44px]" aria-label="More" data-testid="chat-menu-button">
+              <MoreHorizontal className="h-[22px] w-[22px]" strokeWidth={2.2} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-[18px] border-0 bg-canvas p-1.5 shadow-modal">
@@ -540,7 +550,7 @@ export default function ChatRoom() {
       )}
 
       {/* messages */}
-      <div className="vo-scroll px-4 pb-3 pt-2" data-testid="chat-messages">
+      <div className="vo-scroll px-3.5 pb-3 pt-2" data-testid="chat-messages">
         {loading ? (
           <div className="flex h-full min-h-[40vh] items-center justify-center text-ink" data-testid="chat-loading">
             <Spinner size={28} stroke={2.5} />
@@ -571,10 +581,13 @@ export default function ChatRoom() {
               </div>
             )}
             <AnimatePresence initial={false}>
-              {rendered.map((r) =>
-                r.type === "day" ? (
+              {rendered.map((r) => {
+                const mine = r.type === "msg" && r.m.sender_id === user?.id;
+                return r.type === "day" ? (
                   <div key={r.key} className="my-4 flex items-center justify-center">
-                    <span className="text-[12px] font-medium text-mute">{r.label}</span>
+                    <span className="vo-day-pill inline-flex h-[30px] items-center rounded-full px-4 text-[14px] font-medium text-mute" data-testid="chat-day-label">
+                      {r.label}
+                    </span>
                   </div>
                 ) : (
                   <motion.div
@@ -584,44 +597,47 @@ export default function ChatRoom() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96 }}
                     transition={tween(0.18)}
-                    className={`flex ${r.m.sender_id === user?.id ? "justify-end" : "justify-start"} ${r.endOfGroup ? "mb-3" : "mb-1.5"}`}
+                    className={`flex items-start ${mine ? "justify-end" : "justify-start"} mb-2.5`}
                   >
-                    <div className={`max-w-[78%] ${r.m.sender_id === user?.id ? "items-end" : "items-start"} flex flex-col`}>
+                    {!mine && (
+                      <span className="mr-2.5 w-[38px] shrink-0">
+                        {r.startOfGroup && <UserPhoto src={other?.photos?.[0]} name={other?.name} size="xs" className="h-[38px] w-[38px] rounded-full text-[14px]" data-testid="chat-message-avatar" />}
+                      </span>
+                    )}
+                    <div className={`flex max-w-[76%] flex-col ${mine ? "items-end" : "items-start"}`}>
                       {r.m.kind === "reaction" ? (
-                        <ReactionBubble m={r.m} mine={r.m.sender_id === user?.id} otherName={other?.name} />
+                        <ReactionBubble m={r.m} mine={mine} otherName={other?.name} />
                       ) : r.m.kind === "image" || r.m.kind === "video" ? (
-                        <LongPress enabled={r.m.sender_id === user?.id && !r.m.pending} onFire={() => setActionMsg(r.m)}>
+                        <LongPress enabled={mine && !r.m.pending} onFire={() => setActionMsg(r.m)}>
                           {r.m.media?.view_once ? (
-                            <ViewOnceBubble m={r.m} mine={r.m.sender_id === user?.id} onOpen={openViewOnce} busy={openingId === r.m.id} />
+                            <ViewOnceBubble m={r.m} mine={mine} onOpen={openViewOnce} busy={openingId === r.m.id} />
                           ) : (
-                            <MediaBubble m={r.m} mine={r.m.sender_id === user?.id} onOpen={(item) => setViewer({ ...item, name: other?.name })} />
+                            <MediaBubble m={r.m} mine={mine} onOpen={(item) => setViewer({ ...item, name: other?.name })} />
                           )}
                         </LongPress>
                       ) : (
-                        <Bubble m={r.m} mine={r.m.sender_id === user?.id} onActions={setActionMsg} />
+                        <Bubble m={r.m} mine={mine} onActions={setActionMsg} />
                       )}
-                      {r.endOfGroup && (
-                        <div className="mt-1 flex items-center gap-1 px-1 text-[11px] text-mute">
-                          {clockTime(r.m.created_at)}
-                          {r.m.sender_id === user?.id && r.m.id === lastMine?.id && (
-                            r.m.read_at ? (
-                              <span className="inline-flex items-center gap-0.5 text-blue" data-testid="chat-seen">
-                                <CheckCheck className="h-3 w-3" /> Seen
-                              </span>
-                            ) : (
-                              <Check className="h-3 w-3" data-testid="chat-sent-tick" />
-                            )
-                          )}
-                        </div>
+                      <div className={`mt-1.5 flex items-center gap-1.5 px-1 text-[13.5px] leading-none text-mute ${mine ? "justify-end" : ""}`} data-testid="chat-message-time">
+                        {clockTime(r.m.created_at)}
+                        {mine && !r.m.pending && (r.m.read_at ? <CheckCheck className="vo-tick h-4 w-4" strokeWidth={2.4} data-testid="chat-read-ticks" /> : <Check className="h-4 w-4" strokeWidth={2.4} data-testid="chat-sent-tick" />)}
+                      </div>
+                      {mine && r.m.id === lastMine?.id && r.m.read_at && (
+                        <span className="mt-1 px-1 text-[13.5px] leading-none text-mute" data-testid="chat-seen">
+                          Seen
+                        </span>
                       )}
                     </div>
                   </motion.div>
-                )
-              )}
+                );
+              })}
             </AnimatePresence>
             {typing && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(0.15)} className="mb-2 flex justify-start" data-testid="chat-typing-indicator">
-                <div className="vo-soft flex items-center gap-1 rounded-[20px] px-4 py-3">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tween(0.15)} className="mb-2 flex items-start justify-start" data-testid="chat-typing-indicator">
+                <span className="mr-2.5 w-[38px] shrink-0">
+                  <UserPhoto src={other?.photos?.[0]} name={other?.name} size="xs" className="h-[38px] w-[38px] rounded-full text-[14px]" />
+                </span>
+                <div className="vo-bubble-in flex h-[44px] items-center gap-1.5 rounded-[22px] px-4">
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
                   <span className="typing-dot h-2 w-2 rounded-full bg-mute" />
@@ -666,35 +682,31 @@ export default function ChatRoom() {
         </div>
       ) : (
         <form
-          className="px-3 pt-1.5"
+          className="px-3 pt-2"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage();
           }}
         >
-          <div className="flex items-end gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                pickFile(f);
-              }}
-              data-testid="chat-media-input"
-            />
-            <button type="button" className="vo-soft-icon h-[46px] w-[46px] shrink-0" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-attach-button">
-              <ImagePlus className="h-5 w-5" strokeWidth={1.9} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              pickFile(f);
+            }}
+            data-testid="chat-media-input"
+          />
+          {/* one transparent glass bar: + | message pill | smile · photo · mic/send */}
+          <div className="vo-chat-composer flex items-end gap-2 p-2" data-testid="chat-composer">
+            <button type="button" className="vo-plus-btn flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" data-testid="chat-attach-button">
+              <Plus className="h-7 w-7" strokeWidth={2.6} />
             </button>
-            {!isDm && !text && (
-              <button type="button" className="vo-soft-icon h-[46px] w-[46px] shrink-0" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
-                <MessageSquareText className="h-5 w-5" strokeWidth={1.9} />
-              </button>
-            )}
-            <div className="vo-soft-sunken flex min-h-[46px] flex-1 items-end rounded-[23px] px-4">
+            <div className="vo-chat-input flex min-h-[50px] flex-1 items-end rounded-full px-4">
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -706,15 +718,29 @@ export default function ChatRoom() {
                     sendMessage();
                   }
                 }}
-                placeholder="Message"
-                className="max-h-[120px] w-full resize-none bg-transparent py-[13px] text-[15.5px] leading-[20px] text-ink outline-none placeholder:text-mute"
-                style={{ height: Math.min(120, 26 + 20 * Math.max(1, text.split("\n").length)) }}
+                placeholder="Message..."
+                className="max-h-[120px] w-full resize-none bg-transparent py-[14px] text-[17px] leading-[22px] text-ink outline-none placeholder:text-mute"
+                style={{ height: Math.min(120, 28 + 22 * Math.max(1, text.split("\n").length)) }}
                 data-testid="chat-message-input"
               />
             </div>
-            <button type="submit" disabled={!text.trim() || sending} aria-busy={sending} className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} aria-label="Send" data-testid="chat-send-button">
-              {sending ? <Spinner size={18} stroke={2.4} /> : <ArrowUp className="h-5 w-5" strokeWidth={2.5} />}
-            </button>
+            <div className="flex h-[50px] shrink-0 items-center pr-0.5">
+              <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
+                <Smile className="h-[26px] w-[26px]" strokeWidth={1.9} />
+              </button>
+              <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-photo-button">
+                <ImageIcon className="h-[26px] w-[26px]" strokeWidth={1.9} />
+              </button>
+              {text.trim() ? (
+                <button type="submit" disabled={sending} aria-busy={sending} className="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} aria-label="Send" data-testid="chat-send-button">
+                  {sending ? <Spinner size={18} stroke={2.4} /> : <ArrowUp className="h-5 w-5" strokeWidth={2.6} />}
+                </button>
+              ) : (
+                <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => notice("Voice messages are coming soon")} aria-label="Voice message" data-testid="chat-mic-button">
+                  <Mic className="h-[26px] w-[26px]" strokeWidth={1.9} />
+                </button>
+              )}
+            </div>
           </div>
         </form>
       )}

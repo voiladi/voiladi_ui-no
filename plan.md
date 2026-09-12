@@ -455,7 +455,13 @@
 - Admin: `POST/DELETE /api/admin/seed/chats?username=arin`, `POST /api/admin/verifications/{id}/grant` (operator verify override).
 - Production: @arin seeded + granted verification so messaging works.
 
-### 26.11 Testing
+### 26.11 Final chat room UI (owner reference, 2026-09-12)
+- Header: bare chevron, 46px avatar with official-tint gradient ring + online dot, 20px bold name, 'Active now' presence, glass Phone / Video (coming-soon notice) / More buttons; frosted header (`.vo-chat-header`).
+- Messages: glass 'Today' pill; incoming = frosted white bubbles with 38px avatar on first of group; outgoing = black bubbles; 13.5px time under every bubble, violet double tick (--tick) when read, 'Seen' under last own message; typing bubble with avatar.
+- Composer: one transparent glass bar (`.vo-chat-composer`): glossy blue + (photo/video), 'Message...' pill, smile (vibe prompts), image, mic (coming soon) that turns into the black send arrow when typing.
+- Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
+
+### 26.12 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---
