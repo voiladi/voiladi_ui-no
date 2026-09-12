@@ -471,7 +471,7 @@
 ### 26.13 Glass composer legibility - final approach (2026-09-12)
 - Finding: in Chromium (headless + Android WebView) the composer's backdrop-filter blurs bubble edges but NOT bubble text (text stays sharp behind
   the glass) -> a see-through bar over a black bubble was unreadable. Not fixable via blur alone (tested ::before layer, translateZ, isolation, removing children/transforms).
-- Fix: keep the iPhone glass (white 42%->24%, blur 18px on ::before, rim + glow; input 34%) and add `.vo-chat-fade` under the bar: a 128px
+- Fix: keep the iPhone glass (white 42%->24%, blur 18px on ::before, rim + glow; input 34%) and add `.vo-chat-fade` under the bar: an 84px (tight, owner rejected a taller glow)
   canvas-coloured fade (0 -> 94%) so bubbles dissolve as they pass beneath (iMessage-style). Glass stays see-through at the fade's top edge.
 
 ### 26.14 Testing

@@ -1014,15 +1014,15 @@
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6);
     }
 
-    /* soft fade under the floating bar so bubbles dissolve as they pass beneath it (iMessage-style) */
+    /* tight fade only right behind the floating bar (keeps the bar readable without a big white glow up the screen) */
     .vo-chat-fade {
         pointer-events: none;
         position: absolute;
         inset-inline: 0;
         bottom: 0;
-        height: 128px;
+        height: 84px;
         z-index: 10;
-        background: linear-gradient(180deg, rgba(243, 243, 246, 0) 0%, rgba(243, 243, 246, 0.6) 40%, rgba(243, 243, 246, 0.94) 100%);
+        background: linear-gradient(180deg, rgba(243, 243, 246, 0) 0%, rgba(243, 243, 246, 0.45) 35%, rgba(243, 243, 246, 0.86) 100%);
     }
 
     /* flat blue "+" (no shadow: the button sits in a clipped animation wrapper, a shadow would show a hard edge) */
@@ -1066,7 +1066,7 @@
     }
 
     .dark .vo-chat-fade {
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0.85) 100%);
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.45) 35%, rgba(0, 0, 0, 0.86) 100%);
     }
 
     .dark .vo-chat-input {
