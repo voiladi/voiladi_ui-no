@@ -464,7 +464,11 @@
 - Open-at-bottom: instant jump on first render (+ retries while media loads, ResizeObserver keeps pinned); new messages glide down only when already near the bottom (stickToBottom).
 - Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
 
-### 26.12 Testing
+### 26.12 Composer legibility + flat plus (2026-09-12)
+- Composer glass 86%->72% white, blur 26px; input pill 82% white -> readable over black bubbles. `.vo-plus-btn` shadow removed (it was clipped by the animation wrapper -> hard edge).
+- Testing agent iteration 26: all pass (floating bar, plus, legibility, focus expansion, open-at-bottom, bot reply).
+
+### 26.13 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---
