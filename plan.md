@@ -448,7 +448,14 @@
 - Shell 1.3.0 (versionCode 4, UA VoiladiApp/1.4): hasCamera()/shellVersion() bridge, DownloadListener -> system browser, runtime CAMERA/RECORD_AUDIO prompt.
 - Dockerfile passes REACT_APP_APK_UPDATE_URL build arg; Railway var set on voiladi-web.
 
-### 26.10 Testing
+### 26.10 Test bots for chat (2026-09-12)
+- `backend/bots.py`: `seed_chats_for(user)` builds a full inbox with the 24 sample profiles (8 convos w/ history + unread, 2 fresh matches,
+  3 incoming DM requests, 1 outgoing request, 10 likes); `schedule_bot_reply` makes sample profiles read + type + reply 2-5s after any
+  text/media the real person sends (scripted replies, no AI). Hooked into routes_chat.send_message and routes_media complete.
+- Admin: `POST/DELETE /api/admin/seed/chats?username=arin`, `POST /api/admin/verifications/{id}/grant` (operator verify override).
+- Production: @arin seeded + granted verification so messaging works.
+
+### 26.11 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

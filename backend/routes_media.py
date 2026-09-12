@@ -296,6 +296,8 @@ async def media_complete(upload_id: str, user=Depends(get_current_user)):
                "sender_name": user.get("name") or "Someone", "sender_photo": (user.get("photos") or [None])[0]}
     await manager.send(other, payload)
     await manager.send(user["id"], payload)
+    from bots import schedule_bot_reply  # local import: bots depends on core/ws only
+    schedule_bot_reply(match, await db.users.find_one({"id": other, "is_seed": True}, {"_id": 0, "id": 1, "name": 1, "photos": 1, "is_seed": 1}), user["id"], "", up["kind"])
 
     if up["kind"] == "video":
         asyncio.create_task(_finish_video(msg_id, match, raw, MEDIA_DIR / fname, MEDIA_DIR / media["poster_file"], max_edge, upload_id))

@@ -116,3 +116,19 @@ async def approve_verification(user_id: str, body: ReviewIn = ReviewIn(), x_admi
 async def reject_verification(user_id: str, body: ReviewIn = ReviewIn(), x_admin_key: Optional[str] = Header(default=None)):
     require_admin(x_admin_key)
     return await _review(user_id, False, body.note or "")
+
+
+@router.post("/admin/verifications/{user_id}/grant")
+async def grant_verification(user_id: str, body: ReviewIn = ReviewIn(), x_admin_key: Optional[str] = Header(default=None)):
+    """Operator override: mark an account verified without a selfie (e.g. the owner's own test account)."""
+    require_admin(x_admin_key)
+    u = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    v = {**(u.get("verification") or {}), "status": "approved", "reviewed_at": now_iso(), "note": (body.note or "granted by operator")[:200]}
+    v.setdefault("selfie_url", None)
+    v.setdefault("submitted_at", now_iso())
+    await db.users.update_one({"id": user_id}, {"$set": {"verification": v, "verified": True}})
+    await manager.send(user_id, {"type": "verification", "status": "approved", "note": v["note"]})
+    u["verification"] = v
+    return _row(u)

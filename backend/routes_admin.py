@@ -98,6 +98,37 @@ async def admin_delete_user(user_id: str, x_admin_key: Optional[str] = Header(de
             "removed": removed}
 
 
+# ---------- test inbox: sample profiles chat with a real account ----------
+@router.post("/seed/chats")
+async def seed_chats(username: Optional[str] = None, user_id: Optional[str] = None, reset: bool = True,
+                     x_admin_key: Optional[str] = Header(default=None)):
+    """Give @username a full test inbox (conversations, fresh matches, requests, likes) with the sample profiles.
+    Sample profiles then auto-reply to anything this account sends them."""
+    require_admin(x_admin_key)
+    from bots import seed_chats_for
+    from seed import seed as seed_profiles
+    q = {"id": user_id} if user_id else {"username": (username or "").lstrip("@").lower()}
+    user = await db.users.find_one(q, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if await db.users.count_documents({"is_seed": True}) < 14:
+        await seed_profiles()
+    created = await seed_chats_for(user, reset=reset)
+    return {"ok": True, "user": {"id": user["id"], "name": user.get("name"), "username": user.get("username")}, "created": created}
+
+
+@router.delete("/seed/chats")
+async def unseed_chats(username: Optional[str] = None, user_id: Optional[str] = None, x_admin_key: Optional[str] = Header(default=None)):
+    """Remove the test inbox again (sample profiles stay)."""
+    require_admin(x_admin_key)
+    from bots import clear_chats_for
+    q = {"id": user_id} if user_id else {"username": (username or "").lstrip("@").lower()}
+    user = await db.users.find_one(q, {"_id": 0, "id": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"ok": True, "removed": await clear_chats_for(user["id"])}
+
+
 # ---------- demo data (sample profiles flagged is_seed) ----------
 @router.get("/seed")
 async def seed_status(x_admin_key: Optional[str] = Header(default=None)):

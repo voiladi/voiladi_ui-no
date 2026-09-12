@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from core import is_verified, db, now_iso, get_current_user, public_profile
 from ws_manager import manager
+from bots import schedule_bot_reply
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -225,6 +226,8 @@ async def send_message(match_id: str, body: MessageIn, user=Depends(get_current_
                "sender_name": user.get("name") or "Someone", "sender_photo": (user.get("photos") or [None])[0]}
     await manager.send(other, payload)
     await manager.send(user["id"], payload)
+    # sample profiles answer back so chat can be tested end to end (no-op for real people)
+    schedule_bot_reply(match, await db.users.find_one({"id": other, "is_seed": True}, {"_id": 0, "id": 1, "name": 1, "photos": 1, "is_seed": 1}), user["id"], text)
     return msg
 
 

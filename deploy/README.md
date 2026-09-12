@@ -104,3 +104,7 @@ The phones on voiladi.com show REAL screenshots of the app (`frontend/public/lan
 Re-capture after UI changes: log in as a fresh onboarded account (e.g. arin.landing@voiladi.com on preview, profile name Rin @rin), screenshot /explore /chats /likes /profile
 at viewport 390x844 device_scale_factor=2, convert to WebP q82, then redeploy voiladi-web.
 NOTE: /landing/*.webp is edge-cached for 7 days; when re-capturing, give the file a NEW name (e.g. explore-v3.webp) and update SCREENS in PhoneScreens.jsx.
+
+## Test bots
+- `POST https://api.voiladi.com/api/admin/seed/chats?username=<handle>` (x-admin-key) fills that inbox with sample-profile chats; `DELETE` removes them.
+- Sample profiles auto-reply (typing + Seen + reply in 2-5s) to anything a real account sends them.
