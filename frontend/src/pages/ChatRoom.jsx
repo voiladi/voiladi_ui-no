@@ -1141,7 +1141,6 @@ export default function ChatRoom() {
         </div>
       ) : (
         <>
-          <div className="vo-chat-fade" aria-hidden="true" />
           <form
             className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4"
             style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
