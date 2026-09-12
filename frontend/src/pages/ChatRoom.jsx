@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, MoreHorizontal, ArrowUp, Check, CheckCheck, UserRound, Ban, ShieldAlert, HeartOff, Heart, Trash2, Copy, Undo2, Plus, Smile, Image as ImageIcon, Mic, Phone, Video } from "lucide-react";
@@ -155,6 +155,8 @@ export default function ChatRoom() {
   const [openingId, setOpeningId] = useState(null); // view-once being fetched
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
+  const listRef = useRef(null);
+  const stickToBottom = useRef(true); // pinned to the newest message until the person scrolls up
   const inputRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
@@ -259,9 +261,43 @@ export default function ChatRoom() {
     return () => clearInterval(t);
   }, [connected, loading, matchId, mergeMessages]);
 
+  const jumpToBottom = useCallback(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
+
+  // Opening a chat always starts at the newest message: jump instantly (no visible scroll) as soon as the
+  // history renders, and again while avatars / media finish loading and change the height.
+  useLayoutEffect(() => {
+    if (loading) return;
+    stickToBottom.current = true;
+    jumpToBottom();
+    const timers = [40, 160, 400, 900].map((ms) => setTimeout(jumpToBottom, ms));
+    return () => timers.forEach(clearTimeout);
+  }, [loading, matchId, jumpToBottom]);
+
+  // stay pinned while content grows (images decoding, bubbles appearing) unless the person scrolled up
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, typing]);
+    const el = listRef.current;
+    if (!el || loading || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      if (stickToBottom.current) jumpToBottom();
+    });
+    Array.from(el.children).forEach((c) => ro.observe(c));
+    return () => ro.disconnect();
+  }, [loading, messages.length, jumpToBottom]);
+
+  const onListScroll = () => {
+    const el = listRef.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
+
+  // new messages / typing: glide down only if we're already near the bottom
+  useEffect(() => {
+    if (loading) return;
+    if (stickToBottom.current) bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, typing, loading]);
 
   const onType = (v) => {
     setText(v);
@@ -552,7 +588,7 @@ export default function ChatRoom() {
       )}
 
       {/* messages */}
-      <div className={`vo-scroll px-3.5 pt-2 ${composerHidden || !user?.verified || loading ? "pb-3" : "pb-[84px]"}`} data-testid="chat-messages">
+      <div ref={listRef} onScroll={onListScroll} className={`vo-scroll px-3.5 pt-2 ${composerHidden || !user?.verified || loading ? "pb-3" : "pb-[84px]"}`} data-testid="chat-messages">
         {loading ? (
           <div className="flex h-full min-h-[40vh] items-center justify-center text-ink" data-testid="chat-loading">
             <Spinner size={28} stroke={2.5} />

@@ -461,6 +461,7 @@
 - Composer: one transparent glass bar (`.vo-chat-composer`): glossy blue + (photo/video), 'Message...' pill, smile (vibe prompts), image, mic (coming soon) that turns into the black send arrow when typing.
 - Composer floats (absolute, z-20) over the message list with see-through glass (white 34%->18%, blur 18px, bright rim + glow); compact 52px bar, flat iOS-blue 40px +, 22px icons; list gets 84px bottom padding.
 - Focus/typing expands the field to the full bar (framer width/opacity 220ms): +, smile, image, mic collapse; only the black send arrow remains. Send keeps keyboard focus; collapses on blur when empty.
+- Open-at-bottom: instant jump on first render (+ retries while media loads, ResizeObserver keeps pinned); new messages glide down only when already near the bottom (stickToBottom).
 - Existing features untouched: media, view-once, long-press actions, requests bar, verify gate, report/block.
 
 ### 26.12 Testing
