@@ -141,6 +141,7 @@ export default function ChatRoom() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [focused, setFocused] = useState(false); // composer expands to the full bar while typing
   const [typing, setTyping] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [icebreakers, setIcebreakers] = useState(false);
@@ -473,6 +474,7 @@ export default function ChatRoom() {
   };
 
   const composerHidden = isRequestForMe;
+  const composerExpanded = focused || !!text.trim();
 
   return (
     <div className="vo-neu-page relative flex h-full flex-col" data-testid="chat-room" data-kind={match?.kind} data-status={match?.status}>
@@ -702,16 +704,28 @@ export default function ChatRoom() {
             data-testid="chat-media-input"
           />
           {/* one transparent glass bar: + | message pill | smile · photo · mic/send */}
-          <div className="vo-chat-composer pointer-events-auto flex items-end gap-2 p-[6px]" data-testid="chat-composer">
-            <button type="button" className="vo-plus-btn flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" data-testid="chat-attach-button">
-              <Plus className="h-[22px] w-[22px]" strokeWidth={2.4} />
-            </button>
-            <div className="vo-chat-input flex min-h-[40px] flex-1 items-end rounded-full px-3.5">
+          <div className="vo-chat-composer pointer-events-auto flex items-end gap-2 p-[6px]" data-testid="chat-composer" data-expanded={composerExpanded ? "true" : "false"}>
+            {/* + collapses away while typing */}
+            <motion.div
+              initial={false}
+              animate={composerExpanded ? { width: 0, opacity: 0, scale: 0.6, marginRight: -8 } : { width: 40, opacity: 1, scale: 1, marginRight: 0 }}
+              transition={tween(0.22)}
+              className="flex h-[40px] shrink-0 items-center overflow-hidden"
+              style={{ pointerEvents: composerExpanded ? "none" : "auto" }}
+            >
+              <button type="button" className="vo-plus-btn flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" tabIndex={composerExpanded ? -1 : 0} data-testid="chat-attach-button">
+                <Plus className="h-[22px] w-[22px]" strokeWidth={2.4} />
+              </button>
+            </motion.div>
+
+            <motion.div layout transition={tween(0.22)} className="vo-chat-input flex min-h-[40px] flex-1 items-end rounded-full px-3.5">
               <textarea
                 ref={inputRef}
                 rows={1}
                 value={text}
                 onChange={(e) => onType(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setTimeout(() => setFocused(false), 80)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -723,23 +737,52 @@ export default function ChatRoom() {
                 style={{ height: Math.min(110, 20 + 20 * Math.max(1, text.split("\n").length)) }}
                 data-testid="chat-message-input"
               />
-            </div>
-            <div className="flex h-[40px] shrink-0 items-center pr-0.5">
-              <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
-                <Smile className="h-[22px] w-[22px]" strokeWidth={1.9} />
-              </button>
-              <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-photo-button">
-                <ImageIcon className="h-[22px] w-[22px]" strokeWidth={1.9} />
-              </button>
-              {text.trim() ? (
-                <button type="submit" disabled={sending} aria-busy={sending} className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} aria-label="Send" data-testid="chat-send-button">
-                  {sending ? <Spinner size={16} stroke={2.4} /> : <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.6} />}
+            </motion.div>
+
+            {/* smile · photo · mic collapse away while typing; the send arrow takes their place */}
+            <div className="flex h-[40px] shrink-0 items-center">
+              <motion.div
+                initial={false}
+                animate={composerExpanded ? { width: 0, opacity: 0, scale: 0.7 } : { width: 102, opacity: 1, scale: 1 }}
+                transition={tween(0.22)}
+                className="flex h-[40px] items-center overflow-hidden"
+                style={{ pointerEvents: composerExpanded ? "none" : "auto" }}
+              >
+                <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" tabIndex={composerExpanded ? -1 : 0} data-testid="chat-icebreakers-open-button">
+                  <Smile className="h-[22px] w-[22px]" strokeWidth={1.9} />
                 </button>
-              ) : (
-                <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => notice("Voice messages are coming soon")} aria-label="Voice message" data-testid="chat-mic-button">
+                <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" tabIndex={composerExpanded ? -1 : 0} data-testid="chat-photo-button">
+                  <ImageIcon className="h-[22px] w-[22px]" strokeWidth={1.9} />
+                </button>
+                <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => notice("Voice messages are coming soon")} aria-label="Voice message" tabIndex={composerExpanded ? -1 : 0} data-testid="chat-mic-button">
                   <Mic className="h-[22px] w-[22px]" strokeWidth={1.9} />
                 </button>
-              )}
+              </motion.div>
+              <AnimatePresence initial={false}>
+                {composerExpanded && (
+                  <motion.button
+                    key="send"
+                    type="submit"
+                    initial={{ width: 0, opacity: 0, scale: 0.6 }}
+                    animate={{ width: 36, opacity: 1, scale: 1 }}
+                    exit={{ width: 0, opacity: 0, scale: 0.6 }}
+                    transition={tween(0.22)}
+                    disabled={!text.trim() || sending}
+                    aria-busy={sending}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      sendMessage();
+                    }}
+                    className="flex h-[36px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40"
+                    aria-label="Send"
+                    data-testid="chat-send-button"
+                  >
+                    {sending ? <Spinner size={16} stroke={2.4} /> : <ArrowUp className="h-[18px] w-[18px] shrink-0" strokeWidth={2.6} />}
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </form>
