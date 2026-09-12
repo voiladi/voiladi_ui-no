@@ -1002,18 +1002,11 @@
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.6);
     }
 
-    /* glossy blue "+" sphere */
+    /* flat blue "+" (iOS system blue, no 3D) */
     .vo-plus-btn {
         color: #fff;
-        background:
-            radial-gradient(90% 70% at 32% 22%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.15) 38%, rgba(255, 255, 255, 0) 60%),
-            radial-gradient(100% 100% at 50% 100%, #0F3FD0 0%, rgba(15, 63, 208, 0) 60%),
-            linear-gradient(180deg, #6A9BFF 0%, #2F6BFF 50%, #1748E0 100%);
-        box-shadow:
-            0 8px 20px rgba(31, 79, 214, 0.45),
-            0 0 0 1px rgba(255, 255, 255, 0.35),
-            inset 0 -4px 8px rgba(0, 20, 90, 0.35),
-            inset 0 1px 1px rgba(255, 255, 255, 0.7);
+        background: var(--blue);
+        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.28);
         transition-property: transform, opacity;
         transition-duration: 120ms;
     }

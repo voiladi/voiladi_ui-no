@@ -550,7 +550,7 @@ export default function ChatRoom() {
       )}
 
       {/* messages */}
-      <div className={`vo-scroll px-3.5 pt-2 ${composerHidden || !user?.verified || loading ? "pb-3" : "pb-[104px]"}`} data-testid="chat-messages">
+      <div className={`vo-scroll px-3.5 pt-2 ${composerHidden || !user?.verified || loading ? "pb-3" : "pb-[84px]"}`} data-testid="chat-messages">
         {loading ? (
           <div className="flex h-full min-h-[40vh] items-center justify-center text-ink" data-testid="chat-loading">
             <Spinner size={28} stroke={2.5} />
@@ -702,11 +702,11 @@ export default function ChatRoom() {
             data-testid="chat-media-input"
           />
           {/* one transparent glass bar: + | message pill | smile · photo · mic/send */}
-          <div className="vo-chat-composer pointer-events-auto flex items-end gap-2.5 p-[9px]" data-testid="chat-composer">
-            <button type="button" className="vo-plus-btn flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" data-testid="chat-attach-button">
-              <Plus className="h-7 w-7" strokeWidth={2.2} />
+          <div className="vo-chat-composer pointer-events-auto flex items-end gap-2 p-[6px]" data-testid="chat-composer">
+            <button type="button" className="vo-plus-btn flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full" onClick={() => fileRef.current?.click()} aria-label="Add a photo or video" data-testid="chat-attach-button">
+              <Plus className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </button>
-            <div className="vo-chat-input flex min-h-[48px] flex-1 items-end rounded-full px-4">
+            <div className="vo-chat-input flex min-h-[40px] flex-1 items-end rounded-full px-3.5">
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -719,25 +719,25 @@ export default function ChatRoom() {
                   }
                 }}
                 placeholder="Message..."
-                className="max-h-[120px] w-full resize-none bg-transparent py-[13px] text-[17px] leading-[22px] text-ink outline-none placeholder:text-mute/80"
-                style={{ height: Math.min(120, 26 + 22 * Math.max(1, text.split("\n").length)) }}
+                className="max-h-[110px] w-full resize-none bg-transparent py-[10px] text-[15.5px] leading-[20px] text-ink outline-none placeholder:text-mute/80"
+                style={{ height: Math.min(110, 20 + 20 * Math.max(1, text.split("\n").length)) }}
                 data-testid="chat-message-input"
               />
             </div>
-            <div className="flex h-[50px] shrink-0 items-center pr-0.5">
-              <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
-                <Smile className="h-[26px] w-[26px]" strokeWidth={1.9} />
+            <div className="flex h-[40px] shrink-0 items-center pr-0.5">
+              <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => setIcebreakers(true)} aria-label="Vibe check prompts" data-testid="chat-icebreakers-open-button">
+                <Smile className="h-[22px] w-[22px]" strokeWidth={1.9} />
               </button>
-              <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-photo-button">
-                <ImageIcon className="h-[26px] w-[26px]" strokeWidth={1.9} />
+              <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => fileRef.current?.click()} aria-label="Send a photo or video" data-testid="chat-photo-button">
+                <ImageIcon className="h-[22px] w-[22px]" strokeWidth={1.9} />
               </button>
               {text.trim() ? (
-                <button type="submit" disabled={sending} aria-busy={sending} className="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} aria-label="Send" data-testid="chat-send-button">
-                  {sending ? <Spinner size={18} stroke={2.4} /> : <ArrowUp className="h-5 w-5" strokeWidth={2.6} />}
+                <button type="submit" disabled={sending} aria-busy={sending} className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-ink text-onink active:scale-95 disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} aria-label="Send" data-testid="chat-send-button">
+                  {sending ? <Spinner size={16} stroke={2.4} /> : <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.6} />}
                 </button>
               ) : (
-                <button type="button" className="flex h-[44px] w-[38px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => notice("Voice messages are coming soon")} aria-label="Voice message" data-testid="chat-mic-button">
-                  <Mic className="h-[26px] w-[26px]" strokeWidth={1.9} />
+                <button type="button" className="flex h-[40px] w-[34px] items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" onClick={() => notice("Voice messages are coming soon")} aria-label="Voice message" data-testid="chat-mic-button">
+                  <Mic className="h-[22px] w-[22px]" strokeWidth={1.9} />
                 </button>
               )}
             </div>
