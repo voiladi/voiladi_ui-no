@@ -441,7 +441,14 @@
 - Android shell (MainActivity.onPermissionRequest): asks the system CAMERA / RECORD_AUDIO runtime permission first, then grants to the page; REQ_CAMERA result handler. Manifest adds RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (ready for calls).
 - APK 1.2.0 (versionCode 3) built with the release keystore -> frontend/public/voiladi.apk + deploy/android/voiladi-1.2.0.apk; deployed.
 
-### 26.9 Testing
+### 26.9 Camera spinner fix + APK 1.3.0 (2026-09-12)
+- Root cause of endless spinner: shells before 1.4 never answer the page's camera request. Web now detects the shell via `VoiladiNative.hasCamera()`
+  (nativeSupportsCamera) and shows 'Update the Voiladi app' + Download update (REACT_APP_APK_UPDATE_URL -> Railway host, which old shells open in Chrome).
+  getUserMedia also has a 20s timeout -> 'Camera didn't respond' with retry; error name shown small for support.
+- Shell 1.3.0 (versionCode 4, UA VoiladiApp/1.4): hasCamera()/shellVersion() bridge, DownloadListener -> system browser, runtime CAMERA/RECORD_AUDIO prompt.
+- Dockerfile passes REACT_APP_APK_UPDATE_URL build arg; Railway var set on voiladi-web.
+
+### 26.10 Testing
 - Testing agent iteration 25: 100% pass (landing render mobile+desktop, carousel, toast, side menu, redirects, auth flows, signed-in redirect).
 
 ---

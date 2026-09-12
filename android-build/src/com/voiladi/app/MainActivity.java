@@ -143,13 +143,23 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.3");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.4");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         WebView.setWebContentsDebuggingEnabled(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setBackgroundColor(Color.WHITE);
         web.addJavascriptInterface(new Bridge(), "VoiladiNative");
+        // file downloads (e.g. a newer voiladi.apk) are handed to the system browser / download manager
+        web.setDownloadListener(new android.webkit.DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                } catch (Exception ignored) {
+                }
+            }
+        });
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -404,6 +414,17 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean isNative() {
             return true;
+        }
+
+        /** Present from shell 1.4: the WebView can open the live camera (runtime permission is requested on demand). */
+        @JavascriptInterface
+        public boolean hasCamera() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public String shellVersion() {
+            return "1.4";
         }
     }
 

@@ -23,3 +23,9 @@ const call = (name, ...args) => {
 export const nativeSetToken = (token) => (token ? call("setToken", token) : call("clearToken"));
 export const nativeReady = () => call("ready");
 export const nativeOpenSettings = () => call("openSettings");
+
+/* Shell 1.4+ exposes hasCamera(): older shells never answer the page's camera request, so the web app must not wait on them. */
+export const nativeSupportsCamera = () => {
+  const b = bridge();
+  return !!b && typeof b.hasCamera === "function";
+};

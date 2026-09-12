@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, RotateCcw, Clock, Sun, Glasses, ScanFace, Scan, CameraOff } from "lucide-react";
+import { Camera, RotateCcw, Clock, Sun, Glasses, ScanFace, Scan, CameraOff, Download } from "lucide-react";
 import { Spinner } from "@/components/Loading";
 import { SoftCard } from "@/components/SoftUI";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { isNativeApp, nativeSupportsCamera } from "@/lib/native";
 import { FlowPage, FlowTitle, FlowSub, StatusCircle, TipsCard, FlowButton } from "@/components/verification/VerifyUI";
 
 /*
@@ -31,7 +32,11 @@ export default function Verify() {
   const streamRef = useRef(null);
   const status = user?.verified ? "approved" : user?.verification?.status || "none";
   const [step, setStep] = useState(status === "pending" ? "sent" : "tips"); // tips | camera | review | sent
-  const [camera, setCamera] = useState("idle"); // idle | starting | live | denied | unsupported
+  const [camera, setCamera] = useState("idle"); // idle | starting | live | denied | unsupported | update
+  const [cameraError, setCameraError] = useState("");
+  // Older Android shells (before 1.4) never answer the camera request - the page would spin forever. Send them to update.
+  const needsAppUpdate = isNativeApp() && !nativeSupportsCamera();
+  const APK_UPDATE_URL = process.env.REACT_APP_APK_UPDATE_URL || "/voiladi.apk";
   const [shot, setShot] = useState(null); // { blob, url }
   const [sending, setSending] = useState(false);
 
@@ -42,19 +47,30 @@ export default function Verify() {
 
   const start = async () => {
     stop();
+    setCameraError("");
+    if (needsAppUpdate) {
+      setCamera("update");
+      return;
+    }
     setCamera("starting");
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error("no camera api");
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1440 } }, audio: false });
+      if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("no camera api"), { name: "Unsupported" });
+      // never hang on a permission prompt that is never answered
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error("timeout"), { name: "TimeoutError" })), 20000));
+      const stream = await Promise.race([
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1440 } }, audio: false }),
+        timeout,
+      ]);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => {});
       }
       setCamera("live");
     } catch (e) {
       // Live camera only - there is deliberately no gallery/file fallback (the selfie must be taken right now).
-      setCamera(e && (e.name === "NotAllowedError" || e.name === "SecurityError" || e.name === "PermissionDeniedError") ? "denied" : navigator.mediaDevices?.getUserMedia ? "denied" : "unsupported");
+      setCameraError(e?.name || "");
+      setCamera(e?.name === "Unsupported" ? "unsupported" : "denied");
     }
   };
 
@@ -175,7 +191,11 @@ export default function Verify() {
         testId="verify-page"
         data-step="camera"
         cta={
-          camera === "denied" || camera === "unsupported" ? (
+          camera === "update" ? (
+            <a href={APK_UPDATE_URL} className="inline-flex h-[58px] w-full items-center justify-center gap-2 rounded-full bg-ink text-[clamp(18px,5.2cqi,20px)] font-semibold tracking-[-0.01em] text-onink active:scale-[0.98]" style={{ transitionProperty: "transform", transitionDuration: "120ms" }} data-testid="verify-update-app-button">
+              <Download className="h-6 w-6" strokeWidth={2.2} /> Download update
+            </a>
+          ) : camera === "denied" || camera === "unsupported" ? (
             <FlowButton onClick={start} disabled={camera === "unsupported"} testId="verify-allow-camera-button">
               <Camera className="h-6 w-6" strokeWidth={2.2} /> Allow camera
             </FlowButton>
@@ -198,12 +218,20 @@ export default function Verify() {
                 <Spinner size={28} stroke={2.5} />
               </div>
             )}
+            {camera === "update" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-7 text-center" data-testid="verify-camera-update">
+                <Download className="h-11 w-11 text-mute" strokeWidth={1.6} />
+                <p className="mt-4 text-[19px] font-semibold tracking-[-0.01em] text-ink">Update the Voiladi app</p>
+                <p className="mt-1.5 text-[15px] leading-[20px] text-mute">Live camera verification needs the latest version of the app. Download the update, install it over the current one, and come back here.</p>
+              </div>
+            )}
             {camera === "denied" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center px-7 text-center" data-testid="verify-camera-denied">
                 <CameraOff className="h-11 w-11 text-mute" strokeWidth={1.6} />
-                <p className="mt-4 text-[19px] font-semibold tracking-[-0.01em] text-ink">Camera access needed</p>
+                <p className="mt-4 text-[19px] font-semibold tracking-[-0.01em] text-ink">{cameraError === "TimeoutError" ? "Camera didn't respond" : "Camera access needed"}</p>
                 <p className="mt-1.5 text-[15px] leading-[20px] text-mute">Verification uses a live selfie, so photos from your gallery can't be used. Allow camera access to continue.</p>
-                <p className="mt-3 text-[13px] leading-[17px] text-mute">If you've blocked it before, turn it on in your phone's Settings › Apps › Voiladi › Permissions.</p>
+                <p className="mt-3 text-[13px] leading-[17px] text-mute">If you've blocked it before, turn it on in your phone's Settings › Apps › Voiladi › Permissions › Camera.</p>
+                {cameraError && <p className="mt-2 text-[11px] text-mute/70" data-testid="verify-camera-error">{cameraError}</p>}
               </div>
             )}
             {camera === "unsupported" && (

@@ -6,7 +6,9 @@ RUN yarn install --frozen-lockfile --network-timeout 600000
 COPY . .
 # Railway passes service variables as build args; CRA bakes REACT_APP_* in at build time.
 ARG REACT_APP_BACKEND_URL
+ARG REACT_APP_APK_UPDATE_URL
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL \
+    REACT_APP_APK_UPDATE_URL=$REACT_APP_APK_UPDATE_URL \
     CI=false \
     GENERATE_SOURCEMAP=false \
     NODE_OPTIONS=--max-old-space-size=4096
