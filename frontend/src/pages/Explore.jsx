@@ -269,7 +269,7 @@ export default function Explore() {
         <div className="mt-4">
           <SoftSearch inputRef={searchRef} value={q} onChange={setQ} onClear={() => setQ("")} placeholder="Search people, interests, or communities" testId="explore-search-input" />
         </div>
-        {!s && <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="explore-tab" className="mt-4" />}
+        {!s && <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="explore-tab" className="vo-seg-inbox mt-5 mb-1" />}
       </header>
 
       <div className="mt-4 flex flex-col gap-4 px-[clamp(14px,5cqi,20px)]">

@@ -149,7 +149,7 @@ export default function Likes() {
             </span>
           }
         />
-        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="mt-4" />
+        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="vo-seg-inbox mt-5 mb-1" />
       </header>
 
       {loading ? (
