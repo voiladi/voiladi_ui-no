@@ -126,8 +126,9 @@
         --soft-shadow-lg: -16px -16px 36px var(--neu-light), 20px 20px 48px var(--neu-dark);
         --neu-inset: inset 5px 5px 12px rgba(0, 0, 0, 0.6), inset -5px -5px 12px rgba(255, 255, 255, 0.03);
         --neu-seg-on: -3px -3px 8px rgba(255, 255, 255, 0.03), 4px 4px 12px rgba(0, 0, 0, 0.6);
-        --glass-lens: linear-gradient(180deg, rgba(90, 90, 96, 0.55) 0%, rgba(60, 60, 66, 0.4) 100%);
-        --glass-lens-shadow: 0 14px 30px rgba(0, 0, 0, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4), inset 0 1.5px 1px rgba(255, 255, 255, 0.22), inset 0 -1px 1px rgba(0, 0, 0, 0.3);
+        /* dark lens: smoked glass - a faint neutral tint with a hairline rim, never a silver blob */
+        --glass-lens: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.06) 100%);
+        --glass-lens-shadow: 0 10px 26px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 -1px 0.5px rgba(0, 0, 0, 0.35), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
         --soft-art-hi: #2E2E31;
         --soft-art-lo: #1E1E21;
         --soft-art-back-hi: #262629;
@@ -1174,6 +1175,16 @@
         opacity: 1;
     }
 
+    /* dark mode: no white wash - the lens reads as smoked glass with a thin top highlight */
+    .dark .vo-gseg-thumb::after {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.02) 100%);
+    }
+
+    .dark .vo-gseg.is-lifted .vo-gseg-thumb {
+        -webkit-backdrop-filter: blur(10px) saturate(130%);
+        backdrop-filter: blur(10px) saturate(130%);
+    }
+
     .vo-gseg-item {
         position: relative;
         z-index: 1;
@@ -1220,6 +1231,12 @@
 
     .vo-gseg-nav.is-lifted .vo-gseg-thumb-nav {
         box-shadow: var(--glass-lens-shadow);
+    }
+
+    .dark .vo-gseg-thumb-nav {
+        -webkit-backdrop-filter: blur(10px) saturate(130%);
+        backdrop-filter: blur(10px) saturate(130%);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 -1px 0.5px rgba(0, 0, 0, 0.35), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
     }
 
     .vo-gseg-nav .vo-gseg-thumb::after {
