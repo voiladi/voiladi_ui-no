@@ -1,12 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, Images } from "lucide-react";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Skeleton } from "@/components/Loading";
 import { compact } from "@/components/feed/PostCard";
 
 /* 3-up grid of post tiles (profile posts / saved). Tap opens the post full-screen. */
-export const PostsGrid = ({ posts, loading, emptyTitle = "No posts yet", emptyText = "", testId = "posts-grid" }) => {
+export const PostsGrid = ({ posts, loading, emptyTitle = "No posts yet", emptyText = "", emptyIcon: EmptyIcon = Images, testId = "posts-grid" }) => {
   const navigate = useNavigate();
   if (loading) {
     return (
@@ -19,9 +19,10 @@ export const PostsGrid = ({ posts, loading, emptyTitle = "No posts yet", emptyTe
   }
   if (!posts?.length) {
     return (
-      <div className="py-10 text-center" data-testid={`${testId}-empty`}>
-        <p className="text-[18px] font-bold text-ink">{emptyTitle}</p>
-        {emptyText && <p className="mt-1 text-[14.5px] text-mute">{emptyText}</p>}
+      <div className="flex flex-col items-center px-8 pb-10 pt-[38px] text-center" data-testid={`${testId}-empty`}>
+        <EmptyIcon className="h-[54px] w-[54px] text-mute/80" strokeWidth={1.5} />
+        <p className="mt-[22px] text-[24px] font-bold leading-[28px] tracking-[-0.02em] text-ink">{emptyTitle}</p>
+        {emptyText && <p className="mt-[8px] max-w-[300px] text-[17px] leading-[24px] tracking-[-0.01em] text-mute">{emptyText}</p>}
       </div>
     );
   }

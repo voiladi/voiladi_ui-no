@@ -150,6 +150,15 @@ async def saved_posts(user=Depends(get_current_user)):
     return {"posts": await _decorate(ordered, user)}
 
 
+@router.get("/posts/liked")
+async def liked_posts(user=Depends(get_current_user)):
+    likes = await db.post_likes.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(300)
+    ids = [l["post_id"] for l in likes]
+    rows = {p["id"]: p for p in await db.posts.find({"id": {"$in": ids}}, {"_id": 0}).to_list(None)}
+    ordered = [rows[i] for i in ids if i in rows]
+    return {"posts": await _decorate(ordered, user)}
+
+
 @router.get("/users/{user_id}/posts")
 async def user_posts(user_id: str, user=Depends(get_current_user)):
     if user_id != user["id"] and await _blocked_between(user["id"], user_id):
@@ -465,6 +474,7 @@ async def ensure_indexes():
     await db.posts.create_index([("created_at", -1)])
     await db.posts.create_index("user_id")
     await db.post_likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.post_likes.create_index([("user_id", 1), ("created_at", -1)])
     await db.post_saves.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await db.post_saves.create_index([("user_id", 1), ("created_at", -1)])
     await db.post_hidden.create_index([("post_id", 1), ("user_id", 1)], unique=True)

@@ -15,7 +15,13 @@ import {
   CircleHelp,
   Plus,
   Bookmark,
+  Menu,
+  Share2,
+  UserRound,
+  Grip,
+  Heart,
 } from "lucide-react";
+import { Brand } from "@/components/Logo";
 import { useQuery } from "@tanstack/react-query";
 import { PostsGrid } from "@/components/feed/PostsGrid";
 import { GlassSegmented } from "@/components/GlassSegmented";
@@ -38,20 +44,41 @@ import { Skeleton, Spinner } from "@/components/Loading";
 
 const Stat = ({ label, value, testId }) => (
   <div className="flex min-w-0 flex-1 flex-col items-center px-1">
-    <span
-      className="flex h-[26px] items-center text-[22px] font-bold leading-none tracking-[-0.01em] text-ink"
-      data-testid={testId}
-    >
+    <span className="flex h-[28px] items-center text-[24px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
       {value ?? <Skeleton className="h-4 w-7 rounded-full" />}
     </span>
-    <span className="mt-1 text-center text-[14px] leading-[1.1] tracking-[-0.01em] text-mute">
-      {label}
-    </span>
+    <span className="mt-[3px] text-center text-[15.5px] leading-[1.15] tracking-[-0.01em] text-mute">{label}</span>
   </div>
 );
 
-const StatDivider = () => (
-  <span className="h-9 w-px shrink-0 bg-line" aria-hidden="true" />
+const StatDivider = () => <span className="h-[38px] w-px shrink-0 bg-line" aria-hidden="true" />;
+
+/* flat light-grey round button (reference header: + / bell / menu) */
+const FlatIconButton = ({ icon: Icon, label, onClick, testId, strokeWidth = 2 }) => (
+  <button
+    type="button"
+    aria-label={label}
+    onClick={onClick}
+    className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-surface2 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue active:opacity-70"
+    style={{ transitionProperty: "opacity, transform", transitionDuration: "120ms" }}
+    data-testid={testId}
+  >
+    <Icon className="h-[21px] w-[21px]" strokeWidth={strokeWidth} />
+  </button>
+);
+
+/* flat light-grey pill with a leading icon (Edit profile / Share profile) */
+const FlatPill = ({ icon: Icon, label, onClick, testId }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex h-[34px] min-w-[141px] items-center justify-center gap-[10px] rounded-full bg-surface2 px-[18px] text-[15.5px] font-semibold leading-none tracking-[-0.01em] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue active:opacity-70"
+    style={{ transitionProperty: "opacity", transitionDuration: "120ms" }}
+    data-testid={testId}
+  >
+    <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+    {label}
+  </button>
 );
 
 /* Boost / Super Likes / VOILADI+ : raised icon tile, bold title, muted subtitle, raised value pill, chevron. */
@@ -200,6 +227,26 @@ export default function Profile() {
     queryFn: async () => (await api.get("/posts/saved")).data.posts,
     enabled: !!user && tab === "saved",
   });
+  const likedPosts = useQuery({
+    queryKey: ["liked-posts"],
+    queryFn: async () => (await api.get("/posts/liked")).data.posts,
+    enabled: !!user && tab === "liked",
+  });
+
+  const shareProfile = async () => {
+    const url = `${window.location.origin}/@${user?.username || ""}`;
+    const text = `${user?.name} on Voiladi${user?.username ? ` · @${user.username}` : ""}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: text, text, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      notice("Profile link copied");
+    } catch (e) {
+      if (e?.name !== "AbortError") notice(url);
+    }
+  };
 
   useEffect(() => {
     if (stats?.boost_active && boostLeft <= 0)
@@ -246,164 +293,112 @@ export default function Profile() {
       }}
       data-testid="profile-page"
     >
-      {/* header: identical to every other tab (brand left, round glass buttons right) */}
+      {/* header: brand left, three flat round buttons right (+ / bell / menu) */}
       <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
-        <SoftHeader
-          right={
-            <>
-              <SoftIconButton
-                icon={Plus}
-                label="New post"
-                onClick={() => navigate("/posts/new")}
-                testId="profile-new-post-button"
-                strokeWidth={2.2}
-              />
-              <span className="relative">
-                <SoftIconButton
-                  icon={Bell}
-                  label="Notifications"
-                  onClick={() => navigate("/notifications")}
-                  testId="profile-notifications-button"
-                  strokeWidth={1.9}
-                />
-                {unseen > 0 && (
-                  <span
-                    className="pointer-events-none absolute right-[9px] top-[8px] h-2 w-2 rounded-full bg-red ring-2 ring-[color:var(--soft-bg)]"
-                    data-testid="profile-notifications-dot"
-                  />
-                )}
-              </span>
-              <SoftIconButton
-                icon={Settings}
-                label="Settings"
-                onClick={() => navigate("/settings")}
-                testId="profile-settings-button"
-                strokeWidth={1.9}
-              />
-            </>
-          }
-        />
+        <div className="flex h-[64px] items-center justify-between">
+          <Brand size={40} />
+          <div className="flex items-center gap-[15px]">
+            <FlatIconButton icon={Plus} label="New post" onClick={() => navigate("/posts/new")} testId="profile-new-post-button" strokeWidth={2} />
+            <span className="relative">
+              <FlatIconButton icon={Bell} label="Notifications" onClick={() => navigate("/notifications")} testId="profile-notifications-button" strokeWidth={1.9} />
+              {unseen > 0 && (
+                <span className="pointer-events-none absolute right-[3px] top-[3px] h-[9px] w-[9px] rounded-full bg-red ring-2 ring-[color:var(--soft-bg)]" data-testid="profile-notifications-dot" />
+              )}
+            </span>
+            <FlatIconButton icon={Menu} label="Menu" onClick={() => navigate("/settings")} testId="profile-settings-button" strokeWidth={2} />
+          </div>
+        </div>
       </header>
 
-      {/* avatar + name / handle / edit */}
-      <section
-        className="mt-4 flex items-center gap-4 px-[clamp(14px,5cqi,20px)]"
-        data-testid="profile-summary-card"
-      >
+      {/* avatar (centred) + name / handle */}
+      <section className="mt-[10px] flex flex-col items-center px-[clamp(14px,5cqi,20px)]" data-testid="profile-summary-card">
         <button
           type="button"
-          className="relative h-[88px] w-[88px] shrink-0 rounded-full focus-visible:outline-none active:opacity-90"
+          className="relative h-[95px] w-[95px] shrink-0 rounded-full focus-visible:outline-none active:opacity-90"
           onClick={() => navigate("/profile/edit")}
           aria-label="Change photo"
           data-testid="profile-avatar-button"
         >
-          <UserPhoto
-            src={user.photos?.[0]}
-            name={user.name}
-            size="xs"
-            className="h-full w-full rounded-full text-[40px] font-medium shadow-[var(--soft-shadow)]"
-          />
-          <span className="vo-soft absolute -bottom-0.5 -right-0.5 flex h-[32px] w-[32px] items-center justify-center rounded-full text-ink">
-            <Camera className="h-4 w-4" strokeWidth={2} />
+          <UserPhoto src={user.photos?.[0]} name={user.name} size="xs" className="h-full w-full rounded-full bg-surface2 text-[44px] font-semibold text-mute" />
+          <span className="absolute -bottom-[1px] right-[-6px] flex h-[31px] w-[31px] items-center justify-center rounded-full bg-white text-ink shadow-[0_2px_8px_rgba(28,28,38,0.14),0_0_0_1px_rgba(28,28,38,0.04)] dark:bg-surface">
+            <Camera className="h-[17px] w-[17px]" strokeWidth={2} />
           </span>
         </button>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1
-              className="truncate text-[26px] font-bold leading-[1.15] tracking-[-0.02em] text-ink"
-              data-testid="profile-name"
-            >
-              {user.name}
-            </h1>
-            {user.verified && (
-              <VerifiedBadge size={22} testId="profile-verified-badge" />
-            )}
-          </div>
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[15px] leading-[20px] tracking-[-0.01em] text-mute">
-            {user.username && (
-              <span className="truncate" data-testid="profile-username">
-                @{user.username}
-              </span>
-            )}
-            {!user.verified && (
-              <>
-                {user.username && <span aria-hidden="true">·</span>}
-                <button
-                  type="button"
-                  onClick={() => navigate("/settings/verification")}
-                  className="inline-flex shrink-0 items-center gap-0.5 active:opacity-60 focus-visible:outline-none"
-                  data-testid="profile-not-verified-link"
-                  data-status={vstatus}
-                >
-                  {vstatus === "pending" ? "In review" : "Not verified"}
-                  <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
-                </button>
-              </>
-            )}
-          </div>
-          <SoftPill
-            className="vo-glass-tint mt-2.5 h-[34px] px-4 text-[15px]"
-            onClick={() => navigate("/profile/edit")}
-            testId="profile-edit-button"
-          >
-            Edit profile
-          </SoftPill>
+        <div className="mt-[10px] flex items-center gap-[7px]">
+          <h1 className="truncate text-[26px] font-bold leading-[30px] tracking-[-0.025em] text-ink" data-testid="profile-name">
+            {user.name}
+          </h1>
+          {user.verified && <VerifiedBadge size={22} testId="profile-verified-badge" />}
+        </div>
+        <div className="mt-[1px] flex items-center gap-1.5 text-[16px] leading-[20px] tracking-[-0.01em] text-mute">
+          {user.username && (
+            <span className="truncate" data-testid="profile-username">
+              @{user.username}
+            </span>
+          )}
+          {!user.verified && (
+            <>
+              {user.username && <span aria-hidden="true">·</span>}
+              <button type="button" onClick={() => navigate("/settings/verification")} className="inline-flex shrink-0 items-center gap-0.5 active:opacity-60 focus-visible:outline-none" data-testid="profile-not-verified-link" data-status={vstatus}>
+                {vstatus === "pending" ? "In review" : "Not verified"}
+                <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Edit profile / Share profile */}
+        <div className="mt-[16px] flex items-center gap-[9px]">
+          <FlatPill icon={UserRound} label="Edit profile" onClick={() => navigate("/profile/edit")} testId="profile-edit-button" />
+          <FlatPill icon={Share2} label="Share profile" onClick={shareProfile} testId="profile-share-button" />
         </div>
       </section>
 
-      {/* followers / following / views: one full-width row */}
-      <section
-        className="mt-6 flex items-center px-[clamp(14px,5cqi,20px)]"
-        data-testid="profile-stats"
-      >
-        <Stat
-          label="Followers"
-          value={stats?.followers}
-          testId="profile-stat-likes"
-        />
+      {/* followers / following / views */}
+      <section className="mt-[22px] flex items-center px-[clamp(14px,5cqi,20px)]" data-testid="profile-stats">
+        <Stat label="Followers" value={stats?.followers} testId="profile-stat-likes" />
         <StatDivider />
-        <Stat
-          label="Following"
-          value={stats?.following}
-          testId="profile-stat-following"
-        />
+        <Stat label="Following" value={stats?.following} testId="profile-stat-following" />
         <StatDivider />
-        <Stat
-          label="Profile views"
-          value={stats?.profile_views}
-          testId="profile-stat-views"
-        />
+        <Stat label="Profile views" value={stats?.profile_views} testId="profile-stat-views" />
       </section>
 
-      {/* Posts | Saved (glass segmented, same as Likes / Messages) */}
-      <section className="mx-4 mt-5" data-testid="profile-posts">
-        <GlassSegmented
-          options={[
-            { value: "posts", label: `Posts${myPosts.data?.length ? ` ${myPosts.data.length}` : ""}` },
-            { value: "saved", label: "Saved" },
-          ]}
-          value={tab}
-          onChange={setTab}
-          testIdPrefix="profile-tab"
-        />
-        <div className="mt-3">
+      {/* Posts | Saved | Likes : icon tabs with underline + hairline */}
+      <section className="mt-[20px]" data-testid="profile-posts">
+        <div className="relative flex border-b border-line/80" role="tablist" data-testid="profile-tab-track">
+          {[
+            { value: "posts", label: "Posts", icon: Grip },
+            { value: "saved", label: "Saved", icon: Bookmark },
+            { value: "liked", label: "Likes", icon: Heart },
+          ].map((t) => {
+            const on = tab === t.value;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setTab(t.value)}
+                className={`relative flex h-[62px] flex-1 flex-col items-center justify-center gap-[6px] text-[16px] font-medium leading-[19px] tracking-[-0.01em] focus-visible:outline-none active:opacity-70 ${on ? "font-semibold text-ink" : "text-mute"}`}
+                style={{ transitionProperty: "color", transitionDuration: "150ms" }}
+                data-testid={`profile-tab-${t.value}`}
+              >
+                <Icon className="h-[24px] w-[24px]" strokeWidth={on ? 2.2 : 1.7} fill={on && t.value === "posts" ? "currentColor" : "none"} />
+                {t.label}
+                {on && <span className="absolute -bottom-px left-1/2 h-[2px] w-[56px] -translate-x-1/2 rounded-full bg-ink" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+        <div className="px-[clamp(14px,5cqi,20px)] pt-[3px]">
           {tab === "posts" ? (
-            <PostsGrid
-              posts={myPosts.data}
-              loading={myPosts.isLoading}
-              emptyTitle="No posts yet"
-              emptyText="Share a photo or video of your day from the + button."
-              testId="profile-posts-grid"
-            />
+            <PostsGrid posts={myPosts.data} loading={myPosts.isLoading} emptyTitle="No posts yet" emptyText="Share a photo or video of your day from the + button." testId="profile-posts-grid" />
+          ) : tab === "saved" ? (
+            <PostsGrid posts={savedPosts.data} loading={savedPosts.isLoading} emptyTitle="Nothing saved yet" emptyText="Tap the bookmark on a post to keep it here." emptyIcon={Bookmark} testId="profile-saved-grid" />
           ) : (
-            <PostsGrid
-              posts={savedPosts.data}
-              loading={savedPosts.isLoading}
-              emptyTitle="Nothing saved yet"
-              emptyText="Tap the bookmark on a post to keep it here."
-              testId="profile-saved-grid"
-            />
+            <PostsGrid posts={likedPosts.data} loading={likedPosts.isLoading} emptyTitle="No likes yet" emptyText="Posts you like will show up here." emptyIcon={Heart} testId="profile-liked-grid" />
           )}
         </div>
       </section>

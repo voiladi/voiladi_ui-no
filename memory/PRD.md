@@ -117,3 +117,6 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - 2026-09-14: Discover now has two minimal text tabs top-left: "Discover" (everyone) | "Circle" (posts from people you follow = your like-swipes).
   Backend GET /api/posts/feed?scope=circle. Active tab 38px white with short underline, inactive 30px white/60. Circle empty state -> Find people.
   Scope remembered per session (sessionStorage vo_feed_scope). Brand row removed from Explore/Likes/Messages (SoftTitle `actions` prop); Profile keeps it. Deployed.
+- 2026-09-14: Profile rebuilt to the user's mockup: header brand + flat grey round buttons (+ / bell / menu->/settings), centred 95px avatar with white camera badge,
+  26px name + tick, @handle, two flat pills (Edit profile / Share profile via navigator.share), stats row with dividers, icon tabs Posts | Saved | Likes
+  (Grip / Bookmark / Heart, black underline + hairline), empty states with big icon. New GET /api/posts/liked. Deployed api + web.
