@@ -78,7 +78,7 @@ export default function Settings() {
         </section>
 
         <div className="pt-2">
-          <SoftCard as="button" type="button" className="flex h-[54px] w-full items-center justify-center text-[17px] font-semibold text-red focus-visible:outline-none active:opacity-80" onClick={() => setConfirm(true)} testId="profile-logout-button">
+          <SoftCard as="button" type="button" className="flex h-[54px] w-full items-center justify-center text-[17px] font-semibold text-ink focus-visible:outline-none active:opacity-80" onClick={() => setConfirm(true)} testId="profile-logout-button">
             Log Out
           </SoftCard>
         </div>
@@ -90,7 +90,7 @@ export default function Settings() {
         title="Log out?"
         description="Your matches and chats stay safe. You can log back in anytime."
         confirmText="Log Out"
-        danger
+        ink
         onConfirm={() => {
           logout();
           navigate("/login", { replace: true });

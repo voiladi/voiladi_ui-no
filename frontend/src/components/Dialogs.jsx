@@ -22,14 +22,14 @@ const Sheet = ({ open, onOpenChange, children, testId }) => (
   </AD.Root>
 );
 
-export const ConfirmDialog = ({ open, onOpenChange, title, description, confirmText = "Confirm", danger = false, onConfirm, loading, testId = "confirm-dialog" }) => (
+export const ConfirmDialog = ({ open, onOpenChange, title, description, confirmText = "Confirm", danger = false, ink = false, onConfirm, loading, testId = "confirm-dialog" }) => (
   <Sheet open={open} onOpenChange={onOpenChange} testId={testId}>
     <div className="vo-sheet-group">
       <div className="vo-sheet-head">
         <AD.Title className="vo-sheet-title">{title}</AD.Title>
         {description && <AD.Description className="vo-sheet-desc">{description}</AD.Description>}
       </div>
-      <button type="button" className={`vo-sheet-action ${danger ? "vo-sheet-danger" : ""}`} onClick={onConfirm} disabled={loading} aria-busy={loading} data-testid={`${testId}-confirm`}>
+      <button type="button" className={`vo-sheet-action ${danger ? "vo-sheet-danger" : ink ? "vo-sheet-ink" : ""}`} onClick={onConfirm} disabled={loading} aria-busy={loading} data-testid={`${testId}-confirm`}>
         {loading ? <Spinner size={22} stroke={2} /> : confirmText}
       </button>
     </div>

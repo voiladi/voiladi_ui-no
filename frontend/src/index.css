@@ -769,6 +769,12 @@
         color: var(--red);
     }
 
+    /* neutral (black / white in dark mode) action, e.g. Log Out */
+    .vo-sheet-ink {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
     .vo-sheet-cancel {
         border-radius: 14px;
         background: var(--glass-solid);
