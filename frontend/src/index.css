@@ -1254,6 +1254,117 @@
         animation: shimmer 1.6s ease infinite;
     }
 
+    /* ---------- Messages inbox (reference: flat list, hairlines, chevrons; compact glass tabs) ---------- */
+    .vo-gseg.vo-seg-inbox {
+        height: 40px;
+        padding: 4px;
+        background: var(--glass);
+        -webkit-backdrop-filter: blur(16px) saturate(160%);
+        backdrop-filter: blur(16px) saturate(160%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 1px var(--glass-line), 0 6px 18px rgba(28, 28, 38, 0.06);
+    }
+
+    .vo-gseg.vo-seg-inbox .vo-gseg-item {
+        height: 32px;
+        font-size: 16.5px;
+        letter-spacing: -0.015em;
+        font-weight: 500;
+    }
+
+    .vo-gseg.vo-seg-inbox .vo-gseg-item.is-active {
+        font-weight: 600;
+    }
+
+    .vo-gseg.vo-seg-inbox .vo-gseg-thumb {
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(28, 28, 38, 0.10), 0 4px 12px rgba(28, 28, 38, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .dark .vo-gseg.vo-seg-inbox .vo-gseg-thumb {
+        background: var(--neu-pill);
+    }
+
+    .vo-inbox-item + .vo-inbox-item .vo-inbox-row {
+        border-top: 0.5px solid var(--line);
+    }
+
+    .vo-inbox-row {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 14px;
+        padding: 7px 0 7px 0;
+        text-align: left;
+        border-radius: 0;
+        -webkit-tap-highlight-color: transparent;
+        transition-property: background-color, opacity;
+        transition-duration: 120ms;
+    }
+
+    .vo-inbox-row:active {
+        opacity: 0.72;
+    }
+
+    .vo-inbox-row:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--blue);
+        border-radius: 14px;
+    }
+
+    .vo-inbox-badge {
+        display: inline-flex;
+        height: 22px;
+        min-width: 22px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 6px;
+        background: var(--ink);
+        color: var(--on-ink);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    /* "••• typing..." pill of three dots */
+    .vo-inbox-typing {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        height: 18px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--surface-2);
+    }
+
+    .vo-inbox-typing i {
+        display: block;
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: var(--mute);
+        animation: vo-typing-dot 1.2s ease-in-out infinite;
+    }
+
+    .vo-inbox-typing i:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    .vo-inbox-typing i:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+
+    @keyframes vo-typing-dot {
+        0%, 60%, 100% {
+            opacity: 0.35;
+            transform: translateY(0);
+        }
+        30% {
+            opacity: 1;
+            transform: translateY(-1.5px);
+        }
+    }
+
     /* ---------- Discover feed (full-screen posts) ---------- */
     /* the feed paints its own black canvas: no ambient haze, no page padding */
     #vo-main > .vo-feed {

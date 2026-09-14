@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MessageCircle, Search, SquarePen, X, Image as ImageIcon, Film } from "lucide-react";
+import { MessageCircle, Search, SquarePen, X, Image as ImageIcon, Film, ChevronRight, CheckCheck } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { useMatchesQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
 import { SkeletonList } from "@/components/EmptyState";
 import { GlassSegmented } from "@/components/GlassSegmented";
-import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, BubblesArt } from "@/components/SoftUI";
+import { SoftHeader, SoftIconButton, SoftEmpty, BubblesArt } from "@/components/SoftUI";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
@@ -29,7 +30,22 @@ export default function Chats() {
   const [q, setQ] = useState("");
   const [compose, setCompose] = useState(false);
   const searchRef = useRef(null);
+  const { subscribe } = useSocket();
+  const [typing, setTypingMap] = useState({}); // match_id -> true while the other person is typing
+  const typingTimers = useRef({});
   const matches = useMemo(() => data?.matches || [], [data]);
+
+  // live "typing..." in the list (same event the room uses)
+  useEffect(
+    () =>
+      subscribe((ev) => {
+        if (ev.type !== "typing" || !ev.match_id) return;
+        setTypingMap((t) => ({ ...t, [ev.match_id]: true }));
+        clearTimeout(typingTimers.current[ev.match_id]);
+        typingTimers.current[ev.match_id] = setTimeout(() => setTypingMap((t) => ({ ...t, [ev.match_id]: false })), 2500);
+      }),
+    [subscribe]
+  );
   const requests = useMemo(() => data?.requests || [], [data]);
 
   const TABS = useMemo(
@@ -58,6 +74,15 @@ export default function Chats() {
   }, [filtered, q]);
 
   const preview = (m) => {
+    if (typing[m.id])
+      return (
+        <span className="inline-flex items-center gap-2" data-testid="chats-typing">
+          <span className="vo-inbox-typing" aria-hidden="true">
+            <i /><i /><i />
+          </span>
+          typing...
+        </span>
+      );
     if (m.is_request) return m.last_message?.text ? m.last_message.text : "Wants to send you a message";
     if (!m.last_message) {
       if (m.kind === "dm" && m.status === "request") return "Request sent";
@@ -75,8 +100,15 @@ export default function Chats() {
       );
     }
     if (m.last_message.kind === "reaction") return mine ? m.last_message.text.replace("Liked your", "You liked their") : m.last_message.text;
-    const base = `${mine ? "You: " : ""}${m.last_message.text}`;
-    return m.kind === "dm" && m.status === "request" && mine ? `${base} · Request sent` : base;
+    if (m.kind === "dm" && m.status === "request" && mine) return `${m.last_message.text} · Request sent`;
+    if (mine)
+      return (
+        <>
+          <CheckCheck className={`mr-1.5 inline h-[16px] w-[16px] -translate-y-px ${m.last_read ? "text-blue" : "text-mute"}`} strokeWidth={2} data-testid={m.last_read ? "chats-read-ticks" : "chats-sent-ticks"} />
+          {m.last_message.text}
+        </>
+      );
+    return m.last_message.text;
   };
 
   const empty = {
@@ -96,8 +128,13 @@ export default function Chats() {
             </>
           }
         />
-        <SoftTitle title="Messages" subtitle="Your conversations" testId="chats-title" />
-        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="chats-tab" className="mt-4" />
+        <div className="mt-2 min-w-0">
+          <h1 className="text-[clamp(32px,10cqi,40px)] font-bold leading-[1.1] tracking-[-0.03em] text-ink" data-testid="chats-title">
+            Messages
+          </h1>
+          <p className="mt-1.5 text-[clamp(15px,4.6cqi,18px)] leading-[1.3] tracking-[-0.01em] text-mute">Your conversations</p>
+        </div>
+        <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="chats-tab" className="vo-seg-inbox mt-5 mb-1" />
         {searching && (
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base)} className="vo-soft relative mt-3 flex h-[48px] items-center rounded-full">
             <Search className="pointer-events-none absolute left-4 h-5 w-5 text-mute" strokeWidth={2} />
@@ -119,40 +156,41 @@ export default function Chats() {
           <SoftEmpty art={<BubblesArt />} title={empty.title} description={empty.description} actionIcon={Search} actionLabel="Find people" onAction={() => navigate("/explore")} actionTestId="chats-find-people-button" footer={empty.footer} />
         )
       ) : (
-        <ul className="mt-5 flex flex-col gap-3 px-[clamp(14px,5cqi,20px)]" data-testid="chats-list">
+        <ul className="vo-inbox mt-4 flex flex-col px-[clamp(14px,5cqi,20px)]" data-testid="chats-list">
           {tab === "requests" && (
-            <li className="px-1 pb-1 text-[13px] leading-[17px] text-mute" data-testid="chats-requests-hint">
+            <li className="pb-2 text-[13px] leading-[17px] text-mute" data-testid="chats-requests-hint">
               These people aren't your matches yet. Open a request to accept or delete it - they won't know until you reply.
             </li>
           )}
           {rows.map((m, i) => (
-            <motion.li key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)}>
-              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-soft-row" data-testid={m.is_request ? "chats-request-row" : "chats-list-row"} data-kind={m.kind}>
+            <motion.li key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={tween(D.base, Math.min(i, 8) * 0.03)} className="vo-inbox-item">
+              <button type="button" onClick={() => navigate(`/chats/${m.id}`)} className="vo-inbox-row" data-testid={m.is_request ? "chats-request-row" : "chats-list-row"} data-kind={m.kind}>
                 <span className="relative shrink-0">
-                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} size="xs" className="h-[56px] w-[56px] rounded-full text-xl" />
+                  <UserPhoto src={m.user.photos?.[0]} name={m.user.name} size="xs" className="h-[48px] w-[48px] rounded-full text-[18px]" />
                   {m.online && <span className="vo-dot-online" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-[17px] font-semibold tracking-[-0.01em] text-ink">
+                  <span className="flex items-center gap-1.5 text-[20px] font-semibold leading-[24px] tracking-[-0.02em] text-ink">
                     <span className="truncate">{m.user.name}</span>
-                    {m.user.verified && <VerifiedBadge size={17} testId="chats-row-verified" />}
+                    {m.user.verified && <VerifiedBadge size={18} testId="chats-row-verified" />}
                   </span>
-                  <span className={`mt-0.5 block truncate text-[15px] ${m.unread || m.is_request ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
+                  <span className={`mt-[3px] block truncate text-[16px] leading-[20px] tracking-[-0.005em] ${m.unread || m.is_request ? "font-medium text-ink" : "text-mute"}`} data-testid="chats-last-message">
                     {preview(m)}
                   </span>
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-1.5 pr-1">
-                  <span className="text-[13px] text-mute">{chatTime(m.last_message_at || m.created_at)}</span>
+                <span className="flex shrink-0 flex-col items-end gap-[6px] self-start pt-[2px]">
+                  <span className="text-[15px] leading-[18px] text-mute">{chatTime(m.last_message_at || m.created_at)}</span>
                   {m.is_request ? (
                     <span className="inline-flex h-[22px] items-center rounded-full bg-ink px-2.5 text-[11px] font-semibold text-onink" data-testid="chats-request-badge">
                       Request
                     </span>
                   ) : m.unread > 0 ? (
-                    <span className="vo-badge" data-testid="chats-unread-badge">
-                      {m.unread}
+                    <span className="vo-inbox-badge" data-testid="chats-unread-badge">
+                      {m.unread > 99 ? "99+" : m.unread}
                     </span>
                   ) : null}
                 </span>
+                <ChevronRight className="ml-[2px] h-[20px] w-[20px] shrink-0 text-mute/70" strokeWidth={2} aria-hidden="true" />
               </button>
             </motion.li>
           ))}

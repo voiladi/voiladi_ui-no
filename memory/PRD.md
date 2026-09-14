@@ -111,3 +111,6 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   ffmpeg 720p + poster in background (<=60s, <=300MB), post.status ready/failed, WS `post_ready`; feed excludes non-ready. PostCard <video muted loop playsInline>,
   only the on-screen post plays, single tap = sound toggle (feed-wide), double tap = like. NewPost accepts image/*,video/* with progress %. PostView polls while processing.
   Tests iteration_28 100%. Deployed api + web. Calls (WebRTC) still waiting on the user's call-screen designs.
+- 2026-09-14: Messages inbox rebuilt to the user's reference: flat list (no cards) with 0.5px hairlines, 48px avatars, 20px names, 16px preview, time top-right,
+  22px black unread badge, chevron, live "••• typing..." (WS typing event) and ✓✓ read ticks (backend `last_read` on match rows); bigger 40px title;
+  compact 40px glass segmented All / Requests / Unread (`.vo-seg-inbox`). Log Out sheet action black (`ink` prop on ConfirmDialog). Deployed api + web.

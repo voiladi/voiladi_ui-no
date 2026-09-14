@@ -86,6 +86,8 @@ async def _match_view(match: dict, uid: str, users_cache: dict, viewer: dict) ->
         "last_message": match.get("last_message"),
         "last_message_at": match.get("last_message_at"),
         "unread": (match.get("unread") or {}).get(uid, 0),
+        # my last message has been seen when the other side has nothing left unread
+        "last_read": bool(match.get("last_message")) and match["last_message"].get("sender_id") == uid and (match.get("unread") or {}).get(other_id, 0) == 0,
         "online": manager.is_online(other_id),
     }
 
