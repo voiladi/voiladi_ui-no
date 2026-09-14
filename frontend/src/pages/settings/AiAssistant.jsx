@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronRight, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import * as AD from "@radix-ui/react-alert-dialog";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { SoftPageHeader, SoftSectionLabel, SoftCard, SoftRow } from "@/components/SoftUI";
@@ -11,14 +11,15 @@ import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 
 /*
- * Settings > AI Assistant: connect your own ChatGPT / Claude / Gemini account so the orb can search with it.
- * Flow per provider (Drawer): "Open <company>" -> sign in there and create a key -> paste -> Connect (verified live).
- * Connected: model picker (the account's own models), "Use for the orb", Disconnect. Same soft-UI grouped lists as Settings.
+ * Settings > AI Assistant: sign in with your own ChatGPT account so the orb answers on your Plus / Pro plan.
+ * Flow (device code): "Sign in with ChatGPT" -> we show a short code -> OpenAI's page opens in the browser -> the user
+ * signs in there and types the code -> we poll until OpenAI confirms -> "Connected · email · ChatGPT Plus".
+ * Connected: Model row (the account's own Codex catalogue), Sign in again, red Disconnect.
  */
 
-/* Provider mark: small ink tile with the first letter, like an app icon in iOS Settings. */
+/* Provider mark: small ink tile, like an app icon in iOS Settings. */
 export const ProviderMark = ({ provider, size = 30, className = "" }) => {
-  const letter = provider === "openai" ? "G" : provider === "anthropic" ? "C" : "◆";
+  const letter = provider === "anthropic" ? "C" : "G";
   return (
     <span className={`inline-flex shrink-0 items-center justify-center rounded-[9px] bg-ink font-bold text-onink ${className}`} style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }} aria-hidden="true">
       {provider === "gemini" ? (
@@ -32,12 +33,7 @@ export const ProviderMark = ({ provider, size = 30, className = "" }) => {
   );
 };
 
-const ICONS = {
-  openai: () => <ProviderMark provider="openai" size={30} />,
-  anthropic: () => <ProviderMark provider="anthropic" size={30} />,
-  gemini: () => <ProviderMark provider="gemini" size={30} />,
-};
-const ProviderIcon = (provider) => ICONS[provider] || ICONS.openai;
+const ChatGptIcon = () => <ProviderMark provider="chatgpt" size={30} />;
 
 const ConnectedValue = ({ link }) =>
   link ? (
@@ -51,60 +47,104 @@ const ConnectedValue = ({ link }) =>
     "Connect"
   );
 
+const copyText = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 export default function AiAssistant() {
   const navigate = useNavigate();
-  const { links, active, providers, isLoading, refresh } = useAiLinks();
-  const [open, setOpen] = useState(null); // provider id
-  const [key, setKey] = useState("");
-  const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { links, isLoading, refresh } = useAiLinks();
+  const link = links.find((l) => l.provider === "chatgpt");
+  const [open, setOpen] = useState(false);
+  const [session, setSession] = useState(null); // {session_id, user_code, verify_url, interval}
+  const [starting, setStarting] = useState(false);
+  const [status, setStatus] = useState(""); // "", waiting, denied, expired
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [modelSheet, setModelSheet] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const timer = useRef(null);
+  const polling = useRef(false);
 
-  const meta = providers.find((p) => p.id === open);
-  const link = links.find((l) => l.provider === open);
+  const stopPolling = () => {
+    clearInterval(timer.current);
+    timer.current = null;
+  };
 
   const close = () => {
-    setOpen(null);
-    setKey("");
-    setShow(false);
+    setOpen(false);
+    stopPolling();
+    setSession(null);
+    setStatus("");
     setError("");
   };
 
-  const connect = async () => {
-    if (!key.trim() || busy) return;
-    setBusy(true);
+  const start = async () => {
+    if (starting) return;
+    setStarting(true);
     setError("");
+    setStatus("");
     try {
-      await api.post("/ai/links", { provider: open, api_key: key.trim() });
-      await refresh();
-      notice(`${meta?.name} connected`);
-      setKey("");
+      const { data } = await api.post("/ai/chatgpt/start");
+      setSession(data);
+      setStatus("waiting");
+      if (await copyText(data.user_code)) setCopied(true);
     } catch (e) {
       setError(errMsg(e));
     } finally {
-      setBusy(false);
+      setStarting(false);
     }
   };
+
+  // poll while the user is signing in on OpenAI's page (and immediately when they come back to the app)
+  useEffect(() => {
+    if (!session || status !== "waiting") return undefined;
+    const poll = async () => {
+      if (polling.current) return;
+      polling.current = true;
+      try {
+        const { data } = await api.get(`/ai/chatgpt/poll/${session.session_id}`);
+        if (data.status === "connected") {
+          stopPolling();
+          setStatus("");
+          setSession(null);
+          await refresh();
+          notice(`ChatGPT connected${data.link?.email ? ` · ${data.link.email}` : ""}`);
+        } else if (data.status === "denied" || data.status === "expired") {
+          stopPolling();
+          setStatus(data.status);
+        }
+      } catch (e) {
+        /* transient - keep polling */
+      } finally {
+        polling.current = false;
+      }
+    };
+    const every = Math.max(3, Number(session.interval) || 5) * 1000;
+    timer.current = setInterval(poll, every);
+    const onVisible = () => document.visibilityState === "visible" && poll();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.session_id, status]);
 
   const pickModel = async (model) => {
     setModelSheet(false);
     if (!link || model === link.model) return;
     try {
-      await api.put(`/ai/links/${open}`, { model });
+      await api.put("/ai/links/chatgpt", { model });
       refresh();
-    } catch (e) {
-      notice(errMsg(e));
-    }
-  };
-
-  const makeActive = async () => {
-    if (!link || active?.provider === open) return;
-    try {
-      await api.put(`/ai/links/${open}`, { active: true });
-      refresh();
-      notice(`The orb now uses ${meta?.name}`);
     } catch (e) {
       notice(errMsg(e));
     }
@@ -113,10 +153,10 @@ export default function AiAssistant() {
   const disconnect = async () => {
     setBusy(true);
     try {
-      await api.delete(`/ai/links/${open}`);
+      await api.delete("/ai/links/chatgpt");
       await refresh();
       setConfirmDisconnect(false);
-      notice(`${meta?.name} disconnected`);
+      notice("ChatGPT disconnected");
       close();
     } catch (e) {
       notice(errMsg(e));
@@ -125,11 +165,39 @@ export default function AiAssistant() {
     }
   };
 
-  const orderedProviders = providers.length ? providers : [
-    { id: "openai", name: "ChatGPT", company: "OpenAI" },
-    { id: "anthropic", name: "Claude", company: "Anthropic" },
-    { id: "gemini", name: "Gemini", company: "Google" },
-  ];
+  const codeField = session && (
+    <div className="space-y-3" data-testid="ai-device-code-block">
+      <button
+        type="button"
+        onClick={async () => {
+          if (await copyText(session.user_code)) {
+            setCopied(true);
+            notice("Code copied");
+          }
+        }}
+        className="vo-soft-sunken flex h-[64px] w-full items-center justify-between rounded-[18px] px-5 focus-visible:outline-none active:opacity-80"
+        data-testid="ai-device-code"
+        aria-label="Copy the sign-in code"
+      >
+        <span className="text-[28px] font-bold tracking-[0.12em] text-ink" data-testid="ai-device-code-text">
+          {session.user_code}
+        </span>
+        <span className="flex items-center gap-1.5 text-[14px] font-semibold text-mute">
+          {copied ? <Check className="h-[18px] w-[18px]" strokeWidth={2.4} /> : <Copy className="h-[18px] w-[18px]" strokeWidth={2} />}
+          {copied ? "Copied" : "Copy"}
+        </span>
+      </button>
+      <a href={session.verify_url} target="_blank" rel="noopener noreferrer" className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-ink text-[17px] font-semibold text-onink active:scale-[0.98]" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} data-testid="ai-open-chatgpt-link">
+        <ExternalLink className="h-[20px] w-[20px]" strokeWidth={2.2} />
+        Open ChatGPT to enter the code
+      </a>
+      {status === "waiting" && (
+        <p className="flex items-center justify-center gap-2 text-[14px] text-mute" data-testid="ai-device-waiting" aria-busy="true">
+          <Spinner size={14} stroke={2.2} className="text-mute" /> Waiting for you to sign in… come back here when it says Done.
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="vo-neu-page flex min-h-full flex-col px-4 pb-10" data-testid="ai-assistant-page">
@@ -138,177 +206,114 @@ export default function AiAssistant() {
       <SoftCard className="mt-3 px-4 py-3.5" testId="ai-assistant-intro">
         <span className="block text-[11px] font-semibold uppercase leading-none tracking-[0.14em] text-mute">How it works</span>
         <p className="mt-1.5 text-[15px] leading-[20px] tracking-[-0.01em] text-ink">
-          Hold the orb on the tab bar, pull it up and circle anything on your screen. Your own AI explains it and finds matching people, posts and communities in Voiladi.
+          Hold the orb on the tab bar, pull it up and circle anything on your screen. Your ChatGPT explains it and finds matching people, posts and communities in Voiladi.
         </p>
-        <p className="mt-1.5 text-[13px] leading-[17px] text-mute">Your account, your usage. The key stays encrypted on our side and is never shown again.</p>
+        <p className="mt-1.5 text-[13px] leading-[17px] text-mute">Sign in once with your ChatGPT account. Answers run on your own plan - Voiladi never sees your password.</p>
       </SoftCard>
 
       <div className="mt-5 space-y-5">
         <section>
-          <SoftSectionLabel>Accounts</SoftSectionLabel>
+          <SoftSectionLabel>Account</SoftSectionLabel>
           <SoftCard className="overflow-hidden" testId="ai-providers-card">
-            {orderedProviders.map((p, i) => {
-              const l = links.find((x) => x.provider === p.id);
-              return (
-                <SoftRow
-                  key={p.id}
-                  icon={ProviderIcon(p.id)}
-                  label={p.name}
-                  value={isLoading ? "" : <ConnectedValue link={l} />}
-                  onClick={() => setOpen(p.id)}
-                  testId={`ai-provider-${p.id}-row`}
-                  last={i === orderedProviders.length - 1}
-                />
-              );
-            })}
+            <SoftRow icon={ChatGptIcon} label="ChatGPT" value={isLoading ? "" : <ConnectedValue link={link} />} onClick={() => setOpen(true)} testId="ai-provider-chatgpt-row" last />
           </SoftCard>
+          {link && (
+            <p className="mt-2 px-4 text-[13px] leading-[17px] text-mute" data-testid="ai-provider-chatgpt-sub">
+              {link.email}
+              {link.plan_label ? ` · ${link.plan_label}` : ""}
+              {link.model ? ` · ${link.model}` : ""}
+            </p>
+          )}
         </section>
-
-        {links.length > 0 && (
-          <section>
-            <SoftSectionLabel>The orb uses</SoftSectionLabel>
-            <SoftCard className="overflow-hidden" testId="ai-active-card">
-              {links.map((l, i) => (
-                <SoftRow
-                  key={l.provider}
-                  icon={ProviderIcon(l.provider)}
-                  label={l.name}
-                  value={l.model}
-                  onClick={async () => {
-                    if (active?.provider === l.provider) return;
-                    try {
-                      await api.put(`/ai/links/${l.provider}`, { active: true });
-                      refresh();
-                    } catch (e) {
-                      notice(errMsg(e));
-                    }
-                  }}
-                  right={active?.provider === l.provider ? <Check className="h-[20px] w-[20px] shrink-0 text-ink" strokeWidth={2.5} data-testid={`ai-active-${l.provider}`} /> : <span className="h-[20px] w-[20px] shrink-0" />}
-                  testId={`ai-active-${l.provider}-row`}
-                  last={i === links.length - 1}
-                />
-              ))}
-            </SoftCard>
-          </section>
-        )}
       </div>
 
-      {/* Per-provider drawer */}
-      <Drawer open={!!open} onOpenChange={(o) => !o && close()}>
+      {/* ChatGPT drawer */}
+      <Drawer open={open} onOpenChange={(o) => !o && close()}>
         <DrawerContent className="mx-auto max-h-[88dvh] max-w-[430px] rounded-t-[28px] border-0 bg-canvas" data-testid="ai-provider-drawer">
-          {meta && (
-            <div className="vo-scroll px-5 pb-[calc(20px+var(--safe-bottom))] pt-3">
-              <div className="flex items-center gap-3">
-                <ProviderMark provider={meta.id} size={44} />
-                <div className="min-w-0">
-                  <DrawerTitle className="text-[22px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{link ? meta.name : `Connect ${meta.name}`}</DrawerTitle>
-                  <DrawerDescription className="text-[14px] leading-[18px] text-mute">{link ? `Connected · key ${link.hint}` : `Uses your own ${meta.company} account`}</DrawerDescription>
-                </div>
+          <div className="vo-scroll px-5 pb-[calc(20px+var(--safe-bottom))] pt-3">
+            <div className="flex items-center gap-3">
+              <ProviderMark provider="chatgpt" size={44} />
+              <div className="min-w-0">
+                <DrawerTitle className="text-[22px] font-bold leading-[26px] tracking-[-0.02em] text-ink">{link ? "ChatGPT" : "Connect ChatGPT"}</DrawerTitle>
+                <DrawerDescription className="truncate text-[14px] leading-[18px] text-mute" data-testid="ai-drawer-sub">
+                  {link ? `Connected · ${link.email || link.hint}${link.plan_label ? ` · ${link.plan_label}` : ""}` : "Uses your own ChatGPT account · Plus or Pro"}
+                </DrawerDescription>
               </div>
-
-              {link ? (
-                <div className="mt-5 space-y-4">
-                  <SoftCard className="overflow-hidden" testId="ai-link-card">
-                    <SoftRow label="Model" value={link.model} onClick={() => setModelSheet(true)} testId="ai-model-row" />
-                    <SoftRow
-                      label="Use for the orb"
-                      onClick={makeActive}
-                      right={active?.provider === open ? <Check className="h-[20px] w-[20px] shrink-0 text-ink" strokeWidth={2.5} /> : <ChevronRight className="h-[18px] w-[18px] shrink-0 text-mute" strokeWidth={2} />}
-                      testId="ai-use-row"
-                      last
-                    />
-                  </SoftCard>
-                  <p className="px-1 text-[13px] leading-[17px] text-mute">Paste a new key to replace the current one. Disconnecting removes the key from Voiladi.</p>
-                  <div className="relative">
-                    <input
-                      type={show ? "text" : "password"}
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder="Paste a new key (optional)"
-                      value={key}
-                      onChange={(e) => {
-                        setKey(e.target.value);
-                        setError("");
-                      }}
-                      className={`vo-soft-sunken h-[52px] w-full rounded-[16px] pl-4 pr-12 text-[16px] tracking-[-0.01em] text-ink outline-none placeholder:text-mute ${error ? "ring-1.5 ring-red" : ""}`}
-                      data-testid="ai-key-input"
-                    />
-                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-mute" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide key" : "Show key"} data-testid="ai-key-toggle">
-                      {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {error && (
-                    <p className="px-1 text-[14px] font-medium text-red" role="alert" data-testid="ai-connect-error">
-                      {error}
-                    </p>
-                  )}
-                  {key.trim() && (
-                    <button type="button" onClick={connect} disabled={busy} aria-busy={busy} className="inline-flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-[17px] font-semibold text-onink active:scale-[0.98] disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} data-testid="ai-reconnect-button">
-                      {busy ? <Spinner size={20} stroke={2.5} /> : "Update key"}
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setConfirmDisconnect(true)} className="inline-flex h-[52px] w-full items-center justify-center rounded-full text-[17px] font-semibold text-red active:opacity-70" data-testid="ai-disconnect-button">
-                    Disconnect
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-5 space-y-4">
-                  <SoftCard className="px-4 py-3.5" testId="ai-connect-steps">
-                    <ol className="space-y-2.5 text-[15px] leading-[20px] tracking-[-0.01em] text-ink">
-                      <li className="flex gap-3">
-                        <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-onink">1</span>
-                        <span>
-                          Sign in to your {meta.company} account and create a key.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-onink">2</span>
-                        <span>Copy it, come back and paste it below.</span>
-                      </li>
-                    </ol>
-                  </SoftCard>
-                  <a
-                    href={meta.keys_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="vo-soft-pill h-[52px] w-full text-[17px]"
-                    data-testid="ai-open-provider-link"
-                  >
-                    <ExternalLink className="h-[20px] w-[20px]" strokeWidth={2.2} />
-                    Open {meta.company}
-                  </a>
-                  <div className="relative">
-                    <input
-                      type={show ? "text" : "password"}
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder={`Paste your ${meta.name} key`}
-                      value={key}
-                      onChange={(e) => {
-                        setKey(e.target.value);
-                        setError("");
-                      }}
-                      onKeyDown={(e) => e.key === "Enter" && connect()}
-                      className={`vo-soft-sunken h-[52px] w-full rounded-[16px] pl-4 pr-12 text-[16px] tracking-[-0.01em] text-ink outline-none placeholder:text-mute ${error ? "ring-1.5 ring-red" : ""}`}
-                      data-testid="ai-key-input"
-                    />
-                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-mute" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide key" : "Show key"} data-testid="ai-key-toggle">
-                      {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {error && (
-                    <p className="px-1 text-[14px] font-medium text-red" role="alert" data-testid="ai-connect-error">
-                      {error}
-                    </p>
-                  )}
-                  <button type="button" onClick={connect} disabled={!key.trim() || busy} aria-busy={busy} className="inline-flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-[17px] font-semibold text-onink active:scale-[0.98] disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} data-testid="ai-connect-button">
-                    {busy ? <Spinner size={20} stroke={2.5} /> : "Connect"}
-                  </button>
-                  <p className="px-1 text-center text-[13px] leading-[17px] text-mute">Usage is billed to your {meta.company} account. We check the key once, then encrypt it.</p>
-                </div>
-              )}
             </div>
-          )}
+
+            {link && !session ? (
+              <div className="mt-5 space-y-4">
+                <SoftCard className="overflow-hidden" testId="ai-link-card">
+                  <SoftRow label="Model" value={link.model} onClick={() => setModelSheet(true)} testId="ai-model-row" />
+                  <SoftRow label="Sign in again" onClick={start} testId="ai-reconnect-row" last />
+                </SoftCard>
+                {error && (
+                  <p className="px-1 text-[14px] font-medium text-red" role="alert" data-testid="ai-connect-error">
+                    {error}
+                  </p>
+                )}
+                <p className="px-1 text-[13px] leading-[17px] text-mute">Disconnecting removes your ChatGPT sign-in from Voiladi. Nothing changes on your ChatGPT account.</p>
+                <button type="button" onClick={() => setConfirmDisconnect(true)} className="inline-flex h-[52px] w-full items-center justify-center rounded-full text-[17px] font-semibold text-red active:opacity-70" data-testid="ai-disconnect-button">
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-4">
+                <SoftCard className="px-4 py-3.5" testId="ai-connect-steps">
+                  <ol className="space-y-2.5 text-[15px] leading-[20px] tracking-[-0.01em] text-ink">
+                    <li className="flex gap-3">
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-onink">1</span>
+                      <span>Tap Sign in with ChatGPT. You'll get a short code.</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-onink">2</span>
+                      <span>OpenAI's page opens - sign in to your ChatGPT account, enter the code and allow access.</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-onink">3</span>
+                      <span>Come back here. You're connected.</span>
+                    </li>
+                  </ol>
+                </SoftCard>
+
+                {codeField}
+
+                {(status === "denied" || status === "expired") && (
+                  <p className="px-1 text-[14px] font-medium text-red" role="alert" data-testid="ai-connect-error">
+                    {status === "denied" ? "OpenAI didn't approve the sign-in. Try again." : "That code expired. Start again."}
+                  </p>
+                )}
+                {error && (
+                  <p className="px-1 text-[14px] font-medium text-red" role="alert" data-testid="ai-connect-error">
+                    {error}
+                  </p>
+                )}
+
+                {!session && (
+                  <button type="button" onClick={start} disabled={starting} aria-busy={starting} className="inline-flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-[17px] font-semibold text-onink active:scale-[0.98] disabled:opacity-40" style={{ transitionProperty: "transform, opacity", transitionDuration: "120ms" }} data-testid="ai-signin-button">
+                    {starting ? <Spinner size={20} stroke={2.5} /> : "Sign in with ChatGPT"}
+                  </button>
+                )}
+                {session && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopPolling();
+                      setSession(null);
+                      setStatus("");
+                    }}
+                    className="inline-flex h-[48px] w-full items-center justify-center rounded-full text-[16px] font-semibold text-mute active:opacity-70"
+                    data-testid="ai-signin-cancel"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <p className="px-1 text-center text-[13px] leading-[17px] text-mute">
+                  Answers count towards your ChatGPT plan's usage. Sign-in works through OpenAI's Codex login, which OpenAI hasn't made an official program for other apps yet.
+                </p>
+              </div>
+            )}
+          </div>
         </DrawerContent>
       </Drawer>
 
@@ -320,7 +325,7 @@ export default function AiAssistant() {
             <div className="vo-sheet-group">
               <div className="vo-sheet-head">
                 <AD.Title className="vo-sheet-title">Model</AD.Title>
-                <AD.Description className="vo-sheet-desc">Models available on your {meta?.company} account.</AD.Description>
+                <AD.Description className="vo-sheet-desc">Models available on your ChatGPT plan.</AD.Description>
               </div>
               <div className="vo-sheet-list max-h-[52dvh] overflow-y-auto" role="radiogroup">
                 {(link?.models || []).map((m) => (
@@ -341,8 +346,8 @@ export default function AiAssistant() {
       <ConfirmDialog
         open={confirmDisconnect}
         onOpenChange={setConfirmDisconnect}
-        title={`Disconnect ${meta?.name}?`}
-        description="The key is deleted from Voiladi. You can connect again anytime."
+        title="Disconnect ChatGPT?"
+        description="Your ChatGPT sign-in is removed from Voiladi. You can connect again anytime."
         confirmText="Disconnect"
         danger
         loading={busy}

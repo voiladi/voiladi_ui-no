@@ -168,3 +168,41 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Android shell 1.7.3 / APK 1.6.3 (code 10): Bridge.capture(id) -> PixelCopy of the WebView rect (fallback web.draw) -> JPEG q80 <=1080w -> evaluateJavascript
   dispatch 'voiladi:capture' {id, dataUrl}. frontend/public/voiladi.apk + deploy/android/voiladi-1.6.3.apk.
 - html2canvas added to frontend; cryptography pinned in requirements.deploy.txt.
+
+## 2026-09-14 — Phase 30b: SIGN IN WITH CHATGPT (user rejected the API-key flow: "I need something which can connect ChatGPT accounts")
+- Research result shared with user: Apple's ChatGPT link = private contract; official "Sign in with ChatGPT" = identity only + partner-gated; Anthropic (Apr 2026) and
+  Google (Feb 2026) banned subscription OAuth in third-party tools; OpenAI's Codex OAuth still works and is tolerated (used by OpenClaw/opencode/pi). User chose:
+  Codex OAuth for ChatGPT, REMOVE Claude/Gemini from the UI for now, no API-key entry in the UI.
+- backend/chatgpt_account.py: device-code flow on auth.openai.com (client app_EMoamEEZ73f0CkXaXp7hrann; POST /api/accounts/deviceauth/usercode -> user_code +
+  device_auth_id; poll POST /api/accounts/deviceauth/token (403/404 = pending) -> authorization_code + code_verifier -> POST /oauth/token with redirect
+  https://auth.openai.com/deviceauth/callback; refresh via grant_type=refresh_token). Account (chatgpt_account_id, plan, email) read from the JWT claims
+  https://api.openai.com/auth + /profile. Models: GET chatgpt.com/backend-api/codex/models?client_version=1.0.0 (slug/priority/visibility; fallback gpt-5.5, gpt-5.4, gpt-5.4-mini).
+  Answers: POST chatgpt.com/backend-api/codex/responses (SSE, store:false, instructions, input_text + input_image data URL, reasoning low, text verbosity low)
+  with headers Authorization / chatgpt-account-id / originator (env CODEX_ORIGINATOR, default "voiladi") / User-Agent / OpenAI-Beta: responses=experimental.
+  Friendly errors: usage_limit_reached -> "You've hit your ChatGPT usage limit (try in ~N min)", 401/403 -> reconnect, model unavailable.
+- routes_ai.py: PROVIDERS gains "chatgpt" {auth:"account", visible:true}; openai/anthropic/gemini stay server-side with visible:false (hidden in UI).
+  POST /api/ai/chatgpt/start (201: session_id, user_code, verify_url, interval, expires_in 900) -> db.ai_device_sessions; GET /api/ai/chatgpt/poll/{session_id}
+  -> pending | connected {link} | denied | expired (backend polls OpenAI at most once per interval). Link row: ciphertext = Fernet(json tokens), email, plan,
+  account_id, model, models. Lookup: chatgpt links decrypt tokens, refresh when <5 min left (re-saved), retry once on expired. POST /api/ai/links refuses provider=chatgpt.
+  Tests: test_chatgpt_account.py (stubbed OpenAI: start/poll/connected/encrypted/lookup/refresh/model/disconnect) + test_ai_orb.py both green. Live check: real
+  device code issued by auth.openai.com and polling pending; full sign-in + answer must be verified by the user with a real ChatGPT Plus account.
+- Frontend AiAssistant.jsx rewritten: one ACCOUNT row "ChatGPT" (Connect / Connected + email · plan · model line). Drawer: 3 steps card -> "Sign in with ChatGPT"
+  -> code tile (auto-copied, tap to copy) + black "Open ChatGPT to enter the code" (auth.openai.com/codex/device, opens in the system browser from the APK) + spinner
+  "Waiting for you to sign in…" (polls every interval s, plus on focus/visibilitychange) + Cancel; denied/expired errors; fine print about Codex login not being an
+  official OpenAI program. Connected: Model row (Codex catalogue picker), Sign in again, red Disconnect. Orb "Connect your AI" sheet now says Connect ChatGPT.
+
+## 2026-09-14 — Phase 30c: ORB IDENTIFIES ANYTHING + STREAMED ANSWERS (user: "find whatever the user marks... product, person, anything. Description. Faster and accurate")
+- Why not "Sign in with ChatGPT" / connectors: explained to user. Official Sign in with ChatGPT = invite-only partner beta, identity only (name/email/pic),
+  no model access. ChatGPT Developer-mode connectors (Apps SDK / MCP) run ChatGPT -> our server, cannot power the orb. Codex OAuth stays; "Codex" label is
+  OpenAI's consent page branding. User: "Wait I will redesign it.. now let it be like this" -> do NOT touch AiAssistant.jsx layout until he sends the redesign.
+- routes_ai.py: Lens-style SYSTEM (brand+model for products, names for public figures only, dish/cuisine, landmark+where, read/translate text; never guess
+  private people). Reply shape TITLE: / KIND: (product|fashion|person|place|food|animal|plant|vehicle|text|art|app|other) / 1-3 sentences / TERMS:.
+  `_parse_answer` -> {title, kind, answer, terms, web_query}. `/lookup` keeps working (now also returns title/kind/web_query).
+  NEW `POST /api/ai/lookup/stream` -> NDJSON `{type:delta,text}`* then `{type:done,...result}` | `{type:error,status,detail}`; 428/400/409 pre-flight
+  errors are still proper HTTP statuses (raised before streaming starts via `_prepare_lookup`). Token-expired -> refresh once -> retry (only if nothing streamed yet).
+- chatgpt_account.py: `codex_stream()` async generator yields SSE output_text deltas; `codex_answer()` = join of the stream.
+- frontend: lib/aiStream.js (streamLookup via fetch+ReadableStream, axios-shaped errors so errMsg works; parseLive hides half-typed TITLE:/KIND: lines;
+  KIND_LABEL; webSearchUrl=Google). AiSearchLayer: `live` state renders words as they arrive with `.vo-ai-caret`; Answer component (hoisted) = bold 22px title
+  + uppercase kind label + description + "Search the web" soft pill (Globe). Falls back to axios `/lookup` when streaming itself fails (non-HTTP error).
+- Tests: iteration_30.json 16/16 (backend 428/400/409-in-stream/parser/regression; frontend mocked stream: title, FASHION label, web chip, error+retry).
+  Scripts: tests/test_ai_orb_upgrade.py, tests/test_chatgpt_account.py. Deployed web+api via `railway up` (no APK rebuild - shell loads the live web).

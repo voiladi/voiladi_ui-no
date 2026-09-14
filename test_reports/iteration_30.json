@@ -1,0 +1,45 @@
+{
+  "summary": "Completed comprehensive testing of AI orb visual search upgrade: streaming endpoint, enhanced non-stream endpoint, TITLE:/KIND:/TERMS: parsing, and frontend streaming UI. All backend and frontend tests passed successfully.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: POST /api/ai/lookup/stream returns 428 when no AI link connected",
+    "Backend: POST /api/ai/lookup returns 428 when no AI link connected",
+    "Backend: POST /api/ai/lookup returns 400 when no image and no question provided",
+    "Backend: POST /api/ai/lookup/stream returns 409 error in NDJSON when fake ChatGPT token expires",
+    "Backend: _parse_answer correctly parses TITLE:/KIND:/TERMS: format",
+    "Backend: _parse_answer handles plain text without special formatting",
+    "Backend: _parse_answer converts invalid KIND to 'other'",
+    "Backend: GET /api/ai/links returns links and providers",
+    "Backend: GET /api/ai/providers returns provider list",
+    "Backend: POST /api/ai/chatgpt/start returns session info or 502 if OpenAI unreachable",
+    "Frontend: Orb ink event triggers AI lookup with mocked endpoints",
+    "Frontend: Drawer displays streamed title 'Nike Air Force 1 Low'",
+    "Frontend: Drawer displays kind label 'FASHION'",
+    "Frontend: Drawer displays 'Search the web' chip after streaming completes",
+    "Frontend: Error state displays error message with retry button when stream returns error",
+    "Frontend: Error message 'Your ChatGPT sign-in expired' displays correctly"
+  ],
+  "test_report_links": [
+    "/app/backend/test_ai_orb_upgrade.py",
+    ".screenshots/ai-orb-success.png",
+    ".screenshots/ai-orb-error.png"
+  ],
+  "success_percentage": {
+    "backend": "100% (10/10 tests passed)",
+    "frontend": "100% (all UI elements verified)"
+  },
+  "updated_files": [
+    "/app/backend/test_ai_orb_upgrade.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

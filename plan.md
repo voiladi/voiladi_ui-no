@@ -188,7 +188,7 @@
 ---
 
 ## Phase 30 — Connect your AI + Orb Visual Search (NEW, P0)
-**Status: COMPLETED (2026-09-14) - tests iteration_29 100%, api + web deployed, APK 1.6.3 live**
+**Status: COMPLETED (2026-09-14) - tests iteration_29 100%, api + web deployed, APK 1.6.3 live. 30b: replaced API-key UI with Sign in with ChatGPT (Codex device-code OAuth); Claude/Gemini hidden for now**
 
 ### 30.1 Binding decisions (locked with user)
 - Settings adds a new row: **Settings → AI Assistant** (`/settings/ai`).
@@ -327,6 +327,19 @@
 
 ---
 
+## Phase 30b — Orb search: identify anything, faster (COMPLETED 2026-09-14)
+**Status: COMPLETED + deployed (web + api on Railway; no APK change needed - the shell loads the live web)**
+- User asked the orb to "find whatever the user marks - products, people, places, anything - with a description, fast and accurate".
+- Decision: keep Codex OAuth sign-in (the ONLY way to use the user's own ChatGPT Plus). "Sign in with ChatGPT" is an invite-only,
+  identity-only beta; ChatGPT "Developer mode connectors" run the opposite direction (ChatGPT -> our server) so they can't power the orb.
+  The "Codex" label on OpenAI's consent page is OpenAI's branding and can't be changed. User will redesign the connect screen himself later.
+- Backend `routes_ai.py`: Lens-style SYSTEM prompt -> `TITLE:` / `KIND:` / description / `TERMS:`; `_parse_answer()`; `web_query`;
+  new `POST /api/ai/lookup/stream` (NDJSON delta/done/error) sharing `_prepare_lookup()` with `/lookup`.
+- Backend `chatgpt_account.py`: `codex_stream()` async generator (SSE deltas), `codex_answer()` wraps it.
+- Frontend `lib/aiStream.js` (fetch + ReadableStream client, `parseLive`, `KIND_LABEL`, `webSearchUrl`), `AiSearchLayer.jsx` streams
+  words as they arrive (caret), bold title + kind label, "Search the web" chip (Google), falls back to `/lookup` if streaming fails.
+- Tests: `/app/test_reports/iteration_30.json` - 16/16 pass. Test scripts moved to `/app/tests/`.
+
 ## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
 - Do not implement until incoming/ongoing call UI is provided.
@@ -370,7 +383,8 @@
   - Includes Discover overhaul, Circle feed, dark mode + edge-to-edge fixes, and orb/ink feature.
   - Orb hold time updated to **0.40s**.
   - APK published: **1.6.2**.
-- Phase 30: **APPROVED (next to implement)**
+- Phase 30: **COMPLETED** (APK 1.6.3)
+- Phase 30b (orb identify-anything + streaming): **COMPLETED**
 - Phase 31: **BLOCKED**
 
 ---

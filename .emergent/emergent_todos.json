@@ -1,30 +1,18 @@
 [
   {
-    "content": "Backend routes_ai.py: encrypted links CRUD + provider verify/list models + /ai/lookup vision + Voiladi search",
+    "content": "Backend: codex_stream generator + streaming NDJSON /api/ai/lookup/stream",
     "status": "completed"
   },
   {
-    "content": "Frontend lib/aiCapture.js (native/html2canvas capture, crop, DOM context) + install html2canvas",
+    "content": "Backend: identification-focused SYSTEM prompt + TITLE/KIND parser + web_query",
     "status": "completed"
   },
   {
-    "content": "Frontend pages/settings/AiAssistant.jsx + route + Settings row",
+    "content": "Frontend: stream rendering, title/kind header, Search the web chip",
     "status": "completed"
   },
   {
-    "content": "Frontend components/ai/AiSearchLayer.jsx (connect sheet, result drawer, follow-up) mounted in AppShell; BottomNav orb dissolve",
-    "status": "completed"
-  },
-  {
-    "content": "Android shell 1.7.3 Bridge.capture (PixelCopy) + APK 1.6.3",
-    "status": "completed"
-  },
-  {
-    "content": "Compile check, screenshots, testing agent; fix bugs",
-    "status": "completed"
-  },
-  {
-    "content": "Deploy api + web to Railway, publish APK, update PRD",
+    "content": "Test (curl + testing agent), update plan.md",
     "status": "completed"
   }
 ]

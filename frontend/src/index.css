@@ -853,6 +853,23 @@
         color: var(--glass-label);
     }
 
+    /* orb search: caret shown while the answer is still streaming in */
+    .vo-ai-caret {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        margin-left: 2px;
+        vertical-align: -0.15em;
+        background: currentColor;
+        border-radius: 1px;
+        animation: vo-caret-blink 900ms steps(2, start) infinite;
+    }
+
+    @keyframes vo-caret-blink {
+        to { opacity: 0; }
+    }
+
+
     @keyframes vo-fade-in {
         from { opacity: 0; }
         to { opacity: 1; }

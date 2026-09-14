@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as AD from "@radix-ui/react-alert-dialog";
-import { ArrowUp, Play, RotateCcw } from "lucide-react";
+import { ArrowUp, Globe, Play, RotateCcw } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { UserPhoto } from "@/components/UserPhoto";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -10,6 +10,7 @@ import { Spinner, Skeleton } from "@/components/Loading";
 import { ProviderMark } from "@/pages/settings/AiAssistant";
 import { useAiLinks } from "@/hooks/useAiLinks";
 import { captureRegion, collectContext, markedBBox } from "@/lib/aiCapture";
+import { streamLookup, parseLive, KIND_LABEL, webSearchUrl } from "@/lib/aiStream";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -34,6 +35,43 @@ const PersonRow = ({ p, onOpen, last }) => (
   </button>
 );
 
+const openWeb = (q) => {
+  if (!q) return;
+  window.open(webSearchUrl(q), "_blank", "noopener,noreferrer");
+};
+
+/* One AI reply: bold title (what it is) + kind label, description, and a web-search chip once it's finished. */
+const Answer = ({ title, kind, text, webQuery, streaming, testid }) => (
+  <div className="mb-3" data-testid={testid}>
+    {(title || KIND_LABEL[kind]) && (
+      <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        {title && (
+          <h2 className="text-[22px] font-bold leading-[27px] tracking-[-0.02em] text-ink" data-testid="ai-answer-title">
+            {title}
+          </h2>
+        )}
+        {KIND_LABEL[kind] && (
+          <span className="text-[13px] font-semibold uppercase leading-none tracking-[0.12em] text-mute" data-testid="ai-answer-kind">
+            {KIND_LABEL[kind]}
+          </span>
+        )}
+      </div>
+    )}
+    {text && (
+      <p className="whitespace-pre-line text-[17px] leading-[24px] tracking-[-0.01em] text-ink" data-testid="ai-answer">
+        {text}
+        {streaming && <span className="vo-ai-caret" aria-hidden="true" />}
+      </p>
+    )}
+    {!streaming && webQuery && (
+      <button type="button" className="vo-soft-pill mt-3 h-[40px] px-4 text-[15px] font-medium" onClick={() => openWeb(webQuery)} data-testid="ai-web-search">
+        <Globe className="h-4 w-4" strokeWidth={2.2} />
+        Search the web
+      </button>
+    )}
+  </div>
+);
+
 export const AiSearchLayer = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,8 +80,9 @@ export const AiSearchLayer = () => {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null);
   const [ctx, setCtx] = useState(null);
-  const [thread, setThread] = useState([]); // [{role, text, found?}]
+  const [thread, setThread] = useState([]); // [{role, text, title?, kind?, web_query?, found?}]
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(""); // raw text streaming in for the turn being answered
   const [error, setError] = useState("");
   const [question, setQuestion] = useState("");
   const [person, setPerson] = useState(null);
@@ -55,18 +94,32 @@ export const AiSearchLayer = () => {
   const ask = useCallback(
     async (q, history, image, context) => {
       setBusy(true);
+      setLive("");
       setError("");
+      const payload = {
+        image,
+        route: context?.route || window.location.pathname,
+        texts: context?.texts || [],
+        user_ids: context?.user_ids || [],
+        post_ids: context?.post_ids || [],
+        question: q || undefined,
+        history: history.map((t) => ({ role: t.role, text: t.text })),
+      };
+      const push = (data) =>
+        setThread((prev) => [
+          ...prev,
+          { role: "assistant", text: data.answer, title: data.title || "", kind: data.kind || "", web_query: data.web_query || "", found: data.found, provider: data.provider, model: data.model, provider_name: data.provider_name },
+        ]);
       try {
-        const { data } = await api.post("/ai/lookup", {
-          image,
-          route: context?.route || window.location.pathname,
-          texts: context?.texts || [],
-          user_ids: context?.user_ids || [],
-          post_ids: context?.post_ids || [],
-          question: q || undefined,
-          history: history.map((t) => ({ role: t.role, text: t.text })),
-        }, { timeout: 95000 });
-        setThread((prev) => [...prev, { role: "assistant", text: data.answer, found: data.found, provider: data.provider, model: data.model, provider_name: data.provider_name }]);
+        let data;
+        try {
+          data = await streamLookup(payload, setLive);
+        } catch (e) {
+          // a network / proxy that can't stream: fall back to the one-shot endpoint
+          if (e?.response?.status || e?.name === "AbortError") throw e;
+          data = (await api.post("/ai/lookup", payload, { timeout: 95000 })).data;
+        }
+        push(data);
       } catch (e) {
         if (e?.response?.status === 428) {
           setOpen(false);
@@ -77,6 +130,7 @@ export const AiSearchLayer = () => {
         }
       } finally {
         setBusy(false);
+        setLive("");
       }
     },
     [refresh]
@@ -131,7 +185,7 @@ export const AiSearchLayer = () => {
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [thread, busy]);
+  }, [thread, busy, live]);
 
   const send = () => {
     const q = question.trim();
@@ -139,7 +193,7 @@ export const AiSearchLayer = () => {
     const next = [...thread, { role: "user", text: q }];
     setThread(next);
     setQuestion("");
-    ask(q, thread.length ? thread : [{ role: "user", text: "What did I mark? Tell me about it." }], imageRef.current, ctx);
+    ask(q, thread.length ? thread : [{ role: "user", text: "What did I mark? Identify it." }], imageRef.current, ctx);
   };
 
   const retry = () => {
@@ -152,8 +206,9 @@ export const AiSearchLayer = () => {
   const found = [...thread].reverse().find((t) => t.role === "assistant" && t.found)?.found;
   const hasFound = found && (found.people?.length || found.posts?.length || found.topics?.length);
   const providerName = first?.provider_name || active?.name || "AI";
-  const providerId = first?.provider || active?.provider || "openai";
+  const providerId = first?.provider || active?.provider || "chatgpt";
   const model = first?.model || active?.model || "";
+  const liveParsed = busy && live ? parseLive(live) : null;
 
   return (
     <>
@@ -165,7 +220,7 @@ export const AiSearchLayer = () => {
             <div className="vo-sheet-group">
               <div className="vo-sheet-head">
                 <AD.Title className="vo-sheet-title">Connect your AI</AD.Title>
-                <AD.Description className="vo-sheet-desc">Link your ChatGPT, Claude or Gemini account and the orb will explain anything you circle - and find it in Voiladi.</AD.Description>
+                <AD.Description className="vo-sheet-desc">Sign in with your ChatGPT account and the orb will explain anything you circle - and find it in Voiladi.</AD.Description>
               </div>
               <button
                 type="button"
@@ -176,7 +231,7 @@ export const AiSearchLayer = () => {
                 }}
                 data-testid="ai-connect-sheet-go"
               >
-                Connect AI
+                Connect ChatGPT
               </button>
             </div>
             <button type="button" className="vo-sheet-cancel" onClick={() => setConnectSheet(false)} data-testid="ai-connect-sheet-cancel">
@@ -215,18 +270,20 @@ export const AiSearchLayer = () => {
                   </span>
                 </div>
               ) : (
-                <p key={i} className="mb-3 whitespace-pre-line text-[17px] leading-[24px] tracking-[-0.01em] text-ink" data-testid="ai-answer">
-                  {t.text}
-                </p>
+                <Answer key={i} title={t.title} kind={t.kind} text={t.text} webQuery={t.web_query} testid="ai-assistant-turn" />
               )
             )}
 
-            {busy && (
-              <div className="mb-3 space-y-2" data-testid="ai-thinking" aria-busy="true">
-                <Skeleton className="h-[16px] w-[92%]" />
-                <Skeleton className="h-[16px] w-[76%]" />
-                <Skeleton className="h-[16px] w-[58%]" />
-              </div>
+            {busy && liveParsed && (liveParsed.title || liveParsed.text) ? (
+              <Answer title={liveParsed.title} kind={liveParsed.kind} text={liveParsed.text} streaming testid="ai-live-turn" />
+            ) : (
+              busy && (
+                <div className="mb-3 space-y-2" data-testid="ai-thinking" aria-busy="true">
+                  <Skeleton className="h-[22px] w-[60%]" />
+                  <Skeleton className="h-[16px] w-[92%]" />
+                  <Skeleton className="h-[16px] w-[76%]" />
+                </div>
+              )
             )}
 
             {error && !busy && (

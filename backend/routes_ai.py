@@ -14,23 +14,29 @@ import hashlib
 import json
 import os
 import re
+import time
 import uuid
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from core import db, now_iso, get_current_user, public_profile, JWT_SECRET, logger
 from content import INTERESTS, TOPIC_COVERS
+import chatgpt_account as cg
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
+# "chatgpt" = sign in with the ChatGPT account (their Plus/Pro pays) - the only provider shown in the app right now.
+# The three key-based providers stay available server-side (hidden in the UI until there's a sign-in for them too).
 PROVIDERS = {
-    "openai": {"name": "ChatGPT", "company": "OpenAI", "keys_url": "https://platform.openai.com/api-keys", "prefix": "sk-"},
-    "anthropic": {"name": "Claude", "company": "Anthropic", "keys_url": "https://platform.claude.com/settings/keys", "prefix": "sk-ant-"},
-    "gemini": {"name": "Gemini", "company": "Google", "keys_url": "https://aistudio.google.com/api-keys", "prefix": "AIza"},
+    "chatgpt": {"name": "ChatGPT", "company": "OpenAI", "auth": "account", "visible": True},
+    "openai": {"name": "ChatGPT (API key)", "company": "OpenAI", "auth": "key", "visible": False, "keys_url": "https://platform.openai.com/api-keys", "prefix": "sk-"},
+    "anthropic": {"name": "Claude", "company": "Anthropic", "auth": "key", "visible": False, "keys_url": "https://platform.claude.com/settings/keys", "prefix": "sk-ant-"},
+    "gemini": {"name": "Gemini", "company": "Google", "auth": "key", "visible": False, "keys_url": "https://aistudio.google.com/api-keys", "prefix": "AIza"},
 }
 ANTHROPIC_VERSION = "2023-06-01"
 MAX_IMAGE_BYTES = 6 * 1024 * 1024
@@ -254,7 +260,8 @@ def _check_provider(p: str) -> str:
 def _public_link(row: dict) -> dict:
     p = PROVIDERS[row["provider"]]
     return {
-        "provider": row["provider"], "name": p["name"], "company": p["company"], "hint": row.get("hint") or "",
+        "provider": row["provider"], "name": p["name"], "company": p["company"], "auth": p.get("auth", "key"), "hint": row.get("hint") or "",
+        "email": row.get("email") or "", "plan": row.get("plan") or "", "plan_label": cg.plan_label(row.get("plan") or "") if row["provider"] == "chatgpt" else "",
         "model": row.get("model") or "", "models": row.get("models") or [], "active": bool(row.get("active")),
         "connected_at": row.get("created_at"),
     }
@@ -287,6 +294,8 @@ async def list_links(user=Depends(get_current_user)):
 @router.post("/links", status_code=201)
 async def connect(body: LinkIn, user=Depends(get_current_user)):
     provider = _check_provider(body.provider)
+    if PROVIDERS[provider].get("auth") == "account":
+        raise HTTPException(status_code=400, detail="Sign in with your ChatGPT account instead")
     key = body.api_key.strip()
     if not key or any(c.isspace() for c in key):
         raise HTTPException(status_code=400, detail="That doesn't look like a key. Paste the whole key")
@@ -336,6 +345,86 @@ async def disconnect(provider: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- sign in with ChatGPT (device code)
+class DevicePollOut(BaseModel):
+    status: str
+    link: Optional[dict] = None
+
+
+@router.post("/chatgpt/start", status_code=201)
+async def chatgpt_start(user=Depends(get_current_user)):
+    """Begin 'Sign in with ChatGPT': returns the short code the user types on OpenAI's page."""
+    info = await cg.start_device_login()
+    sid = str(uuid.uuid4())
+    await db.ai_device_sessions.delete_many({"user_id": user["id"]})
+    await db.ai_device_sessions.insert_one({
+        "id": sid, "user_id": user["id"], "device_auth_id": info["device_auth_id"], "user_code": info["user_code"],
+        "interval": info["interval"], "status": "pending", "created_at": now_iso(), "started": time.time(), "last_poll": 0.0,
+    })
+    return {"session_id": sid, "user_code": info["user_code"], "verify_url": info["verify_url"], "interval": info["interval"], "expires_in": cg.DEVICE_TIMEOUT_S}
+
+
+async def _save_chatgpt_link(user_id: str, tokens: dict) -> dict:
+    acct = cg.account_from_tokens(tokens)
+    if not acct["account_id"]:
+        raise HTTPException(status_code=502, detail="ChatGPT signed you in but didn't return an account. Try again")
+    models = await cg.list_models(tokens, acct["account_id"])
+    existing = await db.ai_links.find_one({"user_id": user_id, "provider": "chatgpt"}, {"_id": 0})
+    others = await db.ai_links.count_documents({"user_id": user_id, "provider": {"$ne": "chatgpt"}})
+    model = existing.get("model") if existing and existing.get("model") in models else models[0]
+    row = {
+        "id": existing["id"] if existing else str(uuid.uuid4()), "user_id": user_id, "provider": "chatgpt",
+        "ciphertext": _encrypt(json.dumps(tokens)), "hint": acct["email"] or acct["account_id"][:8], "email": acct["email"], "plan": acct["plan"],
+        "account_id": acct["account_id"], "model": model, "models": models,
+        "active": bool(existing.get("active")) if existing else others == 0,
+        "created_at": existing["created_at"] if existing else now_iso(), "updated_at": now_iso(),
+    }
+    if not existing:
+        # a fresh ChatGPT sign-in becomes the orb's AI right away
+        await db.ai_links.update_many({"user_id": user_id, "provider": {"$ne": "chatgpt"}}, {"$set": {"active": False}})
+        row["active"] = True
+    await db.ai_links.update_one({"user_id": user_id, "provider": "chatgpt"}, {"$set": row}, upsert=True)
+    return row
+
+
+@router.get("/chatgpt/poll/{session_id}", response_model=DevicePollOut)
+async def chatgpt_poll(session_id: str, user=Depends(get_current_user)):
+    """The app calls this every few seconds while the user signs in on OpenAI's page."""
+    sess = await db.ai_device_sessions.find_one({"id": session_id, "user_id": user["id"]}, {"_id": 0})
+    if not sess:
+        return {"status": "expired"}
+    if sess.get("status") == "connected":
+        row = await db.ai_links.find_one({"user_id": user["id"], "provider": "chatgpt"}, {"_id": 0})
+        return {"status": "connected", "link": _public_link(row) if row else None}
+    if time.time() - float(sess.get("started") or 0) > cg.DEVICE_TIMEOUT_S:
+        await db.ai_device_sessions.delete_one({"id": session_id})
+        return {"status": "expired"}
+    if time.time() - float(sess.get("last_poll") or 0) < float(sess.get("interval") or 5) - 0.5:
+        return {"status": "pending"}
+    await db.ai_device_sessions.update_one({"id": session_id}, {"$set": {"last_poll": time.time()}})
+    state, tokens = await cg.poll_device_login(sess["device_auth_id"], sess["user_code"])
+    if state == "pending":
+        return {"status": "pending"}
+    if state == "denied":
+        await db.ai_device_sessions.delete_one({"id": session_id})
+        return {"status": "denied"}
+    row = await _save_chatgpt_link(user["id"], tokens)
+    await db.ai_device_sessions.update_one({"id": session_id}, {"$set": {"status": "connected"}})
+    return {"status": "connected", "link": _public_link(row)}
+
+
+async def _chatgpt_creds(link: dict) -> Tuple[dict, str]:
+    """Decrypt the stored tokens, refreshing (and re-saving) them when they're about to expire."""
+    try:
+        creds = json.loads(_decrypt(link["ciphertext"]))
+    except ValueError:
+        raise HTTPException(status_code=409, detail="Reconnect your ChatGPT account in Settings")
+    if cg.needs_refresh(creds):
+        creds = await cg.refresh_tokens(creds)
+        await db.ai_links.update_one({"id": link["id"]}, {"$set": {"ciphertext": _encrypt(json.dumps(creds)), "updated_at": now_iso()}})
+    return creds, link.get("account_id") or cg.account_from_tokens(creds)["account_id"]
+
+
 # ---------------------------------------------------------------- orb lookup
 class Turn(BaseModel):
     role: str
@@ -353,13 +442,24 @@ class LookupIn(BaseModel):
 
 
 SYSTEM = (
-    "You are the search assistant inside Voiladi, a social app where people share photo and video posts, follow each other, "
-    "chat and join interest communities. The user circled part of their screen with a floating orb; the image is that area, "
-    "the dark ink stroke is their marking. Describe or explain what they marked in 1-3 short, friendly sentences (no headings, "
-    "no markdown, no emojis). Then, on a final separate line, output exactly: TERMS: followed by 2-6 short lowercase search "
-    "terms separated by commas (things, places, interests, names or usernames you can read) that would find related people, "
-    "posts or communities inside the app."
+    "You are the visual search inside Voiladi, a social app (photo/video posts, profiles, chat, interest communities). "
+    "The user circled part of their screen with a floating orb. The image is that area; the dark ink stroke is their marking - "
+    "identify ONLY what is inside or under the stroke, ignore the rest and ignore the app's own buttons and chrome.\n"
+    "Be fast, specific and confident, like Google Lens. Identify the exact thing: for a product give brand + product/model "
+    "(and a typical price range if you know it); for clothing/shoes/accessories give brand, style and colour; for a person who is "
+    "a well-known public figure give their name and what they're known for, otherwise describe them briefly and respectfully "
+    "(never guess private people's identity or sensitive traits); for food name the dish and cuisine; for a place or landmark name "
+    "it and where it is; for an animal, plant or car give species / make + model; for text read it out (translate if not English); "
+    "for artwork or a screenshot of another app name it. If you're unsure, give your best guess and say what makes it likely.\n\n"
+    "Reply in EXACTLY this shape, plain text, no markdown, no emojis:\n"
+    "TITLE: <the specific name of the thing, 2-8 words>\n"
+    "KIND: <one of: product, fashion, person, place, food, animal, plant, vehicle, text, art, app, other>\n"
+    "<1-3 short sentences describing it and anything useful to know>\n"
+    "TERMS: <2-6 short lowercase search terms, comma separated: the thing, its brand/category, related interests, any names or "
+    "@usernames you can read - these find matching people, posts and communities inside Voiladi>\n\n"
+    "For follow-up questions answer directly in 1-4 short sentences (no TITLE/KIND lines), keeping TERMS only if new things come up."
 )
+KINDS = ("product", "fashion", "person", "place", "food", "animal", "plant", "vehicle", "text", "art", "app", "other")
 
 
 def _decode_image(value: Optional[str]) -> Optional[str]:
@@ -380,18 +480,35 @@ def _decode_image(value: Optional[str]) -> Optional[str]:
     return base64.b64encode(raw).decode("ascii")
 
 
-def _split_terms(answer: str):
+def _parse_answer(answer: str) -> Dict[str, Any]:
+    """Pull TITLE / KIND / TERMS out of the model's reply; what's left is the description."""
     terms: List[str] = []
-    lines = answer.strip().splitlines()
+    title = ""
+    kind = ""
     kept = []
-    for ln in lines:
-        m = re.match(r"^\s*\**terms\**\s*:\s*(.*)$", ln, re.I)
-        if m:
-            terms += [t.strip(" .#@\"'").lower() for t in m.group(1).split(",")]
-        else:
+    for ln in answer.strip().splitlines():
+        s = ln.strip().strip("*").strip()
+        m = re.match(r"^(title|kind|terms)\s*:\s*(.*)$", s, re.I)
+        if not m:
             kept.append(ln)
+            continue
+        key, val = m.group(1).lower(), m.group(2).strip().strip("*\"' ")
+        if key == "title" and not title:
+            title = val[:80]
+        elif key == "kind" and not kind:
+            k = val.lower().strip(" .")
+            kind = k if k in KINDS else "other"
+        elif key == "terms":
+            terms += [t.strip(" .#@\"'").lower() for t in val.split(",")]
     terms = [t for t in dict.fromkeys(terms) if 2 <= len(t) <= 40][:6]
-    return "\n".join(kept).strip(), terms
+    text = "\n".join(kept).strip()
+    web = title or (terms[0] if terms else "")
+    return {"title": title, "kind": kind, "answer": text, "terms": terms, "web_query": web}
+
+
+def _split_terms(answer: str):
+    p = _parse_answer(answer)
+    return p["answer"], p["terms"]
 
 
 async def _blocked(uid: str) -> set:
@@ -472,15 +589,20 @@ async def find_in_voiladi(user: dict, terms: List[str], user_ids: List[str], pos
     return {"people": people, "posts": posts, "topics": topics}
 
 
-@router.post("/lookup")
-async def lookup(body: LookupIn, user=Depends(get_current_user)):
+async def _prepare_lookup(body: LookupIn, user: dict) -> Dict[str, Any]:
+    """Everything that can fail with a proper HTTP status happens here, before any bytes are streamed."""
     link = await active_link(user["id"])
     if not link:
         raise HTTPException(status_code=428, detail="Connect your AI in Settings first")
     image_b64 = _decode_image(body.image)
     if not image_b64 and not body.question:
         raise HTTPException(status_code=400, detail="Nothing to look at")
-    key = _decrypt(link["ciphertext"])
+    key = None
+    creds = account_id = None
+    if link["provider"] == "chatgpt":
+        creds, account_id = await _chatgpt_creds(link)
+    else:
+        key = _decrypt(link["ciphertext"])
 
     context_bits = []
     if body.route:
@@ -501,17 +623,88 @@ async def lookup(body: LookupIn, user=Depends(get_current_user)):
         if body.question:
             turns.append({"role": "user", "text": body.question})
     else:
-        turns.append({"role": "user", "text": context + (body.question or "What did I mark? Tell me about it.")})
+        turns.append({"role": "user", "text": context + (body.question or "What did I mark? Identify it.")})
     if turns[-1]["role"] != "user":
         turns.append({"role": "user", "text": body.question or "Go on."})
+    return {"link": link, "image_b64": image_b64, "key": key, "creds": creds, "account_id": account_id, "turns": turns}
 
-    raw = await provider_answer(link["provider"], key, link.get("model") or "", SYSTEM, turns, image_b64)
-    answer, terms = _split_terms(raw)
-    if not answer:
-        answer = "I couldn't make out what you marked. Try circling it a little larger."
-    found = await find_in_voiladi(user, terms, body.user_ids, body.post_ids)
-    return {"answer": answer, "terms": terms, "found": found, "provider": link["provider"], "model": link.get("model") or "",
-            "provider_name": PROVIDERS[link["provider"]]["name"]}
+
+async def _refresh_and_save(link: dict, creds: dict) -> dict:
+    creds = await cg.refresh_tokens(creds)
+    await db.ai_links.update_one({"id": link["id"]}, {"$set": {"ciphertext": _encrypt(json.dumps(creds)), "updated_at": now_iso()}})
+    return creds
+
+
+def _result(user: dict, link: dict, raw: str, found: Dict[str, list]) -> Dict[str, Any]:
+    p = _parse_answer(raw)
+    if not p["answer"] and not p["title"]:
+        p["answer"] = "I couldn't make out what you marked. Try circling it a little larger."
+    return {**p, "found": found, "provider": link["provider"], "model": link.get("model") or "", "provider_name": PROVIDERS[link["provider"]]["name"]}
+
+
+@router.post("/lookup")
+async def lookup(body: LookupIn, user=Depends(get_current_user)):
+    prep = await _prepare_lookup(body, user)
+    link, creds, account_id, turns, image_b64 = prep["link"], prep["creds"], prep["account_id"], prep["turns"], prep["image_b64"]
+    model = link.get("model") or cg.FALLBACK_MODELS[0]
+    if link["provider"] == "chatgpt":
+        try:
+            raw = await cg.codex_answer(creds, account_id, model, SYSTEM, turns, image_b64)
+        except HTTPException as e:
+            if "expired" not in str(e.detail):
+                raise
+            # the access token was rejected: refresh once and retry
+            creds = await _refresh_and_save(link, creds)
+            raw = await cg.codex_answer(creds, account_id, model, SYSTEM, turns, image_b64)
+    else:
+        raw = await provider_answer(link["provider"], prep["key"], link.get("model") or "", SYSTEM, turns, image_b64)
+    p = _parse_answer(raw)
+    found = await find_in_voiladi(user, p["terms"], body.user_ids, body.post_ids)
+    return _result(user, link, raw, found)
+
+
+@router.post("/lookup/stream")
+async def lookup_stream(body: LookupIn, user=Depends(get_current_user)):
+    """Same as /lookup but streams NDJSON: {type: delta, text} ... {type: done, ...full result} | {type: error, detail, status}.
+    Words show up in the drawer as ChatGPT writes them instead of after the whole reply."""
+    prep = await _prepare_lookup(body, user)
+    link, creds, account_id, turns, image_b64 = prep["link"], prep["creds"], prep["account_id"], prep["turns"], prep["image_b64"]
+    model = link.get("model") or cg.FALLBACK_MODELS[0]
+
+    def line(obj: dict) -> bytes:
+        return (json.dumps(obj, ensure_ascii=False) + "\n").encode("utf-8")
+
+    async def gen():
+        parts: List[str] = []
+        try:
+            if link["provider"] == "chatgpt":
+                c = creds
+                try:
+                    async for delta in cg.codex_stream(c, account_id, model, SYSTEM, turns, image_b64):
+                        parts.append(delta)
+                        yield line({"type": "delta", "text": delta})
+                except HTTPException as e:
+                    if parts or "expired" not in str(e.detail):
+                        raise
+                    c = await _refresh_and_save(link, c)
+                    async for delta in cg.codex_stream(c, account_id, model, SYSTEM, turns, image_b64):
+                        parts.append(delta)
+                        yield line({"type": "delta", "text": delta})
+            else:
+                raw = await provider_answer(link["provider"], prep["key"], link.get("model") or "", SYSTEM, turns, image_b64)
+                parts.append(raw)
+                yield line({"type": "delta", "text": raw})
+            raw = "".join(parts)
+            p = _parse_answer(raw)
+            found = await find_in_voiladi(user, p["terms"], body.user_ids, body.post_ids)
+            yield line({"type": "done", **_result(user, link, raw, found)})
+        except HTTPException as e:
+            yield line({"type": "error", "status": e.status_code, "detail": str(e.detail)})
+        except Exception:  # noqa: BLE001 - never leave the client hanging on a half-open stream
+            logger.exception("ai lookup stream")
+            yield line({"type": "error", "status": 500, "detail": "Your AI didn't answer. Try again"})
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 async def ensure_indexes():
