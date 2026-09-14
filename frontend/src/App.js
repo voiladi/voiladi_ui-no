@@ -64,7 +64,7 @@ const Splash = () => (
   <div className="vo-backdrop">
     <div className="vo-shell items-center justify-center" data-testid="splash-screen">
       <LogoMark size={84} />
-      <div className="absolute bottom-0 flex flex-col items-center gap-3 text-mute" style={{ paddingBottom: "max(48px, env(safe-area-inset-bottom))" }}>
+      <div className="absolute bottom-0 flex flex-col items-center gap-3 text-mute" style={{ paddingBottom: "max(48px, var(--safe-bottom))" }}>
         <Spinner size={22} stroke={2} />
       </div>
     </div>

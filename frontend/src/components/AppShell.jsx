@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { nativeSetBars } from "@/lib/native";
 import { Spinner } from "@/components/Loading";
 import { useQueryClient } from "@tanstack/react-query";
 import { banner } from "@/lib/feedback";
@@ -133,13 +134,19 @@ export const AppShell = ({ nav = false }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const tab = isTab(pathname);
+  // full-bleed black screens (Discover feed, single post): paint the status-bar strip black and ask the shell for light icons
+  const blackCanvas = pathname === "/discover" || pathname.startsWith("/p/");
+  useEffect(() => {
+    nativeSetBars(blackCanvas ? "dark" : null);
+    return () => nativeSetBars(null);
+  }, [blackCanvas]);
   /*
    * Fully responsive shell: fills the device width (max 430px, centred on wide screens) and the full dynamic viewport
    * height; each screen lays itself out with flex/grid and scrolls inside <main>. No transform scaling.
    */
   return (
     <div className="vo-backdrop">
-      <div className="vo-shell" data-testid="app-shell">
+      <div className="vo-shell" data-canvas={blackCanvas ? "black" : undefined} data-testid="app-shell">
         <main key={pathname} className={`vo-scroll relative ${tab ? "vo-page-fade" : "vo-page-push"}`} id="vo-main">
           <ScreenErrorBoundary key={pathname}>
             {/* screens are code-split; while a screen's code is still arriving, a centred spinner sits on its canvas */}

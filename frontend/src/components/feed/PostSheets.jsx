@@ -97,7 +97,7 @@ export const CommentsSheet = ({ post, open, onOpenChange, onCount }) => {
           )}
           <div ref={endRef} />
         </div>
-        <form onSubmit={send} className="flex items-center gap-2.5 border-t border-line/70 px-3 pt-2.5" style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))" }}>
+        <form onSubmit={send} className="flex items-center gap-2.5 border-t border-line/70 px-3 pt-2.5" style={{ paddingBottom: "calc(10px + var(--safe-bottom))" }}>
           <UserPhoto src={user?.photos?.[0]} name={user?.name} size="xs" className="h-[36px] w-[36px] shrink-0 rounded-full text-[13px]" />
           <div className="flex h-[42px] min-w-0 flex-1 items-center rounded-full bg-surface2 pl-4 pr-1">
             <input

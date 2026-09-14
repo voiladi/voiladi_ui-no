@@ -153,7 +153,7 @@ export const BottomNav = () => {
   const activeIdx = lifted ? hover : index;
 
   return (
-    <nav data-testid="bottom-nav" className="absolute inset-x-3 z-30" style={{ bottom: "calc(var(--nav-gap) + env(safe-area-inset-bottom, 0px))" }}>
+    <nav data-testid="bottom-nav" className="absolute inset-x-3 z-30" style={{ bottom: "calc(var(--nav-gap) + var(--safe-bottom))" }}>
       <div
         ref={barRef}
         role="tablist"

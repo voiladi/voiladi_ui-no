@@ -9,7 +9,7 @@ import { SoftCard } from "@/components/SoftUI";
 
 /* Page frame: back chevron top-left, content, CTA pinned to the bottom (scrolls when the content is taller). */
 export const FlowPage = ({ onBack, backTestId, children, cta, testId, ...rest }) => (
-  <div className="vo-neu-page flex min-h-full flex-col px-[clamp(16px,5.5cqi,22px)]" style={{ paddingBottom: "calc(22px + env(safe-area-inset-bottom, 0px))" }} data-testid={testId} {...rest}>
+  <div className="vo-neu-page flex min-h-full flex-col px-[clamp(16px,5.5cqi,22px)]" style={{ paddingBottom: "calc(22px + var(--safe-bottom))" }} data-testid={testId} {...rest}>
     <header className="flex h-[56px] shrink-0 items-center pt-2">
       <button type="button" onClick={onBack} className="-ml-2 flex h-11 w-11 items-center justify-center text-ink active:opacity-60 focus-visible:outline-none" aria-label="Back" data-testid={backTestId}>
         <ChevronLeft className="h-8 w-8" strokeWidth={2.6} />

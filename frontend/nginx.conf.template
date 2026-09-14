@@ -7,6 +7,11 @@ server {
     # hide the nginx version
     server_tokens off;
 
+    # canonical host: voiladi.com -> www.voiladi.com (the app, cookies/localStorage and links all live on www)
+    if ($host = "voiladi.com") {
+        return 301 https://www.voiladi.com$request_uri;
+    }
+
     # security headers live in security-headers.inc (included per location, see note there)
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;

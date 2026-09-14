@@ -19,8 +19,8 @@ const Toaster = (props) => (
     gap={8}
     duration={2400}
     closeButton={false}
-    offset={{ bottom: "calc(78px + env(safe-area-inset-bottom))", top: "calc(12px + env(safe-area-inset-top))" }}
-    mobileOffset={{ bottom: "calc(78px + env(safe-area-inset-bottom))", top: "calc(12px + env(safe-area-inset-top))", left: 12, right: 12 }}
+    offset={{ bottom: "calc(78px + var(--safe-bottom))", top: "calc(12px + var(--safe-top))" }}
+    mobileOffset={{ bottom: "calc(78px + var(--safe-bottom))", top: "calc(12px + var(--safe-top))", left: 12, right: 12 }}
     icons={{
       success: <Check className="h-[18px] w-[18px]" strokeWidth={2.5} />,
       error: <AlertCircle className="h-[18px] w-[18px]" strokeWidth={2.2} />,

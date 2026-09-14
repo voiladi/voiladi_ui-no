@@ -81,7 +81,7 @@ export const MediaViewer = ({ item, onClose }) => {
     <AnimatePresence>
       {item && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="fixed inset-0 z-[300] flex flex-col bg-black" data-testid="media-viewer" role="dialog" aria-modal="true">
-          <div className="flex items-center justify-between px-3" style={{ paddingTop: "calc(10px + env(safe-area-inset-top))" }}>
+          <div className="flex items-center justify-between px-3" style={{ paddingTop: "calc(10px + var(--safe-top))" }}>
             <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20" aria-label="Close" data-testid="media-viewer-close">
               <X className="h-6 w-6" strokeWidth={2.2} />
             </button>
@@ -101,7 +101,7 @@ export const MediaViewer = ({ item, onClose }) => {
               <img src={item.url} alt="" className="max-h-full max-w-full select-none object-contain" draggable={false} data-testid="media-viewer-image" />
             )}
           </div>
-          <div style={{ height: "env(safe-area-inset-bottom)" }} />
+          <div style={{ height: "var(--safe-bottom)" }} />
         </motion.div>
       )}
     </AnimatePresence>,

@@ -121,7 +121,7 @@ export default function Discover() {
       </div>
 
       {/* Discover (everyone) | Circle (people you follow) - minimal text tabs, Instagram-style */}
-      <div className="absolute left-[20px] flex items-end gap-[18px] text-white" style={{ top: "calc(env(safe-area-inset-top, 0px) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-scope-tabs" role="tablist">
+      <div className="absolute left-[20px] flex items-end gap-[18px] text-white" style={{ top: "calc(var(--safe-top) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-scope-tabs" role="tablist">
         {[
           { value: "all", label: "Discover" },
           { value: "circle", label: "Circle" },

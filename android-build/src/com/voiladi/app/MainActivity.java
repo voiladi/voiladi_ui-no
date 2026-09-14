@@ -20,6 +20,9 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.graphics.Insets;
 import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -89,23 +92,89 @@ public class MainActivity extends Activity {
         return "dark".equals(getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("theme", "light"));
     }
 
+    /* Edge-to-edge (Android 11+): the page draws behind the transparent status + navigation bars, exactly like Instagram,
+       and receives their sizes as CSS variables. Older Androids keep solid bars that follow the theme. */
+    private boolean edgeToEdge() {
+        return Build.VERSION.SDK_INT >= 30;
+    }
+
+    /** Page-level override: "dark" = light icons (black screens such as Discover), "" = follow the theme. */
+    private String barsOverride = "";
+
+    private boolean lightIcons() {
+        if ("dark".equals(barsOverride)) return true;
+        if ("light".equals(barsOverride)) return false;
+        return darkMode;
+    }
+
     private void applySystemBars() {
         Window w = getWindow();
         int bg = darkMode ? Color.BLACK : Color.WHITE;
-        w.setStatusBarColor(bg);
-        w.setNavigationBarColor(bg);
-        if (Build.VERSION.SDK_INT >= 28) w.setNavigationBarDividerColor(bg);
-        int flags = 0;
-        if (!darkMode) {
-            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        if (edgeToEdge()) {
+            w.setDecorFitsSystemWindows(false);
+            w.setStatusBarColor(Color.TRANSPARENT);
+            w.setNavigationBarColor(Color.TRANSPARENT);
+            w.setNavigationBarDividerColor(Color.TRANSPARENT);
+            if (Build.VERSION.SDK_INT >= 29) {
+                w.setNavigationBarContrastEnforced(false);
+                w.setStatusBarContrastEnforced(false);
+            }
+            WindowInsetsController c = w.getInsetsController();
+            if (c != null) {
+                int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                c.setSystemBarsAppearance(lightIcons() ? 0 : mask, mask);
+            }
+        } else {
+            w.setStatusBarColor(bg);
+            w.setNavigationBarColor(bg);
+            if (Build.VERSION.SDK_INT >= 28) w.setNavigationBarDividerColor(bg);
+            int flags = 0;
+            if (!lightIcons()) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+            w.getDecorView().setSystemUiVisibility(flags);
         }
-        w.getDecorView().setSystemUiVisibility(flags);
         if (root != null) root.setBackgroundColor(bg);
         if (web != null) web.setBackgroundColor(bg);
         if (splashView != null) splashView.setBackgroundColor(bg);
         if (offlineBox != null) offlineBox.setBackgroundColor(bg);
         if (offlineTitle != null) offlineTitle.setTextColor(darkMode ? Color.WHITE : Color.parseColor("#111111"));
+    }
+
+    /** Hand the bar sizes to the page (CSS px) and make room for the keyboard ourselves (edge-to-edge disables adjustResize). */
+    private void installInsetsListener() {
+        if (!edgeToEdge() || root == null) return;
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override
+            public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                boolean keyboard = ime.bottom > bars.bottom;
+                // keyboard open: shrink the whole view like adjustResize would; the page's bottom inset is then 0
+                root.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
+                float d = getResources().getDisplayMetrics().density;
+                int top = Math.round(bars.top / d);
+                int bottom = keyboard ? 0 : Math.round(bars.bottom / d);
+                pushInsets(top, bottom);
+                return WindowInsets.CONSUMED;
+            }
+        });
+    }
+
+    private int lastTop = -1, lastBottom = -1;
+
+    private void pushInsets(int top, int bottom) {
+        lastTop = top;
+        lastBottom = bottom;
+        if (web == null) return;
+        web.evaluateJavascript(insetsScript(top, bottom), null);
+    }
+
+    private static String insetsScript(int top, int bottom) {
+        return "(function(){var h=document.documentElement;h.classList.add('vo-native-insets');"
+                + "h.style.setProperty('--native-inset-top','" + top + "px');"
+                + "h.style.setProperty('--native-inset-bottom','" + bottom + "px');})();";
     }
 
     private void setDarkMode(boolean dark) {
@@ -124,6 +193,7 @@ public class MainActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(darkMode ? Color.BLACK : Color.WHITE);
         applySystemBars();
+        installInsetsListener();
 
         web = new WebView(this);
         setupWebView();
@@ -188,7 +258,7 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.6");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.7");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         WebView.setWebContentsDebuggingEnabled(false);
@@ -225,6 +295,11 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                if (edgeToEdge() && lastTop >= 0) view.evaluateJavascript(insetsScript(lastTop, lastBottom), null);
+            }
+
+            @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) showOffline("You're offline", "Check your connection and try again.");
             }
@@ -238,6 +313,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                if (edgeToEdge() && lastTop >= 0) view.evaluateJavascript(insetsScript(lastTop, lastBottom), null);
                 if (!pageFailed) {
                     offline.setVisibility(View.GONE);
                     // the web app calls VoiladiNative.ready() itself; this is the fallback for older builds
@@ -480,6 +556,24 @@ public class MainActivity extends Activity {
             });
         }
 
+        /** Shell 1.7: per-screen bar icon style ("dark" -> light icons, "" -> follow theme). */
+        @JavascriptInterface
+        public void setBars(final String mode) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    barsOverride = mode == null ? "" : mode;
+                    applySystemBars();
+                }
+            });
+        }
+
+        /** Shell 1.7: the page can ask for the current insets (e.g. right after it boots). */
+        @JavascriptInterface
+        public String insets() {
+            return "{\"top\":" + Math.max(0, lastTop) + ",\"bottom\":" + Math.max(0, lastBottom) + "}";
+        }
+
         /** Shell 1.6: true when the phone itself is in dark mode (the WebView's own media query follows the app theme, not the phone). */
         @JavascriptInterface
         public boolean isSystemDark() {
@@ -488,7 +582,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String shellVersion() {
-            return "1.6";
+            return "1.7";
         }
     }
 

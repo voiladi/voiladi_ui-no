@@ -289,7 +289,7 @@ export default function Profile() {
       className="vo-neu-page flex min-h-full flex-col"
       style={{
         paddingBottom:
-          "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))",
+          "calc(var(--nav-h) + var(--nav-gap) + 14px + var(--safe-bottom))",
       }}
       data-testid="profile-page"
     >

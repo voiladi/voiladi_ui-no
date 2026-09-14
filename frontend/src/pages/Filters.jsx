@@ -124,7 +124,7 @@ export default function Filters() {
         </section>
       </div>
 
-      <div className="vo-bar sticky bottom-0 z-20 px-5 pt-3" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
+      <div className="vo-bar sticky bottom-0 z-20 px-5 pt-3" style={{ paddingBottom: "max(20px, var(--safe-bottom))" }}>
         <button type="button" className="vo-btn-primary w-full" disabled={saving} aria-busy={saving} onClick={apply} data-testid="filters-apply-button">
           {saving ? <Spinner size={20} stroke={2} /> : "Apply"}
         </button>

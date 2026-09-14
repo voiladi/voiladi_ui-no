@@ -19,7 +19,7 @@ import { tween, D } from "@/lib/motion";
  * (Instagram DM requests) - they stay there until you reply or accept; "Unread" = anything waiting for you.
  */
 
-const NAV_PAD = "calc(var(--nav-h) + var(--nav-gap) + 14px + env(safe-area-inset-bottom, 0px))";
+const NAV_PAD = "calc(var(--nav-h) + var(--nav-gap) + 14px + var(--safe-bottom))";
 
 export default function Chats() {
   const navigate = useNavigate();

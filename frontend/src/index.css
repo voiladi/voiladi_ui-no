@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+    /* Safe areas. Browsers give us env(); the Android shell draws edge-to-edge behind the status / navigation bars and
+       hands us the real inset sizes as --native-inset-* (html.vo-native-insets), so the app paints under both bars. */
+    :root {
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html.vo-native-insets {
+        --safe-top: var(--native-inset-top, 0px);
+        --safe-bottom: var(--native-inset-bottom, 0px);
+    }
+
     :root {
         /* Voiladi tokens (light) - transcribed from the interface photos */
         --bg: #FFFFFF;
@@ -256,6 +268,7 @@
         max-width: 430px;
         height: 100vh;
         height: 100dvh;
+        padding-top: var(--safe-top); /* content starts under the status bar; the shell's own canvas shows behind it */
         display: flex;
         flex-direction: column;
         background: var(--bg);
@@ -596,7 +609,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: env(safe-area-inset-bottom, 0px);
+        bottom: var(--safe-bottom);
         z-index: var(--z-toast);
         padding: 13px 16px;
         background: var(--glass-dark);
@@ -613,7 +626,7 @@
     }
 
     .vo-notice-nav {
-        bottom: calc(var(--nav-h) + var(--nav-gap) + 8px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--nav-h) + var(--nav-gap) + 8px + var(--safe-bottom));
     }
 
     /* iOS notification banner (new match / new message). Tap to open, swipe up to dismiss. */
@@ -621,7 +634,7 @@
         position: absolute;
         left: 8px;
         right: 8px;
-        top: calc(8px + env(safe-area-inset-top, 0px));
+        top: calc(8px + var(--safe-top));
         z-index: var(--z-toast);
         display: flex;
         align-items: center;
@@ -695,7 +708,7 @@
         width: min(430px, 100%);
         flex-direction: column;
         gap: 8px;
-        padding: 0 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        padding: 0 8px calc(8px + var(--safe-bottom));
         transform: translateX(-50%);
         animation: vo-sheet-in 340ms cubic-bezier(0.32, 0.72, 0, 1);
         outline: none;
@@ -1383,7 +1396,11 @@
     }
 
     /* ---------- Discover feed (full-screen posts) ---------- */
-    /* the feed paints its own black canvas: no ambient haze, no page padding */
+    /* the feed paints its own black canvas: no ambient haze, no page padding; the shell goes black so the status bar area matches */
+    .vo-shell[data-canvas="black"] {
+        background: #000;
+    }
+
     #vo-main > .vo-feed {
         background-image: none;
         background-color: #000;

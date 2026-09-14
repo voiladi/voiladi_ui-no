@@ -126,3 +126,8 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - 2026-09-14: Appearance = System / Light / Dark (Settings › Appearance row -> iOS action sheet; replaces the Dark Mode switch). voiladi_theme stores
   "system"|"light"|"dark" (default system). Web follows prefers-color-scheme live; in the APK the WebView media query follows the *app* theme, so shell 1.6
   exposes isSystemDark() + fires window 'voiladi:systemtheme' on uiMode change; useTheme.resolveDark prefers the shell answer. APK 1.5.0 (code 6) live.
+- 2026-09-14: EDGE-TO-EDGE Android shell 1.7 / APK 1.6.0 (code 7): on Android 11+ status + navigation bars are transparent and the page draws behind them;
+  the shell passes bar sizes as --native-inset-top/bottom (html.vo-native-insets; also readable pre-paint via VoiladiNative.insets()), handles the keyboard
+  itself (root padding = IME inset). Web: --safe-top/--safe-bottom tokens (env() fallback) replace every env(safe-area-inset-*); .vo-shell padding-top:
+  var(--safe-top); shell[data-canvas=black] on /discover and /p/*; nativeSetBars("dark") requests light bar icons there. Older Androids keep themed solid bars.
+  Also: apex voiladi.com -> 301 www; removed emergent/posthog scripts from index.html; boot splash shows Reload after 15s if the app never mounts.

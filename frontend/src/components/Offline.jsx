@@ -29,7 +29,7 @@ export const OfflineBanner = () => {
   return (
     <div
       className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center"
-      style={{ paddingTop: "calc(10px + env(safe-area-inset-top))" }}
+      style={{ paddingTop: "calc(10px + var(--safe-top))" }}
       data-testid="offline-banner"
       data-reason={!online ? "offline" : "unreachable"}
       role="status"

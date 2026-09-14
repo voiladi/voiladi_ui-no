@@ -1094,7 +1094,7 @@ export default function ChatRoom() {
       {loading ? null : isRequestForMe ? (
         <div
           className="px-4 pt-2"
-          style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+          style={{ paddingBottom: "max(14px, var(--safe-bottom))" }}
           data-testid="chat-request-bar"
         >
           <div className="vo-soft rounded-[24px] p-4">
@@ -1143,7 +1143,7 @@ export default function ChatRoom() {
       ) : !user?.verified ? (
         <div
           className="px-4 pt-2"
-          style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+          style={{ paddingBottom: "max(14px, var(--safe-bottom))" }}
           data-testid="chat-verify-gate"
         >
           <div className="vo-soft flex items-center gap-3 rounded-[24px] p-3.5">
@@ -1173,7 +1173,7 @@ export default function ChatRoom() {
         <>
           <form
             className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4"
-            style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: "max(14px, var(--safe-bottom))" }}
             onSubmit={(e) => {
               e.preventDefault();
               sendMessage();

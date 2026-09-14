@@ -25,6 +25,8 @@ export const nativeReady = () => call("ready");
 export const nativeOpenSettings = () => call("openSettings");
 /* Shell 1.5+: status bar + Android navigation bar follow the app theme ("dark" | "light"). No-op on older shells / web. */
 export const nativeSetTheme = (dark) => call("setTheme", dark ? "dark" : "light");
+/* Shell 1.7+: per-screen status-bar icon style override ("dark" = light icons for a black screen, null = follow theme). */
+export const nativeSetBars = (mode) => call("setBars", mode || "");
 /* Shell 1.6+: the phone's own dark-mode state (null when unknown / not in the app). */
 export const nativeSystemDark = () => {
   const b = bridge();

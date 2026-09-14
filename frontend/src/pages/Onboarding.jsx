@@ -418,7 +418,7 @@ export default function Onboarding() {
                 {error}
               </p>
             )}
-            <div className="vo-bar sticky bottom-0 -mx-5 mt-auto px-5 pt-4" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+            <div className="vo-bar sticky bottom-0 -mx-5 mt-auto px-5 pt-4" style={{ paddingBottom: "max(24px, var(--safe-bottom))" }}>
               <button type="button" className="vo-btn-primary w-full" disabled={interests.length < MIN_INTERESTS || saving} aria-busy={saving} onClick={saveInterests} data-testid="onboarding-next-button">
                 {saving ? <Spinner size={20} stroke={2} /> : "Continue"}
               </button>

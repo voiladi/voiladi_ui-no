@@ -155,7 +155,7 @@ const SideMenu = ({ open, onClose, go }) => (
           aria-label="Menu"
           data-testid="landing-menu"
         >
-          <div className="flex items-center justify-between px-6" style={{ paddingTop: "calc(22px + env(safe-area-inset-top))" }}>
+          <div className="flex items-center justify-between px-6" style={{ paddingTop: "calc(22px + var(--safe-top))" }}>
             <span className="flex items-center gap-3">
               <LogoMark size={52} />
               <span className="text-[32px] font-extrabold leading-none tracking-[-0.035em] text-ink">voiladi</span>
@@ -210,7 +210,7 @@ const SideMenu = ({ open, onClose, go }) => (
               <StorePill kind="play" small href="/voiladi.apk" testId="menu-playstore" />
             </motion.div>
           </nav>
-          <footer className="px-6 pb-8 pt-4 text-center" style={{ paddingBottom: "calc(28px + env(safe-area-inset-bottom))" }}>
+          <footer className="px-6 pb-8 pt-4 text-center" style={{ paddingBottom: "calc(28px + var(--safe-bottom))" }}>
             <div className="flex items-center justify-center gap-2 text-[13px] text-mute">
               <button type="button" onClick={() => go("/legal/terms")} className="active:opacity-60" data-testid="menu-terms">Terms</button>
               <span aria-hidden="true">·</span>
@@ -276,7 +276,7 @@ export default function Landing() {
     <div className="vo-landing min-h-[100dvh] text-ink" data-testid="landing-page">
       <div ref={frameRef} className="mx-auto flex min-h-[100dvh] w-full max-w-[560px] flex-col px-[clamp(18px,5.5cqi,28px)]" style={{ containerType: "inline-size" }}>
         {/* header */}
-        <header className="flex items-center justify-between" style={{ paddingTop: "calc(18px + env(safe-area-inset-top))" }}>
+        <header className="flex items-center justify-between" style={{ paddingTop: "calc(18px + var(--safe-top))" }}>
           <span className="flex items-center gap-3" data-testid="landing-brand">
             <LogoMark size={56} />
             <span className="text-[clamp(30px,9cqi,38px)] font-extrabold leading-none tracking-[-0.035em] text-ink">voiladi</span>
@@ -337,7 +337,7 @@ export default function Landing() {
         </section>
 
         {/* dots */}
-        <div className="mt-[clamp(8px,3cqi,18px)] flex justify-center gap-3 pb-[calc(28px+env(safe-area-inset-bottom))]" data-testid="landing-dots">
+        <div className="mt-[clamp(8px,3cqi,18px)] flex justify-center gap-3 pb-[calc(28px+var(--safe-bottom))]" data-testid="landing-dots">
           {SCREENS.map((s, i) => (
             <button key={s.key} type="button" onClick={() => setIndex(i)} aria-label={`Go to slide ${i + 1}`} className="flex h-6 w-6 items-center justify-center focus-visible:outline-none" data-testid={`landing-dot-${i}`} data-active={i === index ? "true" : "false"}>
               <motion.span className="block h-[11px] w-[11px] rounded-full" animate={{ backgroundColor: i === index ? "var(--ink)" : "rgba(120,120,128,0.32)", scale: i === index ? 1.12 : 1 }} transition={{ duration: 0.2 }} />

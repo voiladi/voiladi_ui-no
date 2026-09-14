@@ -25,8 +25,8 @@ export default function Welcome() {
       style={{
         paddingLeft: "max(20px, env(safe-area-inset-left))",
         paddingRight: "max(20px, env(safe-area-inset-right))",
-        paddingTop: "max(16px, env(safe-area-inset-top))",
-        paddingBottom: "max(36px, calc(env(safe-area-inset-bottom) + 24px))",
+        paddingTop: "max(16px, var(--safe-top))",
+        paddingBottom: "max(36px, calc(var(--safe-bottom) + 24px))",
       }}
       data-testid="welcome-page"
     >
