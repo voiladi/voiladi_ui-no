@@ -123,3 +123,6 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - 2026-09-14: APK 1.4.0 (versionCode 5, UA VoiladiApp/1.5, release keystore) -> frontend/public/voiladi.apk + deploy/android/voiladi-1.4.0.apk, deployed.
   Shell now follows the web theme: bridge setTheme("dark"|"light") persisted in prefs; status bar, Android navigation bar, window/WebView/splash/offline
   backgrounds all black in dark mode (light icons), white in light mode. Web: useTheme.apply() -> nativeSetTheme(dark). Dark-mode glass lens = smoked glass.
+- 2026-09-14: Appearance = System / Light / Dark (Settings › Appearance row -> iOS action sheet; replaces the Dark Mode switch). voiladi_theme stores
+  "system"|"light"|"dark" (default system). Web follows prefers-color-scheme live; in the APK the WebView media query follows the *app* theme, so shell 1.6
+  exposes isSystemDark() + fires window 'voiladi:systemtheme' on uiMode change; useTheme.resolveDark prefers the shell answer. APK 1.5.0 (code 6) live.

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, Moon, CircleHelp, FileText, Info, Check, Bookmark } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, CircleHelp, FileText, Info, Check, Bookmark, SunMoon } from "lucide-react";
+import * as AD from "@radix-ui/react-alert-dialog";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme, THEME_MODES } from "@/hooks/useTheme";
 import { SoftPageHeader, SoftSectionLabel, SoftCard, SoftRow } from "@/components/SoftUI";
 import { ConfirmDialog } from "@/components/Dialogs";
 import { formatPhone } from "@/lib/phone";
@@ -21,8 +21,10 @@ export const verificationLabel = (user) => {
 export default function Settings() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { dark, setDark } = useTheme();
+  const { mode, setMode } = useTheme();
   const [confirm, setConfirm] = useState(false);
+  const [appearance, setAppearance] = useState(false);
+  const modeLabel = THEME_MODES.find((m) => m.value === mode)?.label || "System";
 
   const verifiedValue = user?.verified ? (
     <>
@@ -64,7 +66,7 @@ export default function Settings() {
           <SoftSectionLabel>App</SoftSectionLabel>
           <SoftCard className="overflow-hidden" testId="settings-app-card">
             <SoftRow icon={Globe} label="Language" value="English" testId="settings-language-row" />
-            <SoftRow icon={Moon} label="Dark Mode" right={<Switch checked={dark} onCheckedChange={setDark} aria-label="Dark mode" data-testid="settings-dark-mode-switch" className="data-[state=checked]:bg-ink" />} testId="settings-dark-mode-row" last />
+            <SoftRow icon={SunMoon} label="Appearance" value={modeLabel} onClick={() => setAppearance(true)} testId="settings-appearance-row" last />
           </SoftCard>
         </section>
 
@@ -83,6 +85,32 @@ export default function Settings() {
           </SoftCard>
         </div>
       </div>
+
+      {/* Appearance: System / Light / Dark (iOS action sheet) */}
+      <AD.Root open={appearance} onOpenChange={setAppearance}>
+        <AD.Portal>
+          <AD.Overlay className="vo-sheet-overlay" />
+          <AD.Content className="vo-sheet vo-apple" data-testid="appearance-sheet" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="vo-sheet-group">
+              <div className="vo-sheet-head">
+                <AD.Title className="vo-sheet-title">Appearance</AD.Title>
+                <AD.Description className="vo-sheet-desc">System follows your phone's light or dark setting.</AD.Description>
+              </div>
+              <div className="vo-sheet-list" role="radiogroup">
+                {THEME_MODES.map((m) => (
+                  <button key={m.value} type="button" role="radio" aria-checked={mode === m.value} onClick={() => { setMode(m.value); setAppearance(false); }} className="vo-sheet-option" data-testid={`appearance-option-${m.value}`}>
+                    <span className="flex-1">{m.label}</span>
+                    {mode === m.value && <Check className="h-[18px] w-[18px] shrink-0" strokeWidth={2.5} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button type="button" className="vo-sheet-cancel" onClick={() => setAppearance(false)} data-testid="appearance-cancel">
+              Cancel
+            </button>
+          </AD.Content>
+        </AD.Portal>
+      </AD.Root>
 
       <ConfirmDialog
         open={confirm}

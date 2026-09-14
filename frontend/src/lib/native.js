@@ -25,6 +25,16 @@ export const nativeReady = () => call("ready");
 export const nativeOpenSettings = () => call("openSettings");
 /* Shell 1.5+: status bar + Android navigation bar follow the app theme ("dark" | "light"). No-op on older shells / web. */
 export const nativeSetTheme = (dark) => call("setTheme", dark ? "dark" : "light");
+/* Shell 1.6+: the phone's own dark-mode state (null when unknown / not in the app). */
+export const nativeSystemDark = () => {
+  const b = bridge();
+  if (!b || typeof b.isSystemDark !== "function") return null;
+  try {
+    return !!b.isSystemDark();
+  } catch (e) {
+    return null;
+  }
+};
 
 /* Shell 1.4+ exposes hasCamera(): older shells never answer the page's camera request, so the web app must not wait on them. */
 export const nativeSupportsCamera = () => {

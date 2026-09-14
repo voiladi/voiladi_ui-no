@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -70,6 +71,19 @@ public class MainActivity extends Activity {
     private boolean darkMode;
     private View splashView;
     private View offlineBox;
+
+    /** Phone-level dark mode (Settings > Display). The page asks for this when Appearance = System. */
+    private boolean systemDark() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (web != null) {
+            web.evaluateJavascript("window.dispatchEvent(new CustomEvent('voiladi:systemtheme',{detail:{dark:" + systemDark() + "}}))", null);
+        }
+    }
 
     private boolean readDarkPref() {
         return "dark".equals(getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("theme", "light"));
@@ -174,7 +188,7 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.5");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.6");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         WebView.setWebContentsDebuggingEnabled(false);
@@ -466,9 +480,15 @@ public class MainActivity extends Activity {
             });
         }
 
+        /** Shell 1.6: true when the phone itself is in dark mode (the WebView's own media query follows the app theme, not the phone). */
+        @JavascriptInterface
+        public boolean isSystemDark() {
+            return systemDark();
+        }
+
         @JavascriptInterface
         public String shellVersion() {
-            return "1.5";
+            return "1.6";
         }
     }
 
