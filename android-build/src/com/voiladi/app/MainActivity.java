@@ -94,8 +94,10 @@ public class MainActivity extends Activity {
 
     /* Edge-to-edge (Android 11+): the page draws behind the transparent status + navigation bars, exactly like Instagram,
        and receives their sizes as CSS variables. Older Androids keep solid bars that follow the theme. */
+    private boolean edgeToEdgeFailed;
+
     private boolean edgeToEdge() {
-        return Build.VERSION.SDK_INT >= 30;
+        return Build.VERSION.SDK_INT >= 30 && !edgeToEdgeFailed;
     }
 
     /** Page-level override: "dark" = light icons (black screens such as Discover), "" = follow the theme. */
@@ -110,21 +112,31 @@ public class MainActivity extends Activity {
     private void applySystemBars() {
         Window w = getWindow();
         int bg = darkMode ? Color.BLACK : Color.WHITE;
+        boolean done = false;
         if (edgeToEdge()) {
-            w.setDecorFitsSystemWindows(false);
-            w.setStatusBarColor(Color.TRANSPARENT);
-            w.setNavigationBarColor(Color.TRANSPARENT);
-            w.setNavigationBarDividerColor(Color.TRANSPARENT);
-            if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                w.setDecorFitsSystemWindows(false);
+                w.setStatusBarColor(Color.TRANSPARENT);
+                w.setNavigationBarColor(Color.TRANSPARENT);
+                w.setNavigationBarDividerColor(Color.TRANSPARENT);
                 w.setNavigationBarContrastEnforced(false);
                 w.setStatusBarContrastEnforced(false);
+                // PhoneWindow.getInsetsController() dereferences the decor view - make sure it exists first
+                // (this was the 1.6.0 launch crash: called before setContentView, decor == null -> NPE)
+                w.getDecorView();
+                WindowInsetsController c = w.getInsetsController();
+                if (c != null) {
+                    int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                    c.setSystemBarsAppearance(lightIcons() ? 0 : mask, mask);
+                }
+                done = true;
+            } catch (Throwable t) {
+                // anything odd on this OEM build: fall back to solid themed bars instead of crashing
+                edgeToEdgeFailed = true;
+                try { w.setDecorFitsSystemWindows(true); } catch (Throwable ignored) {}
             }
-            WindowInsetsController c = w.getInsetsController();
-            if (c != null) {
-                int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-                c.setSystemBarsAppearance(lightIcons() ? 0 : mask, mask);
-            }
-        } else {
+        }
+        if (!done) {
             w.setStatusBarColor(bg);
             w.setNavigationBarColor(bg);
             if (Build.VERSION.SDK_INT >= 28) w.setNavigationBarDividerColor(bg);
@@ -148,15 +160,18 @@ public class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override
             public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                Insets ime = insets.getInsets(WindowInsets.Type.ime());
-                boolean keyboard = ime.bottom > bars.bottom;
-                // keyboard open: shrink the whole view like adjustResize would; the page's bottom inset is then 0
-                root.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
-                float d = getResources().getDisplayMetrics().density;
-                int top = Math.round(bars.top / d);
-                int bottom = keyboard ? 0 : Math.round(bars.bottom / d);
-                pushInsets(top, bottom);
+                try {
+                    Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                    Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                    boolean keyboard = ime.bottom > bars.bottom;
+                    // keyboard open: shrink the whole view like adjustResize would; the page's bottom inset is then 0
+                    root.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
+                    float d = getResources().getDisplayMetrics().density;
+                    int top = Math.round(bars.top / d);
+                    int bottom = keyboard ? 0 : Math.round(bars.bottom / d);
+                    pushInsets(top, bottom);
+                } catch (Throwable ignored) {
+                }
                 return WindowInsets.CONSUMED;
             }
         });
@@ -168,7 +183,10 @@ public class MainActivity extends Activity {
         lastTop = top;
         lastBottom = bottom;
         if (web == null) return;
-        web.evaluateJavascript(insetsScript(top, bottom), null);
+        try {
+            web.evaluateJavascript(insetsScript(top, bottom), null);
+        } catch (Throwable ignored) {
+        }
     }
 
     private static String insetsScript(int top, int bottom) {
@@ -186,6 +204,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        CrashReporter.install(getApplicationContext());
+        CrashReporter.flush(getApplicationContext(), SHELL_VERSION);
         darkMode = readDarkPref();
         setTheme(darkMode ? android.R.style.Theme_DeviceDefault_NoActionBar : android.R.style.Theme_DeviceDefault_Light_NoActionBar);
         super.onCreate(savedInstanceState);
@@ -207,6 +227,7 @@ public class MainActivity extends Activity {
         root.addView(splash, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
+        applySystemBars(); // decor is definitely attached now: icon style + transparent bars take effect
 
         if (savedInstanceState != null) {
             web.restoreState(savedInstanceState);
@@ -227,6 +248,7 @@ public class MainActivity extends Activity {
 
     /* ---------------------------------------------------------------- web view */
 
+    static final String SHELL_VERSION = "1.7.1";
     private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
 
     /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */
@@ -258,7 +280,7 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.7");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/" + SHELL_VERSION);
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         WebView.setWebContentsDebuggingEnabled(false);
@@ -582,7 +604,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String shellVersion() {
-            return "1.7";
+            return SHELL_VERSION;
         }
     }
 

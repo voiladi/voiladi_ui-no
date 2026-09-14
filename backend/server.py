@@ -16,6 +16,7 @@ import routes_notifications
 import routes_verification
 import routes_media
 import routes_posts
+import routes_shell
 import ws_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -48,6 +49,7 @@ app.include_router(routes_notifications.router)
 app.include_router(routes_verification.router)
 app.include_router(routes_media.router)
 app.include_router(routes_posts.router)
+app.include_router(routes_shell.router)
 app.include_router(ws_manager.router)
 
 # middleware order: the last one added runs first. Rate limit + body size run before CORS so abusive

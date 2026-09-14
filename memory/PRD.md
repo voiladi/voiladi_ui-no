@@ -131,3 +131,7 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   itself (root padding = IME inset). Web: --safe-top/--safe-bottom tokens (env() fallback) replace every env(safe-area-inset-*); .vo-shell padding-top:
   var(--safe-top); shell[data-canvas=black] on /discover and /p/*; nativeSetBars("dark") requests light bar icons there. Older Androids keep themed solid bars.
   Also: apex voiladi.com -> 301 www; removed emergent/posthog scripts from index.html; boot splash shows Reload after 15s if the app never mounts.
+- 2026-09-14: APK 1.6.0 crashed on launch: PhoneWindow.getInsetsController() dereferences the decor view, which was null before setContentView -> NPE.
+  Fixed in APK 1.6.1 (code 8, shell 1.7.1): w.getDecorView() first + applySystemBars() again after setContentView; whole edge-to-edge path is try/catch
+  with fallback to solid themed bars. Added CrashReporter (stores uncaught trace, posts to POST /api/shell/crash on next launch); admin reads
+  GET /api/shell/crashes (x-admin-key). routes_shell.py. Deployed api + web.
