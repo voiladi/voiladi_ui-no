@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ImagePlus, RefreshCw } from "lucide-react";
+import { ImagePlus, RefreshCw, Users } from "lucide-react";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useMeta } from "@/hooks/useMeta";
@@ -27,6 +27,7 @@ export default function Discover() {
   const [active, setActive] = useState(0);
   const [deleteFor, setDeleteFor] = useState(null);
   const [muted, setMuted] = useState(true); // one sound setting for the whole feed (Instagram behaviour)
+  const [scope, setScope] = useState(() => (sessionStorage.getItem("vo_feed_scope") === "circle" ? "circle" : "all")); // all = Discover, circle = people you follow
   const scroller = useRef(null);
   const loadingMore = useRef(false);
   const A = usePostActions(setPosts);
@@ -34,20 +35,29 @@ export default function Discover() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const { data } = await api.get("/posts/feed", { params: { limit: 8 } });
+      const { data } = await api.get("/posts/feed", { params: { limit: 8, scope } });
       setPosts(data.posts);
       setNext(data.next);
+      setActive(0);
+      if (scroller.current) scroller.current.scrollTop = 0;
     } catch (e) {
       setError(errMsg(e, "Couldn't load posts right now."));
       setPosts((p) => p || []);
     }
-  }, []);
+  }, [scope]);
+
+  const switchScope = (next) => {
+    if (next === scope) return;
+    sessionStorage.setItem("vo_feed_scope", next);
+    setPosts(null);
+    setScope(next);
+  };
 
   const loadMore = useCallback(async () => {
     if (!next || loadingMore.current) return;
     loadingMore.current = true;
     try {
-      const { data } = await api.get("/posts/feed", { params: { limit: 8, before: next } });
+      const { data } = await api.get("/posts/feed", { params: { limit: 8, before: next, scope } });
       setPosts((p) => {
         const seen = new Set((p || []).map((x) => x.id));
         return [...(p || []), ...data.posts.filter((x) => !seen.has(x.id))];
@@ -58,7 +68,7 @@ export default function Discover() {
     } finally {
       loadingMore.current = false;
     }
-  }, [next]);
+  }, [next, scope]);
 
   useEffect(() => {
     load();
@@ -110,9 +120,30 @@ export default function Discover() {
         ))}
       </div>
 
-      <h1 className="pointer-events-none absolute left-[20px] text-[38px] font-bold leading-[42px] tracking-[-0.03em] text-white" style={{ top: "calc(env(safe-area-inset-top, 0px) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-title">
-        Discover
-      </h1>
+      {/* Discover (everyone) | Circle (people you follow) - minimal text tabs, Instagram-style */}
+      <div className="absolute left-[20px] flex items-end gap-[18px] text-white" style={{ top: "calc(env(safe-area-inset-top, 0px) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-scope-tabs" role="tablist">
+        {[
+          { value: "all", label: "Discover" },
+          { value: "circle", label: "Circle" },
+        ].map((t) => {
+          const on = scope === t.value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => switchScope(t.value)}
+              className={`relative pb-[6px] font-bold leading-[42px] tracking-[-0.03em] focus-visible:outline-none active:opacity-80 ${on ? "text-[38px] text-white" : "text-[30px] text-white/60"}`}
+              style={{ transitionProperty: "color, opacity", transitionDuration: "160ms" }}
+              data-testid={`discover-tab-${t.value}`}
+            >
+              {on ? <h1 className="inline" data-testid="discover-title">{t.label}</h1> : t.label}
+              {on && <span className="absolute bottom-0 left-0 h-[3px] w-[28px] rounded-full bg-white" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
 
       {/* first load: Instagram spinner on black */}
       {first && (
@@ -132,7 +163,23 @@ export default function Discover() {
         </div>
       )}
 
-      {empty && (
+      {empty && scope === "circle" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center text-white" data-testid="circle-empty-state">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white/10">
+            <Users className="h-7 w-7" strokeWidth={1.8} />
+          </span>
+          <p className="mt-5 text-[22px] font-bold">Your circle is quiet</p>
+          <p className="mt-1.5 max-w-[280px] text-[16px] leading-[22px] text-white/70">Posts from people you follow show up here. Follow a few people to fill it.</p>
+          <button type="button" onClick={() => navigate("/explore")} className="mt-6 h-[50px] rounded-full bg-white px-7 text-[16px] font-semibold text-black active:opacity-80" data-testid="circle-find-people-button">
+            Find people
+          </button>
+          <button type="button" onClick={() => switchScope("all")} className="mt-4 text-[16px] font-medium text-white/70 active:opacity-60" data-testid="circle-back-to-discover">
+            Back to Discover
+          </button>
+        </div>
+      )}
+
+      {empty && scope !== "circle" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center text-white" data-testid="empty-state">
           <span className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white/10">
             <ImagePlus className="h-7 w-7" strokeWidth={1.8} />

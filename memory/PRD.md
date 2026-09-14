@@ -114,3 +114,6 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - 2026-09-14: Messages inbox rebuilt to the user's reference: flat list (no cards) with 0.5px hairlines, 48px avatars, 20px names, 16px preview, time top-right,
   22px black unread badge, chevron, live "••• typing..." (WS typing event) and ✓✓ read ticks (backend `last_read` on match rows); bigger 40px title;
   compact 40px glass segmented All / Requests / Unread (`.vo-seg-inbox`). Log Out sheet action black (`ink` prop on ConfirmDialog). Deployed api + web.
+- 2026-09-14: Discover now has two minimal text tabs top-left: "Discover" (everyone) | "Circle" (posts from people you follow = your like-swipes).
+  Backend GET /api/posts/feed?scope=circle. Active tab 38px white with short underline, inactive 30px white/60. Circle empty state -> Find people.
+  Scope remembered per session (sessionStorage vo_feed_scope). Brand row removed from Explore/Likes/Messages (SoftTitle `actions` prop); Profile keeps it. Deployed.

@@ -112,13 +112,20 @@ async def _blocked_ids(uid: str) -> set:
 # ------------------------------------------------------------------ feed
 
 @router.get("/posts/feed")
-async def feed(before: Optional[str] = None, limit: int = FEED_PAGE, user=Depends(get_current_user)):
-    """Discover: everyone's posts, newest first, minus your own, hidden ones and blocked people. Cursor = created_at."""
+async def feed(before: Optional[str] = None, limit: int = FEED_PAGE, scope: str = "all", user=Depends(get_current_user)):
+    """Discover: everyone's posts, newest first, minus your own, hidden ones and blocked people. Cursor = created_at.
+    scope=circle -> only people you follow (your like-swipes)."""
     uid = user["id"]
     limit = max(1, min(limit, 20))
     hidden = [r["post_id"] for r in await db.post_hidden.find({"user_id": uid}, {"_id": 0, "post_id": 1}).to_list(None)]
     blocked = list(await _blocked_ids(uid))
     q = {"user_id": {"$nin": blocked + [uid]}, "status": {"$nin": ["processing", "failed"]}}
+    if scope == "circle":
+        followed = [r["to_id"] for r in await db.swipes.find({"from_id": uid, "action": {"$in": ["like", "superlike"]}}, {"_id": 0, "to_id": 1}).to_list(None)]
+        followed = [f for f in followed if f not in blocked]
+        if not followed:
+            return {"posts": [], "next": None}
+        q["user_id"] = {"$in": followed}
     if hidden:
         q["id"] = {"$nin": hidden}
     if before:
