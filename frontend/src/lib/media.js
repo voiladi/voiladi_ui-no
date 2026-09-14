@@ -81,3 +81,46 @@ export const uploadChatMedia = async ({ file, matchId, viewOnce = false, clientI
   onProgress?.(1);
   return data;
 };
+
+/* Video posts: up to 60 seconds; same chunk pipeline (init -> chunk x N -> complete), the post is created on complete
+   and flips to "ready" once the server has compressed it. */
+export const POST_VIDEO_MAX_SECONDS = 60;
+export const POST_VIDEO_MAX_BYTES = 300 * 1024 * 1024;
+
+export const uploadPostVideo = async ({ file, caption = "", location = "", duration, onProgress, signal }) => {
+  const { data: init } = await api.post("/posts/video/init", {
+    content_type: file.type || "video/mp4",
+    size: file.size,
+    duration: duration || undefined,
+    caption,
+    location,
+  });
+  const chunk = init.chunk_size || 8 * 1024 * 1024;
+  const total = Math.ceil(file.size / chunk);
+  let sent = 0;
+  for (let i = 0; i < total; i++) {
+    if (signal?.aborted) throw new DOMException("Upload cancelled", "AbortError");
+    const blob = file.slice(i * chunk, Math.min(file.size, (i + 1) * chunk));
+    let attempt = 0;
+    for (;;) {
+      try {
+        await api.put(`/media/${init.upload_id}/chunk`, blob, {
+          params: { i },
+          headers: { "Content-Type": "application/octet-stream" },
+          timeout: 120000,
+          signal,
+          onUploadProgress: (e) => onProgress?.(Math.min(0.99, (sent + (e.loaded || 0)) / file.size)),
+        });
+        break;
+      } catch (e) {
+        if (e?.name === "CanceledError" || e?.name === "AbortError" || attempt >= 1 || e?.response?.status) throw e;
+        attempt += 1;
+      }
+    }
+    sent += blob.size;
+    onProgress?.(Math.min(0.99, sent / file.size));
+  }
+  const { data } = await api.post(`/posts/video/${init.upload_id}/complete`, null, { timeout: 120000 });
+  onProgress?.(1);
+  return data;
+};

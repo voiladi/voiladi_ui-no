@@ -21,7 +21,23 @@ export default function PostView() {
   const [posts, setPosts] = useState(null);
   const [error, setError] = useState("");
   const [deleteFor, setDeleteFor] = useState(null);
+  const [muted, setMuted] = useState(true);
   const A = usePostActions(setPosts);
+
+  // a freshly uploaded video is still being compressed: re-check every few seconds until it is ready
+  useEffect(() => {
+    const p = posts?.[0];
+    if (!p || p.kind !== "video" || p.status !== "processing") return undefined;
+    const t = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/posts/${postId}`);
+        if (data.status !== "processing") setPosts([data]);
+      } catch (e) {
+        /* keep polling */
+      }
+    }, 3000);
+    return () => clearInterval(t);
+  }, [posts, postId]);
 
   useEffect(() => {
     setPosts(null);
@@ -42,7 +58,7 @@ export default function PostView() {
     <div className="vo-feed absolute inset-0 overflow-hidden bg-black" style={{ "--nav-h": "0px", "--nav-gap": "18px" }} data-testid="post-view-page">
       {post && (
         <div className="h-full w-full">
-          <PostCard post={post} onLike={A.like} onSave={A.save} onFollow={A.follow} onComment={A.setCommentsFor} onShare={A.setShareFor} onMore={A.setMoreFor} onOpenAuthor={A.openAuthor} />
+          <PostCard post={post} muted={muted} onToggleMute={() => setMuted((m) => !m)} onLike={A.like} onSave={A.save} onFollow={A.follow} onComment={A.setCommentsFor} onShare={A.setShareFor} onMore={A.setMoreFor} onOpenAuthor={A.openAuthor} />
         </div>
       )}
       <button type="button" onClick={back} aria-label="Back" className="absolute left-[10px] flex h-11 w-11 items-center justify-center text-white focus-visible:outline-none active:opacity-70" style={{ top: "calc(env(safe-area-inset-top, 0px) + 46px)", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.5))" }} data-testid="post-view-back-button">

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircleMore, Send, Bookmark, Ellipsis, MapPin, Heart } from "lucide-react";
+import { MessageCircleMore, Send, Bookmark, Ellipsis, MapPin, Heart, Volume2, VolumeX } from "lucide-react";
 import { photoUrl } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
@@ -65,22 +65,55 @@ const RailButton = ({ label, count, onClick, children, testId, active }) => (
 const ICON = "h-[30px] w-[30px]";
 const ICON_SHADOW = { filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.45))" };
 
-export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onFollow, onOpenAuthor, active = true }) => {
+export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onFollow, onOpenAuthor, active = true, playing = true, muted = true, onToggleMute }) => {
   const [ready, setReady] = useState(false);
   const [burst, setBurst] = useState(0);
+  const [soundFlash, setSoundFlash] = useState(0);
   const lastTap = useRef(0);
+  const tapTimer = useRef(null);
+  const videoRef = useRef(null);
+  const isVideo = post.kind === "video";
+  const processing = isVideo && post.status !== "ready";
   const src = photoUrl(post.image);
+  const videoSrc = isVideo ? photoUrl(post.video) : "";
 
-  useEffect(() => setReady(false), [src]);
+  useEffect(() => setReady(false), [src, videoSrc]);
+
+  // only the post on screen plays; the others pause and rewind so they start fresh when scrolled to
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (playing && active && !processing) {
+      const p = v.play();
+      if (p && p.catch) p.catch(() => {});
+    } else {
+      v.pause();
+      if (!playing) {
+        try {
+          v.currentTime = 0;
+        } catch (e) {
+          /* not loaded yet */
+        }
+      }
+    }
+  }, [playing, active, processing, videoSrc]);
 
   const onTap = () => {
     const t = Date.now();
+    clearTimeout(tapTimer.current);
     if (t - lastTap.current < 280) {
       lastTap.current = 0;
       if (!post.liked) onLike(post);
       setBurst((b) => b + 1);
     } else {
       lastTap.current = t;
+      if (isVideo && onToggleMute) {
+        // single tap on a video = sound on / off (waits to make sure it isn't the start of a double tap)
+        tapTimer.current = setTimeout(() => {
+          onToggleMute();
+          setSoundFlash((n) => n + 1);
+        }, 290);
+      }
     }
   };
 
@@ -88,7 +121,32 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
     <article className="vo-post relative h-full w-full shrink-0 snap-start snap-always overflow-hidden bg-black" data-testid="feed-post" data-post-id={post.id}>
       {/* photo: shimmer until decoded, then a soft fade in */}
       <div className={`absolute inset-0 ${ready ? "" : "vo-post-shimmer"}`} onClick={onTap} role="presentation">
-        {src && (
+        {isVideo && !processing && videoSrc && (
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            poster={src || undefined}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: ready ? 1 : 0, transition: "opacity 420ms ease-out" }}
+            muted={muted}
+            loop
+            playsInline
+            preload={active ? "auto" : "metadata"}
+            onLoadedData={() => setReady(true)}
+            onCanPlay={() => setReady(true)}
+            onError={() => setReady(true)}
+            data-testid="feed-post-video"
+            data-ready={ready ? "true" : "false"}
+            data-playing={playing ? "true" : "false"}
+          />
+        )}
+        {isVideo && processing && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white" data-testid="feed-post-processing">
+            <span className="text-[17px] font-semibold">{post.status === "failed" ? "This video couldn't be processed" : "Getting your video ready..."}</span>
+            {post.status !== "failed" && <span className="mt-1 text-[14px] text-white/70">It will show up here in a moment.</span>}
+          </div>
+        )}
+        {!isVideo && src && (
           <img
             src={src}
             alt={post.caption || `Post by ${post.author?.name}`}
@@ -107,6 +165,17 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
       {/* legibility: a whisper of shade at the top for the title, a deeper one at the bottom for the text */}
       <div className="vo-post-shade-top pointer-events-none absolute inset-x-0 top-0 h-[160px]" aria-hidden="true" />
       <div className="vo-post-shade-bottom pointer-events-none absolute inset-x-0 bottom-0 h-[46%]" aria-hidden="true" />
+
+      {/* sound on / off flash (videos) */}
+      <AnimatePresence>
+        {soundFlash > 0 && (
+          <motion.div key={`s${soundFlash}`} className="pointer-events-none absolute inset-0 flex items-center justify-center" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.7, 1, 1, 1.05] }} transition={{ duration: 0.8, times: [0, 0.15, 0.7, 1] }} onAnimationComplete={() => setSoundFlash(0)}>
+            <span className="flex h-[74px] w-[74px] items-center justify-center rounded-full bg-black/55 text-white backdrop-blur" data-testid="feed-sound-flash">
+              {muted ? <VolumeX className="h-8 w-8" strokeWidth={2} /> : <Volume2 className="h-8 w-8" strokeWidth={2} />}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* double-tap heart */}
       <AnimatePresence>

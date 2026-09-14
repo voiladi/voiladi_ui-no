@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { PostsGrid } from "@/components/feed/PostsGrid";
+import { GlassSegmented } from "@/components/GlassSegmented";
 import { notice } from "@/lib/feedback";
 import { api, errMsg } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -192,6 +193,12 @@ export default function Profile() {
     queryKey: ["my-posts"],
     queryFn: async () => (await api.get("/posts/mine")).data.posts,
     enabled: !!user,
+  });
+  const [tab, setTab] = useState("posts");
+  const savedPosts = useQuery({
+    queryKey: ["saved-posts"],
+    queryFn: async () => (await api.get("/posts/saved")).data.posts,
+    enabled: !!user && tab === "saved",
   });
 
   useEffect(() => {
@@ -369,32 +376,35 @@ export default function Profile() {
         />
       </section>
 
-      {/* posts */}
+      {/* Posts | Saved (glass segmented, same as Likes / Messages) */}
       <section className="mx-4 mt-5" data-testid="profile-posts">
-        <div className="flex items-center justify-between px-0.5">
-          <h2 className="text-[19px] font-bold leading-[1.2] tracking-[-0.02em] text-ink">
-            Posts
-            {myPosts.data?.length ? (
-              <span className="ml-1.5 text-mute">{myPosts.data.length}</span>
-            ) : null}
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate("/posts/new")}
-            className="inline-flex h-[32px] items-center gap-1 rounded-full px-3 text-[15px] font-semibold text-ink active:opacity-60"
-            data-testid="profile-posts-new-button"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.4} /> New
-          </button>
-        </div>
-        <div className="mt-2.5">
-          <PostsGrid
-            posts={myPosts.data}
-            loading={myPosts.isLoading}
-            emptyTitle="No posts yet"
-            emptyText="Share a photo of your day from the + button."
-            testId="profile-posts-grid"
-          />
+        <GlassSegmented
+          options={[
+            { value: "posts", label: `Posts${myPosts.data?.length ? ` ${myPosts.data.length}` : ""}` },
+            { value: "saved", label: "Saved" },
+          ]}
+          value={tab}
+          onChange={setTab}
+          testIdPrefix="profile-tab"
+        />
+        <div className="mt-3">
+          {tab === "posts" ? (
+            <PostsGrid
+              posts={myPosts.data}
+              loading={myPosts.isLoading}
+              emptyTitle="No posts yet"
+              emptyText="Share a photo or video of your day from the + button."
+              testId="profile-posts-grid"
+            />
+          ) : (
+            <PostsGrid
+              posts={savedPosts.data}
+              loading={savedPosts.isLoading}
+              emptyTitle="Nothing saved yet"
+              emptyText="Tap the bookmark on a post to keep it here."
+              testId="profile-saved-grid"
+            />
+          )}
         </div>
       </section>
 

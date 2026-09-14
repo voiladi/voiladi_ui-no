@@ -82,6 +82,10 @@ async def _decorate(posts: List[dict], viewer: dict) -> List[dict]:
         row["saved"] = p["id"] in saved
         row["followed"] = p["user_id"] in followed
         row["mine"] = p["user_id"] == uid
+        row.setdefault("kind", "image")
+        row.setdefault("status", "ready")
+        row.setdefault("video", None)
+        row.setdefault("duration", None)
         for k in ("likes", "comments", "shares", "saves"):
             row[k] = int(row.get(k) or 0)
         out.append(row)
@@ -114,7 +118,7 @@ async def feed(before: Optional[str] = None, limit: int = FEED_PAGE, user=Depend
     limit = max(1, min(limit, 20))
     hidden = [r["post_id"] for r in await db.post_hidden.find({"user_id": uid}, {"_id": 0, "post_id": 1}).to_list(None)]
     blocked = list(await _blocked_ids(uid))
-    q = {"user_id": {"$nin": blocked + [uid]}}
+    q = {"user_id": {"$nin": blocked + [uid]}, "status": {"$nin": ["processing", "failed"]}}
     if hidden:
         q["id"] = {"$nin": hidden}
     if before:
@@ -206,6 +210,10 @@ async def delete_post(post_id: str, user=Depends(get_current_user)):
                 (UPLOAD_DIR / "_thumbs" / f"w{w}_{name}").unlink(missing_ok=True)
         except Exception:
             pass
+    if post.get("kind") == "video":
+        from routes_media import MEDIA_DIR
+        for f in (f"{post_id}.mp4", f"{post_id}_poster.jpg"):
+            (MEDIA_DIR / f).unlink(missing_ok=True)
     return {"ok": True}
 
 
@@ -217,7 +225,95 @@ async def get_post(post_id: str, user=Depends(get_current_user)):
     return (await _decorate([post], user))[0]
 
 
-# ------------------------------------------------------------------ like / save / hide
+# ------------------------------------------------------------------ video posts (chunked upload, ffmpeg -> 720p mp4 + poster)
+
+POST_VIDEO_MAX_SECONDS = 60
+POST_VIDEO_MAX_BYTES = 300 * 1024 * 1024
+
+
+class VideoInitIn(BaseModel):
+    content_type: str
+    size: int
+    duration: Optional[float] = None
+    caption: str = ""
+    location: str = ""
+
+
+@router.post("/posts/video/init")
+async def post_video_init(body: VideoInitIn, user=Depends(get_current_user)):
+    """Step 1 of a video post. Chunks then go to PUT /api/media/{upload_id}/chunk (shared with chat media)."""
+    from routes_media import VIDEO_TYPES, CHUNK_MAX, TMP_DIR
+    import time
+    ct = body.content_type.lower().split(";")[0].strip()
+    if ct not in VIDEO_TYPES:
+        raise HTTPException(status_code=400, detail="Only videos can be uploaded here")
+    if body.size <= 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if body.size > POST_VIDEO_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="That video is too large (max 300 MB)")
+    if body.duration and body.duration > POST_VIDEO_MAX_SECONDS + 1:
+        raise HTTPException(status_code=400, detail=f"Videos can be up to {POST_VIDEO_MAX_SECONDS} seconds")
+    caption, location = (body.caption or "").strip(), (body.location or "").strip()
+    if len(caption) > CAPTION_MAX:
+        raise HTTPException(status_code=400, detail=f"Keep the caption under {CAPTION_MAX} characters")
+    if len(location) > LOCATION_MAX:
+        raise HTTPException(status_code=400, detail="That place name is too long")
+    upload_id = str(uuid.uuid4())
+    await db.media_uploads.insert_one({
+        "id": upload_id, "user_id": user["id"], "match_id": None, "purpose": "post", "kind": "video", "content_type": ct,
+        "size": body.size, "view_once": False, "client_id": None, "caption": caption, "location": location,
+        "received": 0, "chunks": 0, "created_at": now_iso(), "ts": time.time(),
+    })
+    (TMP_DIR / upload_id).mkdir(parents=True, exist_ok=True)
+    return {"upload_id": upload_id, "chunk_size": CHUNK_MAX}
+
+
+async def _finish_post_video(post_id: str, raw, dst, poster, upload_id: str):
+    import shutil
+    from routes_media import _transcode_video, _transcode_sem, TMP_DIR, public_url, QUALITY_TIERS
+    try:
+        async with _transcode_sem:
+            meta = await _transcode_video(raw, dst, poster, QUALITY_TIERS[720])
+        if meta.get("duration", 0) > POST_VIDEO_MAX_SECONDS + 1:
+            raise ValueError(f"Videos can be up to {POST_VIDEO_MAX_SECONDS} seconds")
+        await db.posts.update_one({"id": post_id}, {"$set": {
+            "status": "ready", "width": meta.get("width"), "height": meta.get("height"), "duration": meta.get("duration"),
+            "image": public_url(poster.name) if poster.exists() else None,
+        }})
+    except Exception as e:
+        await db.posts.update_one({"id": post_id}, {"$set": {"status": "failed", "error": str(e)[:160]}})
+        dst.unlink(missing_ok=True)
+    finally:
+        shutil.rmtree(TMP_DIR / upload_id, ignore_errors=True)
+        await db.media_uploads.delete_one({"id": upload_id})
+    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    if post:
+        await manager.send(post["user_id"], {"type": "post_ready", "post_id": post_id, "status": post.get("status")})
+
+
+@router.post("/posts/video/{upload_id}/complete", status_code=201)
+async def post_video_complete(upload_id: str, user=Depends(get_current_user)):
+    """Step 3: assemble the chunks and create the post. It shows in the feed once ffmpeg has finished (status ready)."""
+    from routes_media import _assemble, MEDIA_DIR, public_url
+    up = await db.media_uploads.find_one({"id": upload_id, "user_id": user["id"], "purpose": "post"}, {"_id": 0})
+    if not up:
+        raise HTTPException(status_code=404, detail="Upload not found")
+    if up["received"] < up["size"]:
+        raise HTTPException(status_code=400, detail="Upload incomplete")
+    raw = await asyncio.to_thread(_assemble, upload_id)
+    post_id = str(uuid.uuid4())
+    fname, pname = f"{post_id}.mp4", f"{post_id}_poster.jpg"
+    post = {
+        "id": post_id, "user_id": user["id"], "kind": "video", "status": "processing",
+        "video": public_url(fname), "image": None, "width": None, "height": None, "duration": None,
+        "caption": up.get("caption") or "", "location": up.get("location") or "", "created_at": now_iso(),
+        "likes": 0, "comments": 0, "shares": 0, "saves": 0,
+    }
+    await db.posts.insert_one(dict(post))
+    asyncio.create_task(_finish_post_video(post_id, raw, MEDIA_DIR / fname, MEDIA_DIR / pname, upload_id))
+    return (await _decorate([post], user))[0]
+
+
 
 async def _toggle(coll, counter: str, post: dict, uid: str) -> dict:
     key = {"post_id": post["id"], "user_id": uid}
@@ -317,7 +413,7 @@ async def delete_comment(post_id: str, comment_id: str, user=Depends(get_current
 
 def post_snapshot(post: dict, author: dict) -> dict:
     """What a shared post carries inside a chat message (enough to draw the card without another request)."""
-    return {"id": post["id"], "image": post.get("image"), "caption": post.get("caption") or "", "location": post.get("location") or "",
+    return {"id": post["id"], "kind": post.get("kind") or "image", "image": post.get("image"), "caption": post.get("caption") or "", "location": post.get("location") or "",
             "username": author.get("username") or "", "name": author.get("name") or "Someone", "photo": author.get("photo")}
 
 

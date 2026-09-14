@@ -1,34 +1,22 @@
 [
   {
-    "content": "Backend routes_posts.py + indexes + admin seed posts",
+    "content": "Settings: merge rows (Account, Saved added to Profile group)",
     "status": "completed"
   },
   {
-    "content": "Chat: ChatRoom post card for kind=post",
+    "content": "Profile: glass segmented Posts | Saved under stats",
     "status": "completed"
   },
   {
-    "content": "Frontend Discover.jsx full-screen snap feed matching reference + loading sequence",
+    "content": "Video posts backend: chunked upload + ffmpeg 720p (<=60s) + poster, kind field on posts",
     "status": "completed"
   },
   {
-    "content": "Comments / Share / More sheets",
+    "content": "Video posts frontend: NewPost accepts video, PostCard autoplay muted/loop/tap-to-unmute, grid tiles show poster",
     "status": "completed"
   },
   {
-    "content": "NewPost page, PostView (/p/:id), Saved page, Profile + button, posts grid, Saved menu row",
-    "status": "completed"
-  },
-  {
-    "content": "Compile, screenshot verify vs reference",
-    "status": "completed"
-  },
-  {
-    "content": "Testing agent run + fix",
-    "status": "completed"
-  },
-  {
-    "content": "Deploy api + web to Railway",
+    "content": "Test (agent) + deploy api+web",
     "status": "completed"
   }
 ]

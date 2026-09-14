@@ -105,3 +105,9 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   PostsGrid.jsx, hooks/usePostActions.js, pages/NewPost.jsx (/posts/new, from Profile "+" header button and Posts section), pages/PostView.jsx (/p/:id,
   used by shared messages + Copy link), pages/Saved.jsx (/saved, Profile menu "Saved"). ChatRoom renders kind="post" as a tappable card.
   Tests iteration_27 (backend 24/25 -> fixed 201; frontend 100%). Deployed api + web.
+- 2026-09-14: Profile cleaned (completion card, Boost/Super Likes/VOILADI+, Account..Help menu hidden behind SHOW_PROFILE_EXTRAS=false in Profile.jsx; code kept).
+  Settings › Profile group now: Account, Saved, Preferences, Notifications, Privacy & Safety. Profile shows glass segmented "Posts | Saved" under stats.
+  VIDEO POSTS: POST /api/posts/video/init -> PUT /api/media/{upload_id}/chunk -> POST /api/posts/video/{upload_id}/complete (201, status processing);
+  ffmpeg 720p + poster in background (<=60s, <=300MB), post.status ready/failed, WS `post_ready`; feed excludes non-ready. PostCard <video muted loop playsInline>,
+  only the on-screen post plays, single tap = sound toggle (feed-wide), double tap = like. NewPost accepts image/*,video/* with progress %. PostView polls while processing.
+  Tests iteration_28 100%. Deployed api + web. Calls (WebRTC) still waiting on the user's call-screen designs.

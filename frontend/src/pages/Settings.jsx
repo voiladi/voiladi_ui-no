@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, Moon, CircleHelp, FileText, Info, Check } from "lucide-react";
+import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, Moon, CircleHelp, FileText, Info, Check, Bookmark } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
@@ -52,7 +52,8 @@ export default function Settings() {
         <section>
           <SoftSectionLabel>Profile</SoftSectionLabel>
           <SoftCard className="overflow-hidden" testId="settings-profile-card">
-            <SoftRow icon={User} label="Edit profile" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
+            <SoftRow icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
+            <SoftRow icon={Bookmark} label="Saved" onClick={() => navigate("/saved")} testId="settings-saved-row" />
             <SoftRow icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="settings-preferences-row" />
             <SoftRow icon={Bell} label="Notifications" onClick={() => navigate("/legal/notifications")} testId="settings-notifications-row" />
             <SoftRow icon={Lock} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="settings-privacy-row" last />

@@ -26,6 +26,7 @@ export default function Discover() {
   const [next, setNext] = useState(null);
   const [active, setActive] = useState(0);
   const [deleteFor, setDeleteFor] = useState(null);
+  const [muted, setMuted] = useState(true); // one sound setting for the whole feed (Instagram behaviour)
   const scroller = useRef(null);
   const loadingMore = useRef(false);
   const A = usePostActions(setPosts);
@@ -95,6 +96,9 @@ export default function Discover() {
             key={p.id}
             post={p}
             active={Math.abs(i - active) <= 1}
+            playing={i === active && !A.commentsFor && !A.shareFor && !A.moreFor && !A.author}
+            muted={muted}
+            onToggleMute={() => setMuted((m) => !m)}
             onLike={A.like}
             onSave={A.save}
             onFollow={A.follow}
