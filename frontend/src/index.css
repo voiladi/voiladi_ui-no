@@ -302,22 +302,37 @@
        The same soft light as voiladi.com: white glow at the top, a whisper of blue on the left and rose on the right.
        Painted as a background-image on every screen root inside the shell, so each page keeps its own canvas colour and
        the tint sits behind cards/text without touching any component styles. Sized to one viewport, anchored top. */
-    #vo-main > * {
-        background-image:
+    :root {
+        --haze:
             radial-gradient(60% 34% at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 100%),
             radial-gradient(52% 32% at 14% 20%, rgba(214, 224, 255, 0.55) 0%, rgba(214, 224, 255, 0) 100%),
             radial-gradient(52% 32% at 88% 24%, rgba(255, 220, 232, 0.45) 0%, rgba(255, 220, 232, 0) 100%);
+    }
+
+    .dark {
+        --haze:
+            radial-gradient(60% 34% at 50% 0%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 100%),
+            radial-gradient(52% 32% at 14% 20%, rgba(90, 110, 200, 0.16) 0%, rgba(90, 110, 200, 0) 100%),
+            radial-gradient(52% 32% at 88% 24%, rgba(200, 90, 130, 0.12) 0%, rgba(200, 90, 130, 0) 100%);
+    }
+
+    /* the haze is anchored at the very top of the shell (under the status bar). The shell paints it on its own canvas so
+       the status-bar strip blends, and every page paints the same image shifted up by the inset so the two join seamlessly. */
+    .vo-shell {
+        background-color: var(--neu-canvas);
+        background-image: var(--haze);
         background-repeat: no-repeat;
         background-position: 0 0;
         background-size: 100% 100vh;
         background-size: 100% 100dvh;
     }
 
-    .dark #vo-main > * {
-        background-image:
-            radial-gradient(60% 34% at 50% 0%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 100%),
-            radial-gradient(52% 32% at 14% 20%, rgba(90, 110, 200, 0.16) 0%, rgba(90, 110, 200, 0) 100%),
-            radial-gradient(52% 32% at 88% 24%, rgba(200, 90, 130, 0.12) 0%, rgba(200, 90, 130, 0) 100%);
+    #vo-main > * {
+        background-image: var(--haze);
+        background-repeat: no-repeat;
+        background-position: 0 calc(-1 * var(--safe-top));
+        background-size: 100% 100vh;
+        background-size: 100% 100dvh;
     }
 
     .no-scrollbar {
@@ -1398,6 +1413,10 @@
     /* ---------- Discover feed (full-screen posts) ---------- */
     /* the feed paints its own black canvas: no ambient haze, no page padding; the shell goes black so the status bar area matches */
     .vo-shell[data-canvas="black"] {
+        background: #000;
+    }
+
+    .dark .vo-shell[data-canvas="black"] {
         background: #000;
     }
 
