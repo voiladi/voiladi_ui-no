@@ -14,7 +14,7 @@ import { MatchModal } from "@/components/MatchModal";
 import { ConfirmDialog, ReportDialog } from "@/components/Dialogs";
 import { Skeleton } from "@/components/EmptyState";
 import { GlassSegmented } from "@/components/GlassSegmented";
-import { SoftHeader, SoftIconButton, SoftTitle, SoftCard, SectionHead, SoftSearch, SoftPill } from "@/components/SoftUI";
+import { SoftIconButton, SoftTitle, SoftCard, SectionHead, SoftSearch, SoftPill } from "@/components/SoftUI";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { kmLabel } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
@@ -256,16 +256,18 @@ export default function Explore() {
 
   return (
     <div className="vo-neu-page flex min-h-full flex-col" style={{ paddingBottom: NAV_PAD }} data-testid="explore-page">
-      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
-        <SoftHeader
-          right={
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-3">
+        <SoftTitle
+          title="Explore"
+          subtitle="Find people, interests, and communities"
+          testId="explore-title"
+          actions={
             <>
               <SoftIconButton icon={Search} label="Search" onClick={() => searchRef.current?.focus()} testId="explore-search-button" />
               <SoftIconButton icon={SlidersHorizontal} label="Filters" onClick={() => navigate("/filters")} testId="explore-filters-button" />
             </>
           }
         />
-        <SoftTitle title="Explore" subtitle="Find people, interests, and communities" testId="explore-title" />
         <div className="mt-4">
           <SoftSearch inputRef={searchRef} value={q} onChange={setQ} onClear={() => setQ("")} placeholder="Search people, interests, or communities" testId="explore-search-input" />
         </div>

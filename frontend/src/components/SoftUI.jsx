@@ -24,17 +24,29 @@ export const SoftIconButton = ({ icon: Icon, label, onClick, testId, active = fa
 );
 
 /* Large title + grey subtitle; optional element aligned to the right of the block (e.g. the heart-count pill). */
-export const SoftTitle = ({ title, subtitle, right, testId }) => (
-  <div className="mt-2 flex items-center justify-between gap-3">
-    <div className="min-w-0">
-      <h1 className="text-[clamp(27px,8.6cqi,34px)] font-bold leading-[1.12] tracking-[-0.025em] text-ink" data-testid={testId}>
-        {title}
-      </h1>
-      <p className="mt-1 text-[clamp(14px,4.3cqi,17px)] leading-[1.3] tracking-[-0.01em] text-mute">{subtitle}</p>
+export const SoftTitle = ({ title, subtitle, right, testId, actions }) =>
+  actions ? (
+    /* page header without the brand row: title + action buttons on one line, subtitle full-width underneath */
+    <div className="mt-2">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="min-w-0 truncate text-[clamp(30px,9.4cqi,38px)] font-bold leading-[1.1] tracking-[-0.03em] text-ink" data-testid={testId}>
+          {title}
+        </h1>
+        <div className="flex shrink-0 items-center gap-3">{actions}</div>
+      </div>
+      {subtitle && <p className="mt-1.5 text-[clamp(14px,4.3cqi,17px)] leading-[1.3] tracking-[-0.01em] text-mute">{subtitle}</p>}
     </div>
-    {right}
-  </div>
-);
+  ) : (
+    <div className="mt-2 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="text-[clamp(27px,8.6cqi,34px)] font-bold leading-[1.12] tracking-[-0.025em] text-ink" data-testid={testId}>
+          {title}
+        </h1>
+        <p className="mt-1 text-[clamp(14px,4.3cqi,17px)] leading-[1.3] tracking-[-0.01em] text-mute">{subtitle}</p>
+      </div>
+      {right}
+    </div>
+  );
 
 /*
  * Empty state: big rounded card that fills the space down to the floating nav.

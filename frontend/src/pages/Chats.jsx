@@ -9,7 +9,7 @@ import { useMatchesQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
 import { SkeletonList } from "@/components/EmptyState";
 import { GlassSegmented } from "@/components/GlassSegmented";
-import { SoftHeader, SoftIconButton, SoftEmpty, BubblesArt } from "@/components/SoftUI";
+import { SoftIconButton, SoftEmpty, BubblesArt } from "@/components/SoftUI";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { chatTime } from "@/lib/format";
 import { tween, D } from "@/lib/motion";
@@ -119,20 +119,18 @@ export default function Chats() {
 
   return (
     <div className={`vo-neu-page flex flex-col ${rows.length ? "min-h-full" : "h-full"}`} style={{ paddingBottom: NAV_PAD }} data-testid="chats-page">
-      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
-        <SoftHeader
-          right={
-            <>
-              <SoftIconButton icon={searching ? X : Search} label={searching ? "Close search" : "Search conversations"} active={searching} onClick={() => setSearching((v) => !v)} testId="chats-search-button" />
-              <SoftIconButton icon={SquarePen} label="New message" onClick={() => setCompose(true)} testId="chats-compose-button" />
-            </>
-          }
-        />
-        <div className="mt-2 min-w-0">
-          <h1 className="text-[clamp(32px,10cqi,40px)] font-bold leading-[1.1] tracking-[-0.03em] text-ink" data-testid="chats-title">
-            Messages
-          </h1>
-          <p className="mt-1.5 text-[clamp(15px,4.6cqi,18px)] leading-[1.3] tracking-[-0.01em] text-mute">Your conversations</p>
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-3">
+        <div className="mt-2 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[clamp(32px,10cqi,40px)] font-bold leading-[1.1] tracking-[-0.03em] text-ink" data-testid="chats-title">
+              Messages
+            </h1>
+            <p className="mt-1.5 text-[clamp(15px,4.6cqi,18px)] leading-[1.3] tracking-[-0.01em] text-mute">Your conversations</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <SoftIconButton icon={searching ? X : Search} label={searching ? "Close search" : "Search conversations"} active={searching} onClick={() => setSearching((v) => !v)} testId="chats-search-button" />
+            <SoftIconButton icon={SquarePen} label="New message" onClick={() => setCompose(true)} testId="chats-compose-button" />
+          </div>
         </div>
         <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="chats-tab" className="vo-seg-inbox mt-5 mb-1" />
         {searching && (

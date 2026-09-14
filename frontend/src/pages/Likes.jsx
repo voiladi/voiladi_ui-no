@@ -12,7 +12,7 @@ import { useLikesQuery, useLikesSentQuery } from "@/hooks/useBadges";
 import { UserPhoto } from "@/components/UserPhoto";
 import { GlassSegmented } from "@/components/GlassSegmented";
 import { SkeletonList, Skeleton } from "@/components/EmptyState";
-import { SoftHeader, SoftIconButton, SoftTitle, SoftEmpty, CardsArt } from "@/components/SoftUI";
+import { SoftIconButton, SoftTitle, SoftEmpty, CardsArt } from "@/components/SoftUI";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ProfileSheet } from "@/components/ProfileSheet";
 import { MatchModal } from "@/components/MatchModal";
@@ -113,40 +113,38 @@ export default function Likes() {
 
   return (
     <div className={`vo-neu-page flex flex-col ${rows.length ? "min-h-full" : "h-full"}`} style={{ paddingBottom: NAV_PAD }} data-testid="likes-page">
-      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-1">
-        <SoftHeader
-          right={
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SoftIconButton icon={MoreHorizontal} label="More options" testId="likes-more-button" active={superOnly || sort !== "newest"} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-[18px] border-0 bg-bg p-1.5 shadow-modal" data-testid="likes-more-menu">
-                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("newest")} data-testid="likes-sort-newest">
-                  <ArrowDownWideNarrow className="mr-2 h-4 w-4" /> Newest first
-                  {sort === "newest" && <Check className="ml-auto h-4 w-4" />}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("oldest")} data-testid="likes-sort-oldest">
-                  <ArrowUpNarrowWide className="mr-2 h-4 w-4" /> Oldest first
-                  {sort === "oldest" && <Check className="ml-auto h-4 w-4" />}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSuperOnly((v) => !v)} data-testid="likes-filter-super">
-                  <Star className="mr-2 h-4 w-4" /> Super Likes only
-                  {superOnly && <Check className="ml-auto h-4 w-4" />}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          }
-        />
+      <header className="shrink-0 px-[clamp(14px,5cqi,20px)] pt-3">
         <SoftTitle
           title="Likes"
           subtitle="People who liked you"
           testId="likes-title"
-          right={
-            <span className="vo-soft inline-flex h-[48px] shrink-0 items-center gap-2 rounded-full px-5 text-[22px] font-semibold tabular-nums tracking-[-0.02em] text-ink" data-testid="likes-count">
-              <Heart className="h-[22px] w-[22px] text-mute" fill="currentColor" strokeWidth={0} />
-              {loading ? <Skeleton className="h-4 w-5 rounded-full" /> : total}
-            </span>
+          actions={
+            <>
+              <span className="vo-soft inline-flex h-[44px] shrink-0 items-center gap-2 rounded-full px-4 text-[20px] font-semibold tabular-nums tracking-[-0.02em] text-ink" data-testid="likes-count">
+                <Heart className="h-[20px] w-[20px] text-mute" fill="currentColor" strokeWidth={0} />
+                {loading ? <Skeleton className="h-4 w-5 rounded-full" /> : total}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SoftIconButton icon={MoreHorizontal} label="More options" testId="likes-more-button" active={superOnly || sort !== "newest"} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-[18px] border-0 bg-bg p-1.5 shadow-modal" data-testid="likes-more-menu">
+                  <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("newest")} data-testid="likes-sort-newest">
+                    <ArrowDownWideNarrow className="mr-2 h-4 w-4" /> Newest first
+                    {sort === "newest" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSort("oldest")} data-testid="likes-sort-oldest">
+                    <ArrowUpNarrowWide className="mr-2 h-4 w-4" /> Oldest first
+                    {sort === "oldest" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="rounded-[12px] py-2.5 text-[15px]" onClick={() => setSuperOnly((v) => !v)} data-testid="likes-filter-super">
+                    <Star className="mr-2 h-4 w-4" /> Super Likes only
+                    {superOnly && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           }
         />
         <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="likes-tab" className="vo-seg-inbox mt-5 mb-1" />
