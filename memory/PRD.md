@@ -135,7 +135,9 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   Fixed in APK 1.6.1 (code 8, shell 1.7.1): w.getDecorView() first + applySystemBars() again after setContentView; whole edge-to-edge path is try/catch
   with fallback to solid themed bars. Added CrashReporter (stores uncaught trace, posts to POST /api/shell/crash on next launch); admin reads
   GET /api/shell/crashes (x-admin-key). routes_shell.py. Deployed api + web.
-- 2026-09-14: KEY FEATURE "Orb": hold the tab-bar glass lens ~0.65s without moving -> it detaches into a 64px floating glass orb (portal, z 400)
+- 2026-09-14: KEY FEATURE "Orb": hold the tab-bar glass lens ~0.40s without moving (was 0.65s; HOLD_MS=400 since 2026-09-14) -> it detaches into a 64px floating glass orb (portal, z 400)
   that follows the finger anywhere and lays an ink trail (SVG path, glow; ink colour = ink/white in dark). Release -> orb springs back into the
   current tab slot, ink fades, `window` event `voiladi:ink` {points, bbox} is dispatched for the upcoming visual (AI) search. BottomNav.jsx / index.css
   (.vo-orb, .vo-ink-layer, .vo-ink-path). Normal press-and-slide tab switching unchanged. Deployed web.
+- 2026-09-14 17:30 UTC: Orb hold time 0.65s -> 0.40s (BottomNav.jsx HOLD_MS=400). APK 1.6.2 (versionCode 9, shell 1.7.2, release keystore) ->
+  frontend/public/voiladi.apk + deploy/android/voiladi-1.6.2.apk. Deployed web (Railway SUCCESS); live bundle verified ",400)".

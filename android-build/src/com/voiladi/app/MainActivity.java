@@ -248,7 +248,7 @@ public class MainActivity extends Activity {
 
     /* ---------------------------------------------------------------- web view */
 
-    static final String SHELL_VERSION = "1.7.1";
+    static final String SHELL_VERSION = "1.7.2";
     private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
 
     /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */

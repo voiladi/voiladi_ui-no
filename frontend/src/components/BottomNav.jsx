@@ -12,7 +12,7 @@ import { useBadges } from "@/hooks/useBadges";
  *  - active: black icon + bold black label; inactive: grey outline icon + grey label
  *  - liquid-glass lens: slides to the tab you tap (fades in, glides, fades out) and, if you press and hold,
  *    lifts into a glass pill that follows your finger; release snaps to the nearest tab and opens it.
- *  - HOLD LONGER (~0.65s without moving) and the lens detaches into a floating glass orb you carry anywhere on the
+ *  - HOLD LONGER (~0.40s without moving) and the lens detaches into a floating glass orb you carry anywhere on the
  *    screen with your finger, leaving an ink trail - draw or circle anything. Lift your finger: the orb flies back
  *    into its tab slot and the ink fades. The stroke is broadcast as `voiladi:ink` for the upcoming visual search.
  */
@@ -36,7 +36,7 @@ const TABS = [
 const PAD = 4;
 const SNAP = { type: "spring", stiffness: 520, damping: 40, mass: 0.9 };
 const JELLY = { type: "spring", stiffness: 420, damping: 16, mass: 0.8 };
-const HOLD_MS = 650; // longer than the usual press-and-slide
+const HOLD_MS = 400; // hold still 0.40s and the lens lifts off into the floating orb
 const ORB = 64; // floating orb diameter (px)
 const RETURN = { type: "spring", stiffness: 380, damping: 30, mass: 0.9 };
 
