@@ -110,7 +110,7 @@ export default function Discover() {
         ))}
       </div>
 
-      <h1 className="pointer-events-none absolute left-[22px] text-[34px] font-bold leading-[41px] tracking-[-0.02em] text-white" style={{ top: "calc(env(safe-area-inset-top, 0px) + 50px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-title">
+      <h1 className="pointer-events-none absolute left-[20px] text-[38px] font-bold leading-[42px] tracking-[-0.03em] text-white" style={{ top: "calc(env(safe-area-inset-top, 0px) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-title">
         Discover
       </h1>
 

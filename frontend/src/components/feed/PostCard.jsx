@@ -194,7 +194,7 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
       </AnimatePresence>
 
       {/* right rail */}
-      <div className="absolute right-[10px] flex flex-col items-center gap-[10px]" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + env(safe-area-inset-bottom, 0px) + 74px)" }} data-testid="feed-rail">
+      <div className="absolute right-[10px] flex flex-col items-center gap-[10px]" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + env(safe-area-inset-bottom, 0px) + 58px)" }} data-testid="feed-rail">
         <RailButton label={post.liked ? "Unlike" : "Like"} count={post.likes} onClick={() => onLike(post)} testId="post-like-button" active={post.liked}>
           <motion.span key={post.liked ? "on" : "off"} initial={{ scale: 0.7 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 520, damping: 16 }} className="flex">
             <PinkHeart liked={post.liked} className="h-[34px] w-[34px]" />
@@ -215,10 +215,10 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
       </div>
 
       {/* author + caption */}
-      <div className="absolute left-[18px] right-[76px] text-white" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + env(safe-area-inset-bottom, 0px) + 22px)", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }} data-testid="feed-post-info">
+      <div className="absolute left-[18px] right-[76px] text-white" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + env(safe-area-inset-bottom, 0px) + 16px)", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }} data-testid="feed-post-info">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => onOpenAuthor(post)} className="shrink-0 rounded-full ring-[2px] ring-white/95 focus-visible:outline-none active:opacity-90" aria-label={`Open ${post.author?.name}'s profile`} data-testid="post-author-avatar">
-            <UserPhoto src={post.author?.photo} name={post.author?.name} size="xs" className="h-[36px] w-[36px] rounded-full text-[14px]" />
+            <UserPhoto src={post.author?.photo} name={post.author?.name} size="xs" className="h-[34px] w-[34px] rounded-full text-[14px]" />
           </button>
           <div className="flex min-w-0 items-center gap-2">
             <button type="button" onClick={() => onOpenAuthor(post)} className="truncate text-[20px] font-bold leading-[24px] tracking-[-0.01em] focus-visible:outline-none active:opacity-80" data-testid="post-author-username">
@@ -240,13 +240,13 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
           </div>
         </div>
         {post.location && (
-          <div className="mt-[8px] flex items-center gap-1.5 pl-1 text-[15px] leading-[18px] tracking-[-0.005em]" data-testid="post-location">
+          <div className="mt-[5px] flex items-center gap-1.5 pl-0.5 text-[15px] leading-[18px] tracking-[-0.005em]" data-testid="post-location">
             <MapPin className="h-[16px] w-[16px]" strokeWidth={2.2} fill="currentColor" style={{ color: "#fff" }} />
             <span className="truncate">{post.location}</span>
           </div>
         )}
         {post.caption && (
-          <p className="mt-[8px] line-clamp-3 text-[18px] leading-[23px] tracking-[-0.01em]" data-testid="post-caption">
+          <p className="mt-[5px] line-clamp-3 text-[18px] leading-[22px] tracking-[-0.01em]" data-testid="post-caption">
             {post.caption}
           </p>
         )}
