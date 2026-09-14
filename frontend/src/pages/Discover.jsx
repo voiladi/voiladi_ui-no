@@ -121,7 +121,7 @@ export default function Discover() {
       </div>
 
       {/* Discover (everyone) | Circle (people you follow) - minimal text tabs, Instagram-style */}
-      <div className="absolute left-[20px] flex items-end gap-[18px] text-white" style={{ top: "calc(var(--safe-top) + 22px)", textShadow: "0 1px 10px rgba(0,0,0,0.45)" }} data-testid="discover-scope-tabs" role="tablist">
+      <div className="absolute left-[20px] flex items-end gap-[16px] text-white" style={{ top: "12px", textShadow: "0 1px 8px rgba(0,0,0,0.45)" }} data-testid="discover-scope-tabs" role="tablist">
         {[
           { value: "all", label: "Discover" },
           { value: "circle", label: "Circle" },
@@ -134,12 +134,12 @@ export default function Discover() {
               role="tab"
               aria-selected={on}
               onClick={() => switchScope(t.value)}
-              className={`relative pb-[6px] font-bold leading-[42px] tracking-[-0.03em] focus-visible:outline-none active:opacity-80 ${on ? "text-[38px] text-white" : "text-[30px] text-white/60"}`}
+              className={`relative pb-[5px] font-semibold leading-[28px] tracking-[-0.02em] focus-visible:outline-none active:opacity-80 ${on ? "text-[23px] text-white" : "text-[20px] text-white/60"}`}
               style={{ transitionProperty: "color, opacity", transitionDuration: "160ms" }}
               data-testid={`discover-tab-${t.value}`}
             >
               {on ? <h1 className="inline" data-testid="discover-title">{t.label}</h1> : t.label}
-              {on && <span className="absolute bottom-0 left-0 h-[3px] w-[28px] rounded-full bg-white" aria-hidden="true" />}
+              {on && <span className="absolute bottom-0 left-0 h-[2px] w-[22px] rounded-full bg-white" aria-hidden="true" />}
             </button>
           );
         })}

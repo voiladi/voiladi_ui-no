@@ -61,7 +61,7 @@ export default function PostView() {
           <PostCard post={post} muted={muted} onToggleMute={() => setMuted((m) => !m)} onLike={A.like} onSave={A.save} onFollow={A.follow} onComment={A.setCommentsFor} onShare={A.setShareFor} onMore={A.setMoreFor} onOpenAuthor={A.openAuthor} />
         </div>
       )}
-      <button type="button" onClick={back} aria-label="Back" className="absolute left-[10px] flex h-11 w-11 items-center justify-center text-white focus-visible:outline-none active:opacity-70" style={{ top: "calc(var(--safe-top) + 46px)", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.5))" }} data-testid="post-view-back-button">
+      <button type="button" onClick={back} aria-label="Back" className="absolute left-[10px] flex h-11 w-11 items-center justify-center text-white focus-visible:outline-none active:opacity-70" style={{ top: "10px", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.5))" }} data-testid="post-view-back-button">
         <ChevronLeft className="h-8 w-8" strokeWidth={2.4} />
       </button>
       {posts === null && (
