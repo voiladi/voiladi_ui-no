@@ -120,3 +120,6 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - 2026-09-14: Profile rebuilt to the user's mockup: header brand + flat grey round buttons (+ / bell / menu->/settings), centred 95px avatar with white camera badge,
   26px name + tick, @handle, two flat pills (Edit profile / Share profile via navigator.share), stats row with dividers, icon tabs Posts | Saved | Likes
   (Grip / Bookmark / Heart, black underline + hairline), empty states with big icon. New GET /api/posts/liked. Deployed api + web.
+- 2026-09-14: APK 1.4.0 (versionCode 5, UA VoiladiApp/1.5, release keystore) -> frontend/public/voiladi.apk + deploy/android/voiladi-1.4.0.apk, deployed.
+  Shell now follows the web theme: bridge setTheme("dark"|"light") persisted in prefs; status bar, Android navigation bar, window/WebView/splash/offline
+  backgrounds all black in dark mode (light icons), white in light mode. Web: useTheme.apply() -> nativeSetTheme(dark). Dark-mode glass lens = smoked glass.

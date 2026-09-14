@@ -65,20 +65,51 @@ public class MainActivity extends Activity {
     private GeolocationPermissions.Callback geoCallback;
     private PermissionRequest pendingMediaRequest;
 
+    /* The web app tells us its theme (Settings > Dark Mode); we remember it so the very first frame, the splash,
+       the status bar and the Android navigation bar are all dark when the app is in dark mode - no white strips. */
+    private boolean darkMode;
+    private View splashView;
+    private View offlineBox;
+
+    private boolean readDarkPref() {
+        return "dark".equals(getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("theme", "light"));
+    }
+
+    private void applySystemBars() {
+        Window w = getWindow();
+        int bg = darkMode ? Color.BLACK : Color.WHITE;
+        w.setStatusBarColor(bg);
+        w.setNavigationBarColor(bg);
+        if (Build.VERSION.SDK_INT >= 28) w.setNavigationBarDividerColor(bg);
+        int flags = 0;
+        if (!darkMode) {
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        w.getDecorView().setSystemUiVisibility(flags);
+        if (root != null) root.setBackgroundColor(bg);
+        if (web != null) web.setBackgroundColor(bg);
+        if (splashView != null) splashView.setBackgroundColor(bg);
+        if (offlineBox != null) offlineBox.setBackgroundColor(bg);
+        if (offlineTitle != null) offlineTitle.setTextColor(darkMode ? Color.WHITE : Color.parseColor("#111111"));
+    }
+
+    private void setDarkMode(boolean dark) {
+        if (dark == darkMode) return;
+        darkMode = dark;
+        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("theme", dark ? "dark" : "light").apply();
+        applySystemBars();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(android.R.style.Theme_DeviceDefault_Light_NoActionBar);
+        darkMode = readDarkPref();
+        setTheme(darkMode ? android.R.style.Theme_DeviceDefault_NoActionBar : android.R.style.Theme_DeviceDefault_Light_NoActionBar);
         super.onCreate(savedInstanceState);
 
-        Window w = getWindow();
-        w.setStatusBarColor(Color.WHITE);
-        w.setNavigationBarColor(Color.WHITE);
-        int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        w.getDecorView().setSystemUiVisibility(flags);
-
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(darkMode ? Color.BLACK : Color.WHITE);
+        applySystemBars();
 
         web = new WebView(this);
         setupWebView();
@@ -143,12 +174,12 @@ public class MainActivity extends Activity {
         s.setGeolocationEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.4");
+        s.setUserAgentString(s.getUserAgentString() + " VoiladiApp/1.5");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         WebView.setWebContentsDebuggingEnabled(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        web.setBackgroundColor(Color.WHITE);
+        web.setBackgroundColor(darkMode ? Color.BLACK : Color.WHITE);
         web.addJavascriptInterface(new Bridge(), "VoiladiNative");
         // file downloads (e.g. a newer voiladi.apk) are handed to the system browser / download manager
         web.setDownloadListener(new android.webkit.DownloadListener() {
@@ -278,8 +309,9 @@ public class MainActivity extends Activity {
 
     private View buildSplashView() {
         FrameLayout f = new FrameLayout(this);
-        f.setBackgroundColor(Color.WHITE);
+        f.setBackgroundColor(darkMode ? Color.BLACK : Color.WHITE);
         f.setClickable(true);
+        splashView = f;
         ImageView logo = new ImageView(this);
         logo.setImageResource(RES_ICON);
         int size = dp(96);
@@ -308,8 +340,9 @@ public class MainActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER);
-        box.setBackgroundColor(Color.WHITE);
+        box.setBackgroundColor(darkMode ? Color.BLACK : Color.WHITE);
         box.setClickable(true);
+        offlineBox = box;
         int pad = dp(32);
         box.setPadding(pad, pad, pad, pad);
 
@@ -319,7 +352,7 @@ public class MainActivity extends Activity {
 
         offlineTitle = new TextView(this);
         offlineTitle.setText("You're offline");
-        offlineTitle.setTextColor(Color.parseColor("#111111"));
+        offlineTitle.setTextColor(darkMode ? Color.WHITE : Color.parseColor("#111111"));
         offlineTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
         offlineTitle.setTypeface(Typeface.DEFAULT_BOLD);
         offlineTitle.setGravity(Gravity.CENTER);
@@ -422,9 +455,20 @@ public class MainActivity extends Activity {
             return true;
         }
 
+        /** Shell 1.5: the page reports light/dark so the status + navigation bars follow the app theme. */
+        @JavascriptInterface
+        public void setTheme(final String mode) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    setDarkMode("dark".equals(mode));
+                }
+            });
+        }
+
         @JavascriptInterface
         public String shellVersion() {
-            return "1.4";
+            return "1.5";
         }
     }
 

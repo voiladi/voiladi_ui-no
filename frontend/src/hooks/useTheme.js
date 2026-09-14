@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { nativeSetTheme } from "@/lib/native";
 
 const KEY = "voiladi_theme";
 
@@ -6,6 +7,7 @@ const apply = (dark) => {
   document.documentElement.classList.toggle("dark", dark);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", dark ? "#000000" : "#FFFFFF");
+  nativeSetTheme(dark); // Android shell: paint the status / navigation bars to match
 };
 
 export const initTheme = () => {
