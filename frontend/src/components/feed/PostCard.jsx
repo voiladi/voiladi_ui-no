@@ -217,7 +217,7 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
       {/* author + caption */}
       <div className="absolute left-[18px] right-[76px] text-white" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 16px)", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }} data-testid="feed-post-info">
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => onOpenAuthor(post)} className="shrink-0 rounded-full ring-[2px] ring-white/95 focus-visible:outline-none active:opacity-90" aria-label={`Open ${post.author?.name}'s profile`} data-testid="post-author-avatar">
+          <button type="button" onClick={() => onOpenAuthor(post)} className="shrink-0 rounded-full ring-[2px] ring-white/95 focus-visible:outline-none active:opacity-90" aria-label={`Open ${post.author?.name}'s profile`} data-testid="post-author-avatar" data-user-id={post.author?.id}>
             <UserPhoto src={post.author?.photo} name={post.author?.name} size="xs" className="h-[34px] w-[34px] rounded-full text-[14px]" />
           </button>
           <div className="flex min-w-0 items-center gap-2">

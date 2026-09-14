@@ -70,7 +70,7 @@ const TopicTile = ({ topic, onOpen, testId = "explore-topic-tile", className = "
 
 /* Person row: avatar, name, what they do, Follow. */
 const PersonRow = ({ p, sub, onOpen, onFollow, followed, followedLabel = "Following", isMe = false, last = false, testId = "explore-person-row" }) => (
-  <div className={`flex items-center gap-4 py-3 ${last ? "" : "border-b border-line/80"}`} data-testid={testId}>
+  <div className={`flex items-center gap-4 py-3 ${last ? "" : "border-b border-line/80"}`} data-testid={testId} data-user-id={p.id}>
     <button type="button" className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none" onClick={() => onOpen(p)} data-testid={`${testId}-open`}>
       <UserPhoto src={p.photos?.[0]} name={p.name} size="sm" className="h-[60px] w-[60px] shrink-0 rounded-full text-xl" />
       <span className="min-w-0 flex-1">
@@ -129,6 +129,14 @@ export default function Explore() {
   const searchRef = useRef(null);
 
   const topics = useTopics();
+  useEffect(() => {
+    const want = new URLSearchParams(window.location.search).get("topic");
+    if (want && !topic) {
+      setTopic((topics.data?.topics || []).find((t) => t.name === want) || { name: want, members_label: "" });
+      navigate("/explore", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topics.data]);
   const people = usePeople(tab === "topics" ? "people" : tab);
   const topicPeople = useQuery({
     queryKey: ["explore-topic", topic?.name],

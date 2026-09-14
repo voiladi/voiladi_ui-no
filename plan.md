@@ -5,30 +5,31 @@
   - **Account creation + login (Email + Password)**
   - **Phone number + OTP verification**
   - **Profile + photo upload**
-  - **Discover (Feed)**: full-screen vertical **Instagram-style** feed of **Posts** (one per screen, upward snap scroll)
-  - **Explore grid** (tabs + global @username search)
-  - **Likes** views (people who liked you; legacy matching layer)
+  - **Discover (Feed)**: full-screen vertical **Instagram/TikTok-style** feed of **Posts** (one per screen, upward snap scroll)
+  - **Circle feed**: posts from followed users
+  - **Explore grid** (tabs + global @username search + topics/communities)
+  - **Likes** views
   - **Real-time chat** (WebSockets + fallback polling)
   - **Filters** (age/distance/show-me) — still used by matching/search surfaces
   - **Manual selfie verification** (human review) → **black tick** + unlock messaging
   - **Direct messages (DM Requests)**: **verified users can message any profile**; recipient sees it under **Requests** until they reply/accept
-  - **Chat media**: **image + video sharing** in chat, with quality caps (720p now; 1080p for Plus later)
-  - **Android APK shell** with permissions for **CAMERA/RECORD_AUDIO** and in-place update fallback for old shells
-- **STRICTLY NO AI RELATED FEATURES** in UX/UI, copy, or flows.
-- **Top priority**: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
+  - **Chat media**: image + video
+  - **Android APK shell** with **edge-to-edge** system bars + native bridge
+- **NEW (user-approved, 2026-09-14): AI account linking + orb visual search**
+  - Users can **connect their own AI provider** (ChatGPT/OpenAI, Claude/Anthropic, Gemini/Google) to power orb search.
+  - Orb ink stroke → capture screen region → send to their linked model (vision) → show answer + Voiladi results.
+- **Top priority** remains: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
   - No “AI generated” look, no creative liberties.
-  - Preserve neumorphic/glass tokens and Apple font stack.
+  - Preserve neumorphic/glass tokens and iOS-like spacing/typography.
 - Production is **env-driven**, hosted on **Railway**, with domain behind **Cloudflare** (fixes Jio).
 - Performance target: **Instagram-like perceived speed**
   - Fast first paint (boot splash)
   - Lazy route loading with professional loaders
   - Thumbnail photo delivery + edge caching
-  - Reduce India latency where possible (region migration if approved)
-  - Media delivery that is CDN-cacheable and supports Range streaming
+  - Media delivery supports Range streaming
 - Security target: strong server + client hardening.
-  - **Do not rotate JWT secret yet** (keep sessions) (user decision)
-  - Protect against abuse (rate limiting, lockouts), lock down WebView and release signing
-  - Secure media access (short-lived signed URLs, view-once deletion)
+  - Keep existing rate limiting, lockouts, security headers, WebView lockdown, release signing.
+  - Sensitive secrets (AI keys) must be **encrypted at rest** and **never returned to clients**.
 
 ---
 
@@ -36,41 +37,31 @@
 
 ### Phase 1 — Core POC (isolation; do not proceed until stable)
 **Status: COMPLETED**
-- OTP + upload + WS round-trip stable through preview.
 
 ---
 
 ### Phase 2 — V1 App Development (build full app around proven core)
 **Status: COMPLETED**
-- Backend: users/profile/swipes/matches/messages/meta/safety.
-- Frontend: working React/Tailwind app with onboarding, discover, likes, chats, profile.
 
 ---
 
 ### Phase 3 — Hardening, UX polish, and deploy readiness
 **Status: COMPLETED**
-- WS reconnect/backoff + offline banners + polling fallback.
-- Upload limits and server-side image optimisation.
 
 ---
 
 ### Phase 4 — Reactions + Safety everywhere + Admin review
 **Status: COMPLETED**
-- Reaction-aware swipes; reaction messages seed chats.
-- Block/report surfaced across app; admin reports endpoint.
 
 ---
 
 ### Phase 5 — Twilio real SMS OTP
 **Status: COMPLETED (pending user real-phone test)**
-- Twilio Verify supported; DEV codes shown only when provider is dev/test-prefix.
 
 ---
 
 ### Phase 6 — Railway Deployment
 **Status: COMPLETED**
-- Backend + Frontend + MongoDB deployed.
-- Uploads persisted on volume.
 
 ---
 
@@ -87,67 +78,32 @@
 ## Phase 9 — Exact UI replication from user’s interface photos (P0)
 **Status: COMPLETED (frontend + backend) — compiled, visually verified, and tested**
 
-> **Binding spec:** `/app/design_guidelines.md` (derived 1:1 from the user’s photos). This replaces all previous design directions.
-
-### 9.1 Why this phase exists
-- User explicitly demanded: **“Just make as it is I send you now in the interface photos.”**
-- Therefore the UI must be a **pixel-perfect clone** of the provided photos.
-
-### 9.2 User decisions recorded (binding)
-1) **Email + Password is REAL** account creation/login.
-   - Phone number + OTP verification is still required.
-2) **Replicate every screen in the photos exactly**.
-3) Gender not shown in photos but required for matching → minimally added.
-4) After tests pass: **deploy to Railway**.
-
-### 9.3 Backend work (FastAPI + MongoDB)
-**Status: COMPLETED**
-- Auth: register/login, PBKDF2 hashing, phone verify, sparse unique indexes.
-- Explore + Likes + Stats, profile view tracking.
-
-### 9.4 Frontend work (React + Tailwind)
-**Status: COMPLETED**
-- Tokens / typography / radii / components implemented to match photo spec.
-- 5-tab bottom nav.
-- Full page set implemented.
-
-### 9.5 Testing + verification
-**Status: COMPLETED**
-- Test reports in `/app/test_reports/iteration_6.json` and later.
+> **Binding spec:** `/app/design_guidelines.md`
 
 ---
 
 ## Phase 10 — Deploy this Phase 9 build to Railway (P0)
 **Status: COMPLETED**
-- Deployment steps captured in `/app/deploy/README.md`.
 
 ---
 
 ## Phase 11 — Profile 1:1 rebuild, Boost, Welcome screen, loading system (P0)
 **Status: COMPLETED**
-- Profile rebuilt 1:1.
-- Real Boost feature.
-- Welcome screen exact.
-- Loading primitives added.
 
 ---
 
 ## Phase 12 — Blank-screen bug fix + exact logo + responsive shell evolution
 **Status: COMPLETED**
-- Removed transform scaling; migrated to fluid responsive layouts.
-- Screen transition bug fixed.
 
 ---
 
 ## Phase 13 — Instagram-style notifications + Notifications page
 **Status: COMPLETED**
-- Notifications page + backend routes.
 
 ---
 
 ## Phase 14 — Android APK (P1)
 **Status: COMPLETED**
-- Native WebView wrapper built via `android-build/build_apk.py`.
 
 ---
 
@@ -183,303 +139,254 @@
 
 ## Phase 21 — Manual Profile Verification (selfie, human review, black tick)
 **Status: COMPLETED**
-- Admin verify dashboard.
-- Verified badges.
-- Unverified chat lock for matches messaging.
 
 ---
 
 ## Phase 22 — Settings refactor + Verification in Settings + Loading/Offline/Perf + Cloudflare (P0)
-**Status: COMPLETED (2026-09-10)**
-- Verification moved from Profile card → **Settings > Verification** (Meta-Verified style)
-- Settings now has **Account** section with **Email / Phone / Verification**; Email + Phone editable
-  - Backend: `PUT /api/auth/email` added (password confirmation for password accounts)
-- Professional loading improvements:
-  - Boot splash (pre-JS) + route-level lazy loading with Suspense RouteLoader
-  - Chunk-load auto-recover (one-shot reload)
-- Offline UX improved:
-  - Cache last profile locally; on network blip show “Reconnecting…” pill instead of blocking offline screen
-- Domain reliability:
-  - Cloudflare proxy in front of `voiladi.com` to fix **Jio DNS blocking** of `*.up.railway.app`
-- Photo/performance:
-  - `logo-mark.png` reduced dramatically + cached
-  - Backend `/api/uploads/{file}?w=240|480|800` on-demand variants in `uploads/_thumbs` with immutable caching
-  - Frontend `UserPhoto size` → grids/lists/avatars request thumbnails; swipe cards use full
+**Status: COMPLETED**
 
 ---
 
 ## Phase 23 — Direct Messages + Requests tab + Chat polish (P0)
-**Status: COMPLETED (2026-09-10 19:15 UTC)**
-
-### 23.1 Direct Messages (DM Requests)
-**Binding spec (user decision 2026-09-10):**
-- **Anyone verified can message anyone** from their profile.
-- Recipient sees the conversation under **Requests** until they reply/accept.
-
-**Backend (implemented)**
-- DM threads stored in **`db.matches`**:
-  - `kind: 'dm' | 'match'` (legacy rows treated as `match`)
-  - `status: 'request' | 'active'`
-  - `requested_by`, `accepted_at`
-- Endpoints:
-  - `POST /api/dm/{user_id}` → create/return thread
-  - `POST /api/matches/{match_id}/accept` → accept request
-  - Replying via `POST /api/matches/{match_id}/messages` auto-accepts
-- Rules:
-  - Sender must be **verified**
-  - Blocks prevent DM
-  - Mutual like upgrades existing `dm` → `match`
-
-**Frontend (implemented)**
-- ProfileSheet: **Message** button (`data-testid=profile-message-button`) opens/creates chat.
-- Chats: added **Requests** tab + request badge + hint text.
-
-### 23.2 Chat polish (visual + UX)
-**Implemented**
-- Neumorphic chat refresh (soft header controls, raised bubbles, soft input bar).
-- Typing indicator + seen ticks.
-- Message actions: long-press / context menu on own bubble → **Copy** / **Unsend**.
-- Chat safety actions:
-  - DM: Delete chat
-  - Match: Unmatch
-  - Both: Report / Block
-
-### 23.3 Testing
-- Test report: `/app/test_reports/iteration_23.json`.
+**Status: COMPLETED**
 
 ---
 
 ## Phase 24 — Security hardening (Server + Web + APK) (P0/P1)
-**Status: COMPLETED (2026-09-10 19:15 UTC)**
-
-### 24.1 Server hardening (FastAPI)
-**Implemented**
-- `security.py` middlewares:
-  - **Rate limiting** keyed by `CF-Connecting-IP` / `X-Forwarded-For`
-  - **Security headers** on API JSON responses (HSTS, nosniff, frame deny, CSP, no-store)
-  - **Body size cap**: > 12MB → `413`
-- Brute force guard:
-  - **Account lockout** after **8 wrong passwords in 15 min** → `429`
-- Production hygiene:
-  - `/api/docs` disabled in prod
-- WebSocket auth:
-  - New: `/api/ws` then first frame `{type:'auth', token}`
-  - Legacy `/api/ws/{token}` kept temporarily for rollout
-
-### 24.2 Web security (nginx)
-**Implemented**
-- Security headers for the SPA, including CSP + HSTS.
-- Implemented as `security-headers.inc.template` **included per location**.
-- `WS_BACKEND_URL` derived during container start for CSP connect-src.
-
-### 24.3 APK hardening (Android)
-**Implemented**
-- Release signing pipeline (keystore gitignored).
-- WebView lockdown (https-only allow-list, no file/content access, no 3rd-party cookies, no debugging).
-
-### 24.4 Deliverables
-- Deployed to Railway + Cloudflare.
-- Documentation updates in `/app/deploy/README.md` and `memory/PRD.md`.
+**Status: COMPLETED**
 
 ---
 
 ## Phase 25 — Chat Media (Images + Video) (P0)
 **Status: COMPLETED**
-- Chunked uploads + ffmpeg compression + view-once + Range streaming.
-- WS `message_updated` swaps processing → ready.
 
 ---
 
 ## Phase 26 — voiladi.com Web Landing Page (Apple glass) + /login rename (P0)
-**Status: COMPLETED (2026-09-10)**
-- Landing page exact replica + ambient haze behind every app screen.
-- Operator admin endpoints for listing/purging users.
-- 6-step verification flow using live camera only.
-- Android shell permissions + “Update app” fallback for old shells.
-- Final chat UI (floating glass composer) with **outer-glare removed** (no smoke/glow outside the bar).
+**Status: COMPLETED**
 
 ---
 
-## Phase 27 — Discover Feed (Posts) — Instagram-style vertical feed (P0)
-**Status: COMPLETED (2026-09-12) — tests iteration_27, deployed api + web, sample posts seeded on prod**
+## Phase 27 — Discover Feed (Posts) — Instagram/TikTok-style vertical feed (P0)
+**Status: COMPLETED — deployed api + web, sample posts seeded, includes photo + video posts + chunked uploads**
 
-### 27.1 Binding decisions (user)
-- **Discover replaces the swipe-card deck completely.**
-- **Posts are real**:
-  - Users upload a **photo + caption + location** from a **Profile “+” button**.
-  - Feed shows everyone’s posts.
-- **UI must match reference exactly**:
-  - Full-screen post image/video area (image for v1)
-  - White **“Discover”** title top-left
-  - Right rail icons (exact):
-    - **Heart (pink)** + count
-    - **Comment** + count
-    - **Share** + count
-    - **Bookmark** + count
-    - **•••**
-  - Bottom-left: avatar, username, verified tick, **Follow** pill, location pin + text, caption.
-  - Keep existing floating bottom nav.
-- Icon actions:
-  - Heart = **like post**
-  - Comment = opens **real comments sheet**
-  - Share = **send post into a chat** (new message kind **`post`**)
-  - Bookmark = **saved posts** list in Profile
-  - ••• = **Report / Not interested / Copy link**
-- Loading: **Instagram spinner first**, then **grey shimmer skeleton** per post; photo **fades in**.
-- Follow: **just button UI + follower count** on profile (no feed filtering).
+---
 
-### 27.2 Backend (FastAPI + MongoDB)
-**Goal:** add Posts with likes/saves/comments + feed + moderation/hide.
+## Phase 28 — Android Edge-to-Edge + Dark Mode polish + crash hardening (P0)
+**Status: COMPLETED**
+- Transparent system bars, native insets bridged into CSS tokens.
+- Crash loop fixed (InsetsController null deref) with try/catch fallback + CrashReporter.
+
+---
+
+## Phase 29 — Draggable bottom navigation “glass orb” + ink trail (P0)
+**Status: COMPLETED**
+- Long press detaches orb, draws SVG ink trail, dispatches `window` event `voiladi:ink`.
+- **Hold time adjusted:** 0.65s → **0.40s** (`HOLD_MS=400`).
+- APK bumped and published: **APK 1.6.2** (shell 1.7.2) + web deployed.
+
+---
+
+## Phase 30 — Connect your AI + Orb Visual Search (NEW, P0)
+**Status: COMPLETED (2026-09-14) - tests iteration_29 100%, api + web deployed, APK 1.6.3 live**
+
+### 30.1 Binding decisions (locked with user)
+- Settings adds a new row: **Settings → AI Assistant** (`/settings/ai`).
+- Providers: **ChatGPT (OpenAI)**, **Claude (Anthropic)**, **Gemini (Google)**.
+- Linking method: **Bring-your-own-key (BYOK)** but made to feel like **account linking**:
+  - Provider card → “Connect” sheet → button opens provider key page in browser (user logs into their account there) → user pastes key → we verify → show **Connected**.
+  - **Why key?** Because public “Apple-style login that lets third-party apps use the user’s ChatGPT/Claude/Gemini subscription” is not available. Keys are the only workable integration today.
+- Keys must be:
+  - Stored **server-side only**, **encrypted at rest**, never returned to the client.
+  - Only a **hint** may be shown (e.g., last-4) after successful connect.
+- Orb behavior:
+  - If user draws with orb and releases → show AI result sheet.
+  - If nothing linked → show iOS action sheet: **“Connect your AI”** → navigates to `/settings/ai`.
+- Orb result sheet must:
+  - Answer about what was circled (vision).
+  - Also show **Found in Voiladi**: matching **people / posts / communities**.
+- Style: must match existing iOS glass + Settings soft-UI exactly (no new visual language).
+
+### 30.2 Backend (FastAPI + MongoDB)
+**New file:** `backend/routes_ai.py` (mounted in `server.py`)
 
 **Collections**
-- `posts`:
-  - `id`, `user_id`, `photo_url` (uploads), `caption`, `location`, `created_at`,
-  - `like_count`, `comment_count`, `save_count` (denormalised counters)
-- `post_likes`: `post_id`, `user_id`, `created_at` (unique index on `(post_id,user_id)`)
-- `post_saves`: `post_id`, `user_id`, `created_at` (unique index)
-- `post_comments`: `id`, `post_id`, `user_id`, `text`, `created_at` (+ soft delete optional)
-- `post_hidden`: `post_id`, `user_id`, `created_at` (Not interested)
+- `ai_links`:
+  - `user_id`
+  - `provider`: `openai | anthropic | gemini`
+  - `ciphertext`: encrypted API key
+  - `hint`: last-4 / masked label (non-sensitive)
+  - `model`: selected model id
+  - `active`: bool
+  - `created_at`, `updated_at`, `last_validated_at`
 
-**Routes (`routes_posts.py`)**
-- `POST   /api/posts` — create post (verified-only optional; or allow all onboarded)
-- `GET    /api/feed` — discover feed (exclude hidden; cursor pagination)
-- `GET    /api/posts/{id}` — single post (for deep link `/p/:id`)
-- `POST   /api/posts/{id}/like` / `DELETE .../like`
-- `POST   /api/posts/{id}/save` / `DELETE .../save`
-- `GET    /api/posts/{id}/comments` — list comments
-- `POST   /api/posts/{id}/comments` — create comment
-- `POST   /api/posts/{id}/hide` — Not interested
-- `POST   /api/posts/{id}/report` — report post (reuse reports collection or add `post_reports`)
-- `DELETE /api/posts/{id}` — delete own post
+**Encryption**
+- Use `cryptography.Fernet`.
+- Secret from env `AI_KEY_SECRET` (preferred). Fallback: derive from `JWT_SECRET` (stable) if env absent.
 
-**Share into chat**
-- Add message kind: `kind: "post"` with payload:
-  - `post_id`, `post_owner_id`, `post_photo`, `post_caption`, `post_location`, `post_username`
-- Endpoint option A (recommended): client sends a normal message `POST /api/matches/{id}/messages` with `kind="post"`.
-  - Update `MessageIn` schema to accept `kind` + `post` object.
+**Endpoints**
+- `GET    /api/ai/links` → list connected providers (no keys)
+- `POST   /api/ai/links` → connect provider (accept key + provider + optional model)
+  - Validate key by calling provider models endpoint.
+  - Save encrypted key + default model.
+- `PUT    /api/ai/links/{provider}` → update model / active
+- `DELETE /api/ai/links/{provider}` → disconnect
 
-**Indexes**
-- `posts`: `created_at` desc, `user_id`.
-- `post_comments`: `post_id` + `created_at`.
+**Orb lookup endpoint**
+- `POST /api/ai/lookup`
+  - Input: `{ provider?, model?, image_data_url, bbox, page_text, question?, history? }`
+  - Steps:
+    1) Resolve active provider/model for user.
+    2) Call provider vision endpoint with:
+       - cropped JPEG (base64)
+       - prompt that includes: question + page_text context
+    3) Extract:
+       - `answer_text`
+       - `keywords` / `entities` (ask model to output JSON)
+    4) Search inside Voiladi:
+       - People: reuse `GET /api/explore/search?q=` via internal function (or factor search logic to a helper)
+       - Topics: `content.INTERESTS` match
+       - Posts: query `posts` by caption/location regex, plus author username match
+    5) Return: `{ answer, results: { profiles, posts, topics }, provider, model }`
 
-**Seed data**
-- Admin: `POST /api/admin/seed/posts` (idempotent) to create sample posts for `is_seed` users so feed is not empty.
+**Rate limits & body size**
+- Add a stricter rule for `/api/ai/*` (protect from abuse).
+- Ensure body cap allows images (e.g., 2–4MB JPEG). If needed, keep under existing MAX_BODY and compress client-side.
 
-### 27.3 Frontend (React)
-**Routing / screens**
-- Rewrite `pages/Discover.jsx` → feed screen (vertical snap):
-  - `PostCard` full-screen
-  - Right rail buttons + counts
-  - Bottom-left author block + Follow
-  - Top-left title “Discover”
-  - Loading sequence: spinner → skeleton → image fade
-- New:
-  - `pages/NewPost.jsx` (`/posts/new`) — upload + caption + location
-  - `pages/PostView.jsx` (`/p/:id`) — opens single post (from shared message / copy link)
-  - `pages/Saved.jsx` (`/saved`) — saved posts list
+### 30.3 Frontend (React)
 
-**Components**
-- `CommentsSheet` (Radix/vaul-style sheet): list + composer.
-- `ShareSheet`: choose a chat thread and send the post.
-- `MoreSheet`: Report / Not interested / Copy link.
+**Settings UI**
+- Add Settings row: **AI Assistant** in Settings → App section (or Account section if you prefer; keep to reference grouping).
+- New page: `frontend/src/pages/settings/AiAssistant.jsx`
+  - Three provider cards:
+    - status: Not connected / Connected
+    - Connect / Disconnect
+    - Model picker (only after connect)
+  - Connect flow:
+    - iOS glass sheet with:
+      - “Open OpenAI / Anthropic / Google” button (opens key creation URL)
+      - secure paste field (type=password)
+      - Verify & Connect
 
-**Profile integration**
-- Add Profile “+” entry point (exact per reference):
-  - Opens `/posts/new`.
-- Add Profile menu row → **Saved**.
-- Add Posts grid (optional v1.1) or keep minimal: Saved list only.
+**Orb AI Search Layer**
+- New component: `frontend/src/components/ai/AiSearchLayer.jsx`
+  - Listens to `window` event `voiladi:ink`.
+  - On event:
+    1) Capture screenshot (see capture strategy below)
+    2) Crop to bbox (+ padding)
+    3) Generate text context:
+       - visible headings/buttons in current screen (DOM scan)
+       - current route + active post id/profile id if present
+    4) Call `POST /api/ai/lookup`
+    5) Show a glass **result drawer**:
+       - Top: AI answer
+       - Below: “Found in Voiladi” sections
+         - People: reuse existing profile cards/sheets
+         - Posts: small tiles that open `/p/:id`
+         - Communities: open topic sheet
+       - Follow-up composer (optional v1): user asks a follow-up question (keeps short history)
 
-**Chat integration**
-- Update `ChatRoom.jsx` renderer:
-  - New bubble type for `m.kind === "post"` → card with image thumbnail + caption + location + “View post”
-  - Tap opens `/p/:id`.
+**Capture strategy**
+- Web browsers:
+  - Use `html2canvas` (or `modern-screenshot`) to capture `#vo-main` (not the whole page background).
+  - Keep image small: downscale and JPEG compress.
+- Android shell:
+  - Add native bridge `VoiladiNative.capture()` using **PixelCopy** (Phase 30.4).
+  - Web receives `voiladi:capture` event with base64 PNG/JPEG.
 
-### 27.4 Testing plan
+**BottomNav orb tweak**
+- When a stroke exists on release:
+  - Instead of flying home immediately, allow the AI layer to take over (orb can dissolve/fade and then return after results open).
+  - Keep existing feel; no new visuals.
+
+### 30.4 Android shell updates (APK)
+**Target shell:** 1.7.3 (APK 1.6.3)
+- Add `@JavascriptInterface capture()`:
+  - Use PixelCopy to capture the WebView to a bitmap.
+  - Encode to JPEG (quality ~0.75) or PNG.
+  - Dispatch to the page via `evaluateJavascript`:
+    - `window.dispatchEvent(new CustomEvent('voiladi:capture',{detail:{dataUrl:'data:image/jpeg;base64,...'}}))`
+
+### 30.5 Testing plan
 - Backend:
-  - Create post, fetch feed, pagination, like/unlike, save/unsave, comment create/list, hide removes from feed, delete own post.
-  - Share message kind `post` appears in chat history and inbox preview.
+  - Unit-test provider adapters with mocked httpx responses (no real keys in CI).
+  - Verify encryption: ciphertext stored, key never returned.
+  - Lookup returns answer + structured results.
 - Frontend:
-  - Discover opens with spinner, then skeleton, then image fade.
-  - Snap-scroll one-by-one behaviour matches reference.
-  - Right rail taps update counts.
-  - Comments sheet works and persists.
-  - Share into chat produces correct post card in chat.
-  - Saved list shows bookmarked posts.
-- Visual validation:
-  - Screenshot comparison against user reference (icons, spacing, typography).
+  - Settings connect/disconnect states.
+  - If no link: orb release opens “Connect your AI” sheet.
+  - If linked: orb release opens results drawer with answer + results.
+  - Ensure capture works on web (html2canvas).
+- APK:
+  - Verify PixelCopy capture fires event and results open.
 
-### 27.5 Deploy plan
-- Deploy **API + Web** (Railway) after tests.
-- Verify Cloudflare caching does not break feed freshness (post images remain immutable; feed JSON no-store or short max-age).
+### 30.6 Deploy plan
+- Deploy **API + Web** to Railway.
+- Build and publish **APK 1.6.3** using `android-build/build_apk.py`.
+- Update `memory/PRD.md` with the new AI phase, security notes, and rollout details.
 
 ---
 
-## Phase 28 — Voice + Video calls (WebRTC) (P0)
+## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
-- Planned: Instagram-style voice/video calling in chat via WebRTC + Cloudflare TURN.
-- **Do not implement** until exact incoming/ongoing call UI designs are provided.
+- Do not implement until incoming/ongoing call UI is provided.
 
 ---
 
 ## 3) Next Actions
-1) **Phase 27: Discover Feed (Posts)**
-   - Implement backend `routes_posts.py` + DB collections + admin seeding for posts.
-   - Rewrite Discover UI to match reference exactly.
-   - Add New Post flow from Profile “+”.
-   - Add comments/share/save/more sheets.
-   - Add chat `kind="post"` rendering.
-   - Test + deploy api+web.
-2) **Change Password (Settings → Account)**
-   - Add UI row + backend endpoint to change password (with re-auth).
-3) **Move servers to Singapore (Asia)** (optional but biggest speed gain for India)
-   - Requires explicit approval + maintenance window to migrate volumes (db + uploads).
-4) **Cloudflare WAF / Bot protection rules**
-   - Requires a Cloudflare token with additional permissions (Zone Settings/Rules) beyond DNS.
+1) **Phase 30: Connect your AI + Orb Visual Search**
+   - Backend `routes_ai.py` + encrypted key storage.
+   - Settings `/settings/ai` UI.
+   - Orb AI layer: capture → lookup → results drawer.
+   - Android PixelCopy capture bridge + APK 1.6.3.
+   - Test + deploy.
+2) **Phase 31: WebRTC voice/video calls** (blocked)
+   - Wait for user UI mockups.
+3) **Move servers to Singapore (Asia)** (optional biggest speed gain for India)
+   - Requires explicit approval + maintenance window.
+4) **Admin Reports screen UI** (expand `/admin/verify`)
 
 ---
 
 ## 4) Success Criteria
 - UI matches user references pixel-for-pixel.
-- Discover feed behaves like reference:
-  - full-screen vertical snap
-  - exact icons + placements
-  - spinner → shimmer → fade-in
-- Posts system works end-to-end:
-  - create post, feed, like, comment, save, hide, report, delete
-  - saved posts list in profile
-  - share post into chat renders a proper post card
-- Verified-only DM requests work:
-  - Verified user can message any profile → recipient sees in Requests until accepted.
-- Chat feels professional:
-  - typing + seen + unsend + safety actions + media + post cards
-- App loads fast on Indian networks:
-  - thumbnails + edge caching + reduced first paint
-- Security hardened:
-  - rate limits, lockouts, security headers, upload/body caps, WebView lockdown, release signing
-- No AI-related features.
+- Orb UX:
+  - Detach at 0.40s hold.
+  - Drawing is smooth and responsive.
+  - Release triggers AI (linked) or connect sheet (not linked).
+- AI linking:
+  - Providers connect/disconnect reliably.
+  - Keys are encrypted and never exposed.
+  - Model selection works.
+- AI results:
+  - Answer is relevant to circled content.
+  - “Found in Voiladi” returns useful people/posts/communities.
+- No regressions to Discover feed, chat, explore, edge-to-edge shell.
 
 ---
 
 ## 5) Status Log
-- Phase 1–21: **COMPLETED**
-- Phase 22: **COMPLETED** (Settings verification, loading/offline/perf, Cloudflare/Jio fix)
-- Phase 23: **COMPLETED** (DM Requests + Requests tab + Chat polish)
-- Phase 24: **COMPLETED** (Security hardening server + web + APK)
-- Phase 25: **COMPLETED** (Chat media: images + videos, view-once)
-- Phase 26: **COMPLETED** (voiladi.com landing + haze + 6-step live camera verification + bots + final chat UI; outer composer glare removed)
-- Phase 27: **COMPLETED** (Discover Feed / Posts)
-- Phase 28: **BLOCKED** (WebRTC calls pending UI)
+- Phase 1–29: **COMPLETED**
+  - Includes Discover overhaul, Circle feed, dark mode + edge-to-edge fixes, and orb/ink feature.
+  - Orb hold time updated to **0.40s**.
+  - APK published: **1.6.2**.
+- Phase 30: **APPROVED (next to implement)**
+- Phase 31: **BLOCKED**
 
 ---
 
 ## 6) Future backlog
 - P0 WebRTC voice/video calls UI + integration (after mockups)
+- P0 AI Screen Search expansion
+  - multi-step follow-up chat
+  - “search in chats” / “search in posts” scoped toggles
+  - moderation/abuse limits for AI
 - P1 Google Play ready (signed AAB)
 - P1 iPhone app packaging
-- P2 Admin Reports screen UI (currently API exists; UI at `/admin/verify` can be expanded)
-- P2 Community join (from Explore topic sheet → shows on profile)
+- P2 Admin Reports screen UI
+- P2 Community join (topic sheet → shows on profile)
 - P2 Notification settings
 - P2 Unblock list
 - P3 Recent searches
-- P3 Haptics
+- P3 Extra haptics polish
 - P3 Match expiry nudges

@@ -54,6 +54,7 @@ const Settings = screen(() => import("@/pages/Settings"));
 const VerificationSettings = screen(() => import("@/pages/settings/Verification"));
 const ChangeEmail = screen(() => import("@/pages/settings/ChangeEmail"));
 const ChangePhone = screen(() => import("@/pages/settings/ChangePhone"));
+const AiAssistant = screen(() => import("@/pages/settings/AiAssistant"));
 const Notifications = screen(() => import("@/pages/Notifications"));
 const Legal = screen(() => import("@/pages/Legal"));
 const Verify = screen(() => import("@/pages/Verify"));
@@ -166,6 +167,7 @@ function App() {
                   <Route path="/settings/verification" element={<VerificationSettings />} />
                   <Route path="/settings/email" element={<ChangeEmail />} />
                   <Route path="/settings/phone" element={<ChangePhone />} />
+                  <Route path="/settings/ai" element={<AiAssistant />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/verify" element={<Verify />} />
                 </Route>

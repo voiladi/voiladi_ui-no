@@ -9,7 +9,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Base64;
+import android.view.PixelCopy;
+import java.io.ByteArrayOutputStream;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -248,7 +256,7 @@ public class MainActivity extends Activity {
 
     /* ---------------------------------------------------------------- web view */
 
-    static final String SHELL_VERSION = "1.7.2";
+    static final String SHELL_VERSION = "1.7.3";
     private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
 
     /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */
@@ -606,6 +614,86 @@ public class MainActivity extends Activity {
         public String shellVersion() {
             return SHELL_VERSION;
         }
+
+        /** Shell 1.7.3: exact screenshot of the app window (PixelCopy) for the orb's visual search; answered via the 'voiladi:capture' event. */
+        @JavascriptInterface
+        public void capture(final String id) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    captureWindow(id);
+                }
+            });
+        }
+    }
+
+    /* ---------------------------------------------------------------- screen capture (orb visual search) */
+
+    private void captureWindow(String rawId) {
+        final String id = rawId == null ? "" : rawId.replaceAll("[^A-Za-z0-9_-]", "");
+        try {
+            if (Build.VERSION.SDK_INT >= 26 && web != null && web.getWidth() > 0 && web.getHeight() > 0) {
+                final Bitmap bmp = Bitmap.createBitmap(web.getWidth(), web.getHeight(), Bitmap.Config.ARGB_8888);
+                int[] loc = new int[2];
+                web.getLocationInWindow(loc);
+                Rect r = new Rect(loc[0], loc[1], loc[0] + web.getWidth(), loc[1] + web.getHeight());
+                PixelCopy.request(getWindow(), r, bmp, new PixelCopy.OnPixelCopyFinishedListener() {
+                    @Override
+                    public void onPixelCopyFinished(int result) {
+                        if (result == PixelCopy.SUCCESS) deliverCapture(id, bmp);
+                        else drawCapture(id);
+                    }
+                }, new Handler(Looper.getMainLooper()));
+                return;
+            }
+        } catch (Throwable t) {
+            // fall back to a software draw below
+        }
+        drawCapture(id);
+    }
+
+    private void drawCapture(String id) {
+        try {
+            Bitmap bmp = Bitmap.createBitmap(web.getWidth(), web.getHeight(), Bitmap.Config.ARGB_8888);
+            web.draw(new Canvas(bmp));
+            deliverCapture(id, bmp);
+        } catch (Throwable t) {
+            deliverCapture(id, null);
+        }
+    }
+
+    private void deliverCapture(final String id, final Bitmap bmp) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String dataUrl = "";
+                if (bmp != null) {
+                    try {
+                        Bitmap b = bmp;
+                        if (b.getWidth() > 1080) {
+                            float s = 1080f / b.getWidth();
+                            b = Bitmap.createScaledBitmap(bmp, 1080, Math.max(1, Math.round(b.getHeight() * s)), true);
+                        }
+                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        b.compress(Bitmap.CompressFormat.JPEG, 80, out);
+                        dataUrl = "data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+                    } catch (Throwable t) {
+                        dataUrl = "";
+                    }
+                }
+                final String js = "window.dispatchEvent(new CustomEvent('voiladi:capture',{detail:{id:'" + id + "',dataUrl:'" + dataUrl + "'}}))";
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (web != null) web.evaluateJavascript(js, null);
+                        } catch (Throwable t) {
+                            // ignore
+                        }
+                    }
+                });
+            }
+        }).start();
     }
 
     private void askNotificationPermission() {

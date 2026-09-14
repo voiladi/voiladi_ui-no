@@ -1345,6 +1345,20 @@
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.03) 100%);
     }
 
+    /* orb visual-search result sheet: frosted glass like the action sheets, tall + scrollable */
+    .vo-ai-drawer {
+        background: var(--glass-solid);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+        .vo-ai-drawer {
+            background: var(--glass);
+        }
+    }
+
     /* ---------- Messages inbox (reference: flat list, hairlines, chevrons; compact glass tabs) ---------- */
     .vo-gseg.vo-seg-inbox {
         height: 40px;

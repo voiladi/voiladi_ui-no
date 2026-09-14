@@ -1,22 +1,30 @@
 [
   {
-    "content": "Settings: merge rows (Account, Saved added to Profile group)",
+    "content": "Backend routes_ai.py: encrypted links CRUD + provider verify/list models + /ai/lookup vision + Voiladi search",
     "status": "completed"
   },
   {
-    "content": "Profile: glass segmented Posts | Saved under stats",
+    "content": "Frontend lib/aiCapture.js (native/html2canvas capture, crop, DOM context) + install html2canvas",
     "status": "completed"
   },
   {
-    "content": "Video posts backend: chunked upload + ffmpeg 720p (<=60s) + poster, kind field on posts",
+    "content": "Frontend pages/settings/AiAssistant.jsx + route + Settings row",
     "status": "completed"
   },
   {
-    "content": "Video posts frontend: NewPost accepts video, PostCard autoplay muted/loop/tap-to-unmute, grid tiles show poster",
+    "content": "Frontend components/ai/AiSearchLayer.jsx (connect sheet, result drawer, follow-up) mounted in AppShell; BottomNav orb dissolve",
     "status": "completed"
   },
   {
-    "content": "Test (agent) + deploy api+web",
+    "content": "Android shell 1.7.3 Bridge.capture (PixelCopy) + APK 1.6.3",
+    "status": "completed"
+  },
+  {
+    "content": "Compile check, screenshots, testing agent; fix bugs",
+    "status": "completed"
+  },
+  {
+    "content": "Deploy api + web to Railway, publish APK, update PRD",
     "status": "completed"
   }
 ]

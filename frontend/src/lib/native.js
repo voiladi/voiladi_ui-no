@@ -43,3 +43,32 @@ export const nativeSupportsCamera = () => {
   const b = bridge();
   return !!b && typeof b.hasCamera === "function";
 };
+
+/*
+ * Shell 1.7.3+: exact screenshot of the app window (PixelCopy) for the orb's visual search. Resolves to a JPEG data URL,
+ * or null when not in the shell / the shell is older / it takes too long (the web falls back to html2canvas).
+ */
+export const nativeCapture = () => {
+  const b = bridge();
+  if (!b || typeof b.capture !== "function") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("voiladi:capture", onShot);
+      resolve(v);
+    };
+    const onShot = (e) => {
+      if (e.detail?.id === id) finish(e.detail.dataUrl || null);
+    };
+    window.addEventListener("voiladi:capture", onShot);
+    setTimeout(() => finish(null), 2500);
+    try {
+      b.capture(id);
+    } catch (e) {
+      finish(null);
+    }
+  });
+};

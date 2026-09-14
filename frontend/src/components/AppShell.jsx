@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { OfflineBanner } from "@/components/Offline";
+import { AiSearchLayer } from "@/components/ai/AiSearchLayer";
 
 /* Tap-to-open banners for realtime events (new match, new message). */
 const RealtimeToasts = () => {
@@ -159,6 +160,7 @@ export const AppShell = ({ nav = false }) => {
         <OfflineBanner />
         <FeedbackLayer nav={nav} />
         {user && <RealtimeToasts />}
+        {user && nav && <AiSearchLayer />}
       </div>
     </div>
   );

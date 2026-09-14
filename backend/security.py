@@ -46,6 +46,8 @@ RULES: List[Tuple[str, Optional[str], re.Pattern, int, int]] = [
     ("media_send",  "POST",   re.compile(r"^/api/media/(init|[^/]+/complete)$"),      80, 3600),
     ("media_chunk", "PUT",    re.compile(r"^/api/media/[^/]+/chunk$"),             1500, 3600),
     ("search",      "GET",    re.compile(r"^/api/explore/search"),                   90,  60),
+    ("ai_connect",  "POST",   re.compile(r"^/api/ai/links$"),                         12,  600),
+    ("ai_lookup",   "POST",   re.compile(r"^/api/ai/lookup$"),                        40,  600),
     ("admin",       None,     re.compile(r"^/api/admin/"),                          120,  60),
     ("api",         None,     re.compile(r"^/api/"),                                600,  60),
 ]

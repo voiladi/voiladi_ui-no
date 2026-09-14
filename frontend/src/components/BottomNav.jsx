@@ -164,18 +164,33 @@ export const BottomNav = () => {
     haptic([12, 40, 18]);
   };
 
-  /* release while detached: fly home to the current tab's slot, fade the ink, hand the stroke to listeners */
+  /* release while detached: fly home to the current tab's slot, fade the ink, hand the stroke to listeners.
+     With a real stroke the orb dissolves on the spot (it must not be in the screenshot) and the ink lingers for the capture. */
   const returnHome = () => {
     const rect = barRef.current?.getBoundingClientRect();
     const pts = points.current;
     points.current = [];
     setDetached(false);
-    if (pts.length > 1) {
+    const stroke = pts.length > 1;
+    if (stroke) {
       const xs = pts.map((p) => p[0]);
       const ys = pts.map((p) => p[1]);
       window.dispatchEvent(
         new CustomEvent("voiladi:ink", { detail: { points: pts, bbox: { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) } } })
       );
+    }
+    const showLens = () => {
+      setOrbVisible(false);
+      x.set(index * segW);
+      animate(lensOpacity, 1, { duration: 0.1 });
+      clearTimeout(fade.current);
+      fade.current = setTimeout(() => animate(lensOpacity, 0, { duration: 0.35 }), 360);
+    };
+    if (stroke) {
+      animate(inkOpacity, 0, { duration: 0.4, delay: 1.1 }).then(() => setPath(""));
+      animate(orbScale, 0, { duration: 0.16, ease: [0.4, 0, 1, 1] }).then(showLens);
+      haptic();
+      return;
     }
     animate(inkOpacity, 0, { duration: 0.45, delay: 0.15 }).then(() => setPath(""));
     if (rect && segW) {
@@ -183,13 +198,7 @@ export const BottomNav = () => {
       const hy = rect.top + rect.height / 2 - ORB / 2;
       animate(ox, hx, RETURN);
       animate(orbScale, 0.7, { duration: 0.32, ease: [0.2, 0.8, 0.2, 1] });
-      animate(oy, hy, RETURN).then(() => {
-        setOrbVisible(false);
-        x.set(index * segW);
-        animate(lensOpacity, 1, { duration: 0.1 });
-        clearTimeout(fade.current);
-        fade.current = setTimeout(() => animate(lensOpacity, 0, { duration: 0.35 }), 360);
-      });
+      animate(oy, hy, RETURN).then(showLens);
     } else {
       setOrbVisible(false);
     }

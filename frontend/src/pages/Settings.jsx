@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, CircleHelp, FileText, Info, Check, Bookmark, SunMoon } from "lucide-react";
+import { Mail, Phone, BadgeCheck, User, Lock, Bell, SlidersHorizontal, Globe, CircleHelp, FileText, Info, Check, Bookmark, SunMoon, Orbit } from "lucide-react";
 import * as AD from "@radix-ui/react-alert-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme, THEME_MODES } from "@/hooks/useTheme";
 import { SoftPageHeader, SoftSectionLabel, SoftCard, SoftRow } from "@/components/SoftUI";
 import { ConfirmDialog } from "@/components/Dialogs";
 import { formatPhone } from "@/lib/phone";
+import { useAiLinks } from "@/hooks/useAiLinks";
 
 /* Settings, Instagram-style grouped lists on the soft canvas. Account details (email / phone / verification) live at the top. */
 
@@ -25,6 +26,8 @@ export default function Settings() {
   const [confirm, setConfirm] = useState(false);
   const [appearance, setAppearance] = useState(false);
   const modeLabel = THEME_MODES.find((m) => m.value === mode)?.label || "System";
+  const ai = useAiLinks();
+  const aiLabel = ai.active ? ai.active.name : ai.isFetched ? "Off" : "";
 
   const verifiedValue = user?.verified ? (
     <>
@@ -65,6 +68,7 @@ export default function Settings() {
         <section>
           <SoftSectionLabel>App</SoftSectionLabel>
           <SoftCard className="overflow-hidden" testId="settings-app-card">
+            <SoftRow icon={Orbit} label="AI Assistant" value={aiLabel} onClick={() => navigate("/settings/ai")} testId="settings-ai-row" />
             <SoftRow icon={Globe} label="Language" value="English" testId="settings-language-row" />
             <SoftRow icon={SunMoon} label="Appearance" value={modeLabel} onClick={() => setAppearance(true)} testId="settings-appearance-row" last />
           </SoftCard>

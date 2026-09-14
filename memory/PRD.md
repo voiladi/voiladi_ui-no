@@ -6,7 +6,7 @@ onboarding wizard (name/DOB/gender -> phone -> OTP -> photo (skippable) -> inter
 real-time chat (WebSocket + polling fallback), curated non-AI icebreakers, Filters (show me / age / distance / interests / goals),
 Profile (Followers=likes received, Following=likes sent, Profile views; completion card; Boost + VOILADI+ = STATIC PLACEHOLDERS,
 Super Likes = real Voila quota), Edit Profile, Settings (dark mode toggle, red Log Out), block/report/unmatch, delete account, admin reports.
-NO AI features (user rule).
+AI: ONLY the user's own AI (ChatGPT / Claude / Gemini account linked in Settings > AI Assistant) - no Voiladi-side AI features. (User rule updated 2026-09-14; earlier rule was 'no AI at all'.)
 
 ## Design (Phase 9, CURRENT, user-approved direction): 1:1 replica of the user's interface photos — see /app/design_guidelines.md
 Inter font, white #FFFFFF page, #F2F2F4 surfaces, ink #111111, blue #3478F6 (verified badge / Voila star), red #FF3B30,
@@ -141,3 +141,30 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   (.vo-orb, .vo-ink-layer, .vo-ink-path). Normal press-and-slide tab switching unchanged. Deployed web.
 - 2026-09-14 17:30 UTC: Orb hold time 0.65s -> 0.40s (BottomNav.jsx HOLD_MS=400). APK 1.6.2 (versionCode 9, shell 1.7.2, release keystore) ->
   frontend/public/voiladi.apk + deploy/android/voiladi-1.6.2.apk. Deployed web (Railway SUCCESS); live bundle verified ",400)".
+
+## 2026-09-14 — Phase 30: Connect your AI + orb visual search (user-approved)
+- User decision: "Apple-style login" to ChatGPT/Claude/Gemini is impossible for third parties (OpenAI "Sign in with ChatGPT" is identity-only + partner-gated;
+  Anthropic/Google have none), so linking = the user pastes an API key FROM THEIR OWN account, presented as an account-connect flow. Usage is billed to
+  their provider account. Told to the user explicitly ("Why key?" -> "the key is the only door the AI companies leave open to outside apps").
+- Backend routes_ai.py (prefix /api/ai): collection ai_links {user_id, provider, ciphertext (Fernet; secret = AI_KEY_SECRET or sha256(JWT_SECRET)), hint (last 4),
+  model, models[] (account's models, best default first), active}. GET /providers, GET /links, POST /links (verifies key live via provider models endpoint,
+  friendly errors, 201), PUT /links/{provider} {model|active}, DELETE /links/{provider}. POST /lookup {image data:image/jpeg (<=6MB), route, texts[], user_ids[],
+  post_ids[], question?, history[]} -> provider vision chat (OpenAI chat/completions, Anthropic messages, Gemini generateContent via httpx, no SDKs) with SYSTEM
+  prompt asking for a short answer + "TERMS: a, b, c" line -> terms drive find_in_voiladi(): topics (INTERESTS), people (name/username/interests/bio/job/city,
+  circled user_ids first), posts (caption/location/authors, circled post_ids first). 428 when nothing is linked. Rate limits: ai_connect 12/10min, ai_lookup 40/10min.
+  Model ranking heuristics: OpenAI newest gpt-N (plain > mini > nano, no dated/preview/audio/etc), Anthropic sonnet > opus > haiku newest, Gemini flash (non-lite) newest non-preview.
+  test_ai_orb.py = in-process ASGI test with the provider stubbed (connect/encrypt/model/lookup/follow-up/validation/disconnect) - all green.
+- Frontend: Settings > App > "AI Assistant" row (Orbit icon; value = active provider name or Off) -> /settings/ai (pages/settings/AiAssistant.jsx): How-it-works card,
+  ACCOUNTS card (ChatGPT / Claude / Gemini rows, ink letter tiles, "Connect" / "Connected" tick), THE ORB USES card (pick active). Provider Drawer: steps 1-2,
+  "Open OpenAI/Anthropic/Google" (keys_url, new tab), password field with eye, Connect (spinner, red inline error), fine print; when connected: Model row (iOS action-sheet
+  picker of the account's models), Use for the orb, Update key, red Disconnect (ConfirmDialog danger).
+  components/ai/AiSearchLayer.jsx (mounted in AppShell for signed-in tab screens) listens to `voiladi:ink`: no link -> iOS sheet "Connect your AI" -> /settings/ai;
+  linked -> lib/aiCapture.js: markedBBox() keeps only the marking (closed loop, else after the first direction change - the carry line from the bar is dropped),
+  captureRegion() (native PixelCopy via VoiladiNative.capture(id) -> 'voiladi:capture' event, else html2canvas useCORS) crops + pads to <=1024px JPEG (ink included),
+  collectContext() gathers text nodes / [data-user-id] / [data-post-id] under the region. Result = glass Drawer (.vo-ai-drawer): provider mark + name · model, crop preview,
+  answer, chat-style follow-ups (black bubbles) via composer "Ask ChatGPT more…", FOUND IN VOILADI (people rows -> ProfileSheet, 3-up post tiles -> /p/:id,
+  community pills -> /explore?topic=Name (Explore now reads ?topic=)). Skeleton lines while thinking; error row with retry. BottomNav: with a real stroke the orb
+  dissolves in place (not in the capture) and the ink lingers ~1.1s; plain release still flies home. data-user-id added on PostCard author avatar + Explore PersonRow.
+- Android shell 1.7.3 / APK 1.6.3 (code 10): Bridge.capture(id) -> PixelCopy of the WebView rect (fallback web.draw) -> JPEG q80 <=1080w -> evaluateJavascript
+  dispatch 'voiladi:capture' {id, dataUrl}. frontend/public/voiladi.apk + deploy/android/voiladi-1.6.3.apk.
+- html2canvas added to frontend; cryptography pinned in requirements.deploy.txt.
