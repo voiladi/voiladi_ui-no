@@ -206,3 +206,15 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   + uppercase kind label + description + "Search the web" soft pill (Globe). Falls back to axios `/lookup` when streaming itself fails (non-HTTP error).
 - Tests: iteration_30.json 16/16 (backend 428/400/409-in-stream/parser/regression; frontend mocked stream: title, FASHION label, web chip, error+retry).
   Scripts: tests/test_ai_orb_upgrade.py, tests/test_chatgpt_account.py. Deployed web+api via `railway up` (no APK rebuild - shell loads the live web).
+
+## 2026-09-14 — Phase 30d: AI ASSISTANT PAGE REDESIGN (user's 3 mockups, "must match 10/10")
+- AiAssistant.jsx rebuilt: ProviderMark now draws the real OpenAI mark on an ink tile (radius 24% of size). Not connected: ACCOUNT label +
+  76px surface2 card (48px icon, "ChatGPT" 20px medium, "Not connected" 17px mute, chevron). Sheet (white, 30px radius, own 48x5 grabber):
+  58px icon + "Connect ChatGPT" 30px bold + "Use your own ChatGPT account." 19px; bordered steps card (34px number circles, 20px titles,
+  16.5px nowrap subs, hairline separators); ink 52px "Sign in with ChatGPT"; "Not now"; "Uses your ChatGPT plan." In progress: steps reworded
+  ("You'll get a short code." / "Come back here" / "You're connected."), 58px surface code block "DD1L-JYRDD ... ✓ Copied|Copy" (tap copies),
+  ink button with ExternalLink "Open ChatGPT to enter the code", 32px ring spinner + "Waiting for you to sign in / Come back here when it's done.",
+  "Cancel" (closes the sheet). Connected: bordered white card (54px icon, "ChatGPT" 22px bold + black check badge, "● Connected" 30px pill with
+  #34C759 dot on the title line, email 16px full-width below, hairline, gear "Manage account" row 60px) + bottom 60px surface2 "Disconnect" pill.
+  "Manage account" = iOS action sheet: Model · <model> (opens model picker), Sign in again, Open ChatGPT settings. tailwind: added shadow `card`.
+- Tests: iteration_31.json (frontend, all flows pass; drawer auto-close verified manually with poll mock). Deployed web via railway up.

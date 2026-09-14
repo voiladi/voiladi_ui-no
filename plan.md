@@ -340,6 +340,9 @@
   words as they arrive (caret), bold title + kind label, "Search the web" chip (Google), falls back to `/lookup` if streaming fails.
 - Tests: `/app/test_reports/iteration_30.json` - 16/16 pass. Test scripts moved to `/app/tests/`.
 
+## Phase 30d — AI Assistant page redesign to the owner's 3 mockups (COMPLETED 2026-09-14)
+**Status: COMPLETED + deployed (web)** - not connected card + connect sheet, code/waiting state, connected card + Disconnect. Details in memory/PRD.md.
+
 ## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
 - Do not implement until incoming/ongoing call UI is provided.
@@ -385,6 +388,7 @@
   - APK published: **1.6.2**.
 - Phase 30: **COMPLETED** (APK 1.6.3)
 - Phase 30b (orb identify-anything + streaming): **COMPLETED**
+- Phase 30d (AI Assistant page redesign, 3 mockups): **COMPLETED**
 - Phase 31: **BLOCKED**
 
 ---

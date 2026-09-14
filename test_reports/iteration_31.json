@@ -1,0 +1,50 @@
+{
+  "summary": "Completed frontend-only testing of AI Assistant settings page (/settings/ai) with mocked APIs. All core functionality verified: State A (not connected), drawer with 3 steps, device code flow, polling mechanism, State B (connected), manage account, model selection, reconnect, disconnect, and navigation. Found one minor UX issue with drawer not auto-closing after polling.",
+  "backend_issues": {},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AiAssistant drawer",
+        "issue": "Drawer does not auto-close after successful polling. When polling completes and status becomes 'connected', the drawer should close automatically (line 122: setOpen(false)) but remains open. Connected card is rendered behind the drawer but not visible.",
+        "severity": "MEDIUM",
+        "fix_priority": "MEDIUM",
+        "affected_flow": "Device code sign-in flow",
+        "workaround": "User can see manage account sheet which confirms connection, but the visual transition is broken"
+      },
+      {
+        "component": "AiAssistant Cancel button",
+        "issue": "Cancel button (ai-signin-cancel) calls cancelSignIn() which resets session state but doesn't close the drawer. User must click 'Not now' to close the drawer after canceling. This creates a confusing UX where the drawer shows the initial 'Sign in with ChatGPT' state after cancel.",
+        "severity": "LOW",
+        "fix_priority": "LOW",
+        "affected_flow": "Device code cancellation",
+        "suggestion": "cancelSignIn() should either close the drawer or the Cancel button should call close() directly"
+      }
+    ],
+    "integration_issues": []
+  },
+  "passed_tests": [
+    "State A: 'Not connected' status displays correctly with ChatGPT row",
+    "Drawer opens with correct content: 3 steps, 'Sign in with ChatGPT' button, 'Not now' button, plan note",
+    "Device code flow: POST /api/ai/chatgpt/start returns session_id, user_code 'DD1L-JYRDD', verify_url with target='_blank'",
+    "Waiting indicator and Cancel button visible during sign-in",
+    "Polling mechanism: 3 polls executed (pending, pending, connected) with 5s interval",
+    "State B: Connected state achieved (verified via manage account sheet)",
+    "Email 'lacao.nijao@incast.uk' not truncated (scrollWidth <= clientWidth)",
+    "Connected badge, 'Connected' pill, and manage account row present",
+    "Manage account sheet: displays model 'gpt-5.4-mini', reconnect, open ChatGPT options",
+    "Model selection: 2 options (gpt-5.5, gpt-5.4-mini), PUT /api/ai/links/chatgpt triggered on selection",
+    "Reconnect flow: opens drawer directly in device code state",
+    "Disconnect flow: dialog appears, DELETE /api/ai/links/chatgpt called, returns to State A",
+    "Back button navigates to /settings correctly",
+    "No console errors or React warnings detected"
+  ],
+  "test_report_links": [],
+  "action_item_for_main_agent": "Fix drawer auto-close after polling: ensure setOpen(false) is called when polling status becomes 'connected' (line 122 in AiAssistant.jsx). The drawer should close automatically to reveal the connected card. Currently, the connected card is rendered but hidden behind the drawer.",
+  "updated_files": [],
+  "success_percentage": {
+    "frontend": "95%",
+    "backend": "N/A (mocked)"
+  },
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}

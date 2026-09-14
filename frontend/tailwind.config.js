@@ -51,6 +51,7 @@ module.exports = {
       },
       boxShadow: {
         action: '0 6px 18px rgba(0, 0, 0, 0.10)',
+        card: '0 2px 14px rgba(0, 0, 0, 0.05)',
         seg: '0 1px 3px rgba(0, 0, 0, 0.08)',
         thumb: '0 1px 4px rgba(0, 0, 0, 0.20)',
         sheet: '0 -8px 30px rgba(0, 0, 0, 0.12)',
