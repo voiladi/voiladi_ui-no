@@ -237,3 +237,7 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   StatusCircle 124->104, dvh-based clamps for spacing, compact Expect rows (46px tile, one-line subs: "A quick capture to get started." /
   "A few simple camera steps." / "Your status changes to Under review."), FlowPage CTA now `mt-auto` (pinned to bottom) with clamp padding.
   Fits 430x922 with 40/48px insets (button bottom at 852px). Web redeployed.
+- 2026-09-15 fix: ink stroke stayed on screen ABOVE the "Connect your AI" sheet. (a) .vo-ink-layer z-index 400 -> calc(var(--z-sheet) - 5) = 45
+  (above nav 30, below sheets/drawers 50, toasts 100). (b) New event `voiladi:ink-done`: AiSearchLayer fires it right after captureRegion()
+  (or immediately when no AI is linked / connect sheet shown); BottomNav.returnHome registers the listener BEFORE dispatching `voiladi:ink`
+  and fades the ink in 0.3s on it (1.6s safety-net timeout). Web redeployed.

@@ -172,7 +172,19 @@ export const BottomNav = () => {
     points.current = [];
     setDetached(false);
     const stroke = pts.length > 1;
+    // the ink stays for the screen capture; the AI layer fires `voiladi:ink-done` as soon as it has it (or shows a sheet
+    // instead) and the ink fades right away - with a 1.6s safety net in case nothing is listening. Listen BEFORE dispatching:
+    // the "nothing connected" answer is synchronous.
+    let inkDone = false;
+    const fadeInk = () => {
+      if (inkDone) return;
+      inkDone = true;
+      window.removeEventListener("voiladi:ink-done", fadeInk);
+      animate(inkOpacity, 0, { duration: 0.3 }).then(() => setPath(""));
+    };
     if (stroke) {
+      window.addEventListener("voiladi:ink-done", fadeInk);
+      setTimeout(fadeInk, 1600);
       const xs = pts.map((p) => p[0]);
       const ys = pts.map((p) => p[1]);
       window.dispatchEvent(
@@ -187,7 +199,6 @@ export const BottomNav = () => {
       fade.current = setTimeout(() => animate(lensOpacity, 0, { duration: 0.35 }), 360);
     };
     if (stroke) {
-      animate(inkOpacity, 0, { duration: 0.4, delay: 1.1 }).then(() => setPath(""));
       animate(orbScale, 0, { duration: 0.16, ease: [0.4, 0, 1, 1] }).then(showLens);
       haptic();
       return;

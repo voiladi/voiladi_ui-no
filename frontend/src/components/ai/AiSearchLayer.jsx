@@ -142,8 +142,11 @@ export const AiSearchLayer = () => {
       const raw = e.detail?.bbox;
       if (!raw || raw.w + raw.h < MIN_STROKE) return;
       const bbox = markedBBox(e.detail?.points, raw) || raw;
+      // the tab bar keeps the ink on screen until we say we're done with it (it must be in the screenshot, not over a sheet)
+      const inkDone = () => window.dispatchEvent(new CustomEvent("voiladi:ink-done"));
       const { links: ls, isFetched: fetched } = linksRef.current;
       if (fetched && ls.length === 0) {
+        inkDone();
         setConnectSheet(true);
         return;
       }
@@ -152,6 +155,7 @@ export const AiSearchLayer = () => {
         try {
           const { data } = await api.get("/ai/links");
           if (!(data.links || []).length) {
+            inkDone();
             setConnectSheet(true);
             return;
           }
@@ -166,6 +170,7 @@ export const AiSearchLayer = () => {
       } catch (err) {
         shot = null;
       }
+      inkDone();
       setPreview(shot?.image || null);
       imageRef.current = shot?.image || null;
       setCtx(context);

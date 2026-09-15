@@ -1322,7 +1322,7 @@
     .vo-ink-layer {
         position: fixed;
         inset: 0;
-        z-index: 400;
+        z-index: calc(var(--z-sheet) - 5); /* above the tab bar, below sheets / drawers / toasts */
         pointer-events: none;
         overflow: hidden;
     }
