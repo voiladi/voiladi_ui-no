@@ -14,13 +14,13 @@ import { FlowPage, FlowTitle, FlowSub, StatusCircle, TipsCard, FlowButton } from
  */
 
 const Expect = ({ icon: Icon, title, sub, last = false }) => (
-  <div className={`flex items-center gap-4 px-3.5 py-3.5 ${last ? "" : "border-b border-line/80"}`}>
-    <span className="vo-soft-tile h-[52px] w-[52px] rounded-[16px]">
-      <Icon className="h-[26px] w-[26px]" strokeWidth={1.9} />
+  <div className={`flex items-center gap-3.5 px-3 py-[clamp(9px,1.4dvh,13px)] ${last ? "" : "border-b border-line/80"}`}>
+    <span className="vo-soft-tile h-[46px] w-[46px] shrink-0 rounded-[14px]">
+      <Icon className="h-[23px] w-[23px]" strokeWidth={1.9} />
     </span>
     <span className="min-w-0 flex-1">
-      <span className="block text-[clamp(17px,5cqi,19px)] font-semibold leading-[1.2] tracking-[-0.01em] text-ink">{title}</span>
-      <span className="mt-0.5 block text-[clamp(13.5px,3.6cqi,15px)] leading-[1.3] text-mute">{sub}</span>
+      <span className="block truncate text-[clamp(16px,4.6cqi,18px)] font-semibold leading-[1.2] tracking-[-0.01em] text-ink">{title}</span>
+      <span className="mt-0.5 block truncate text-[clamp(13px,3.5cqi,14.5px)] leading-[1.3] text-mute">{sub}</span>
     </span>
   </div>
 );
@@ -99,21 +99,21 @@ export default function VerificationSettings() {
         </FlowButton>
       }
     >
-      <div className="flex flex-col items-center pt-2">
-        <StatusCircle tone="neutral" icon={Check} size={124} stroke={3} />
-        <FlowTitle className="mt-7" testId="verification-state-title">Verified profile</FlowTitle>
-        <span className="vo-soft-pill vo-glass-tint mt-4 h-[42px] px-6 text-[17px] font-semibold text-mute" data-testid="verification-status-pill">
+      <div className="flex flex-col items-center pt-[clamp(0px,1dvh,8px)]">
+        <StatusCircle tone="neutral" icon={Check} size={104} stroke={3} />
+        <FlowTitle className="mt-[clamp(14px,2.6dvh,26px)]" testId="verification-state-title">Verified profile</FlowTitle>
+        <span className="vo-soft-pill vo-glass-tint mt-3 h-[38px] px-5 text-[16px] font-semibold text-mute" data-testid="verification-status-pill">
           Not verified
         </span>
-        <FlowSub className="mt-4" testId="verification-status-text">Unlock trusted messaging and show others you're real.</FlowSub>
+        <FlowSub className="mt-3" testId="verification-status-text">Unlock trusted messaging and show others you're real.</FlowSub>
       </div>
 
-      <section className="mt-8">
-        <p className="mb-2.5 px-1 text-[13px] font-medium uppercase leading-none tracking-[0.22em] text-mute">What to expect</p>
-        <SoftCard className="overflow-hidden rounded-[28px] p-1" testId="verification-steps-card">
-          <Expect icon={Camera} title="Take a live selfie" sub="A quick capture to begin verification." />
-          <Expect icon={User} title="Follow the prompts" sub="Complete a few simple camera steps." />
-          <Expect icon={Clock} title="Submit for review" sub="Your profile status will update to Under review." last />
+      <section className="mt-[clamp(16px,3dvh,30px)]">
+        <p className="mb-2 px-1 text-[12.5px] font-medium uppercase leading-none tracking-[0.2em] text-mute">What to expect</p>
+        <SoftCard className="overflow-hidden rounded-[26px] p-1" testId="verification-steps-card">
+          <Expect icon={Camera} title="Take a live selfie" sub="A quick capture to get started." />
+          <Expect icon={User} title="Follow the prompts" sub="A few simple camera steps." />
+          <Expect icon={Clock} title="Submit for review" sub="Your status changes to Under review." last />
         </SoftCard>
       </section>
     </FlowPage>

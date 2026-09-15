@@ -233,3 +233,7 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
 - Tests: iteration_32.json (backend 8/9 - 9th is the unverified-account DM limitation, not a bug; frontend 100%). Script: tests/test_notifications_redesign.py.
 - 2026-09-15 fix: user said "Fix the panel" (Notifications tabs looked different from Messages). Notifications now uses the SAME `GlassSegmented`
   component + `vo-seg-inbox` class as Chats.jsx (options as {value,label}); the custom .vo-seg-tabs CSS was removed. Web redeployed.
+- 2026-09-15 fix: Verification intro (/settings/verification) overflowed the phone screen so "Get verified" sat under the Android nav bar. Tightened:
+  StatusCircle 124->104, dvh-based clamps for spacing, compact Expect rows (46px tile, one-line subs: "A quick capture to get started." /
+  "A few simple camera steps." / "Your status changes to Under review."), FlowPage CTA now `mt-auto` (pinned to bottom) with clamp padding.
+  Fits 430x922 with 40/48px insets (button bottom at 852px). Web redeployed.

@@ -16,7 +16,7 @@ export const FlowPage = ({ onBack, backTestId, children, cta, testId, ...rest })
       </button>
     </header>
     <div className="flex flex-1 flex-col">{children}</div>
-    {cta && <div className="mt-8 shrink-0">{cta}</div>}
+    {cta && <div className="mt-auto shrink-0 pt-[clamp(16px,3dvh,32px)]">{cta}</div>}
   </div>
 );
 
