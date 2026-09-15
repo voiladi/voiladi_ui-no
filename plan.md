@@ -343,6 +343,9 @@
 ## Phase 30d — AI Assistant page redesign to the owner's 3 mockups (COMPLETED 2026-09-14)
 **Status: COMPLETED + deployed (web)** - not connected card + connect sheet, code/waiting state, connected card + Disconnect. Details in memory/PRD.md.
 
+## Phase 32 — Notifications redesign (All / Requests / Unread, Instagram-Facebook style) (COMPLETED 2026-09-15)
+**Status: COMPLETED + deployed (web + api)** - matches + promo notices removed, per-item read state, inline Accept/Delete for requests. Details in memory/PRD.md.
+
 ## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
 - Do not implement until incoming/ongoing call UI is provided.
@@ -389,6 +392,7 @@
 - Phase 30: **COMPLETED** (APK 1.6.3)
 - Phase 30b (orb identify-anything + streaming): **COMPLETED**
 - Phase 30d (AI Assistant page redesign, 3 mockups): **COMPLETED**
+- Phase 32 (Notifications redesign): **COMPLETED**
 - Phase 31: **BLOCKED**
 
 ---

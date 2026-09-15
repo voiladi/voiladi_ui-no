@@ -594,22 +594,65 @@
         @apply absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#34C759] ring-2 ring-bg;
     }
 
-    /* ---------- toasts ---------- */
-    /* Notifications page rows: 60px avatar column, hairline inset past it */
-    .vo-nrow {
-        @apply relative flex w-full items-center gap-3.5 px-3.5 py-3.5 text-left focus-visible:outline-none active:bg-surface;
+    /* ---------- notifications (Instagram / Facebook style) ---------- */
+    /* Pill tabs as in the owner's reference: translucent track with a hairline, white raised pill on the active tab. */
+    .vo-seg-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        height: 50px;
+        padding: 4px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.42);
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+    }
+
+    .vo-seg-tabs .vo-seg-item {
+        height: 40px;
+        border-radius: 9999px;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        color: var(--muted);
+    }
+
+    .vo-seg-tabs .vo-seg-on {
+        background: var(--bg);
+        color: var(--ink);
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    }
+
+    .dark .vo-seg-tabs {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: none;
+    }
+
+    .dark .vo-seg-tabs .vo-seg-on {
+        background: var(--surface-2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* One activity row: avatar | text | unread dot. Unread rows are tinted (Facebook). */
+    .vo-notif-row {
+        @apply flex w-full items-start gap-3.5 rounded-[18px] px-3 py-3;
         transition-property: background-color;
         transition-duration: 120ms;
     }
 
-    .vo-nrow + .vo-nrow::before {
-        content: "";
-        position: absolute;
-        left: 88px;
-        right: 10px;
-        top: 0;
-        height: 1px;
-        background: var(--line);
+    .vo-notif-row:active {
+        background: var(--surface);
+    }
+
+    .vo-notif-unread {
+        background: rgba(52, 120, 246, 0.07);
+    }
+
+    .dark .vo-notif-unread {
+        background: rgba(52, 120, 246, 0.14);
     }
 
     /* ---------- feedback (Instagram / iOS style - no toast cards) ---------- */

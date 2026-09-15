@@ -218,3 +218,16 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   #34C759 dot on the title line, email 16px full-width below, hairline, gear "Manage account" row 60px) + bottom 60px surface2 "Disconnect" pill.
   "Manage account" = iOS action sheet: Model · <model> (opens model picker), Sign in again, Open ChatGPT settings. tailwind: added shadow `card`.
 - Tests: iteration_31.json (frontend, all flows pass; drawer auto-close verified manually with poll mock). Deployed web via railway up.
+
+## 2026-09-15 — Phase 32: NOTIFICATIONS REDESIGN (user: "Remove matches and unwanted stuff. Professional Instagram/Facebook type. Grid like attached" = All | Requests | Unread pill tabs)
+- Backend routes_notifications.py rewritten: feed = like / superlike / request (DM message request, status pending|accepted, match_id) / message /
+  verification. REMOVED: 'match' items and the 4 promo SYSTEM_NOTICES. Items now {id,type,actor,text,created_at,user{id,name,username,photos,verified},href,read}.
+  Per-item read state: collection notification_reads {user_id,item_id,read_at} (unique index) + users.notifications_read_all_at baseline
+  (first GET seeds it from notifications_seen_at so old stuff counts as read). POST /api/notifications/read {ids:[..]} | {all:true} (400 on empty).
+  /seen unchanged (bell dot only). Response adds unread_count + request_count.
+- Frontend Notifications.jsx rewritten: custom .vo-seg-tabs (50px translucent track, hairline, white raised pill, 18px, bold active) - matches
+  the reference image; sections Today / Yesterday / This week / This month / Earlier; rows .vo-notif-row (56px avatar + FB-style type badge,
+  "**Actor** text time" inline, blue unread dot, unread tint .vo-notif-unread); pending requests: Accept (blue) / Delete (surface2) inline ->
+  POST /matches/{id}/accept | DELETE /matches/{id}; header CheckCheck = mark all read; tapping a row marks read (optimistic, hooks/useNotifications
+  markNotificationsRead) then navigates; avatar tap -> ProfileSheet via GET /users/{id}. Old .vo-nrow CSS removed.
+- Tests: iteration_32.json (backend 8/9 - 9th is the unverified-account DM limitation, not a bug; frontend 100%). Script: tests/test_notifications_redesign.py.

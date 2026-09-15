@@ -100,6 +100,7 @@ async def ensure_indexes():
         await routes_media.sweep_uploads()
         await routes_posts.ensure_indexes()
         await routes_ai.ensure_indexes()
+        await routes_notifications.ensure_indexes()
         logger.info("Indexes ready. OTP provider: %s (sms_enabled=%s)", OTP_PROVIDER, SMS_ENABLED)
     except Exception as e:
         logger.warning(f"Index creation issue: {e}")

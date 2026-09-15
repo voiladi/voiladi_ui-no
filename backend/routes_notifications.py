@@ -1,21 +1,18 @@
-"""Notifications feed: likes / super likes / matches / messages you received, plus a few system notices.
+"""Notifications feed (Instagram / Facebook style): likes, message requests, new messages and account notices.
 
-Everything is derived from existing collections (swipes, matches, messages) so it is always in sync; the only
-stored state is `notifications_seen_at` on the user, which splits the feed into "New" and "Earlier".
+Items are derived from existing collections (swipes, matches, messages) so the feed is always in sync. Stored state:
+  - users.notifications_seen_at      -> bell dot (anything newer is "unseen")
+  - users.notifications_read_all_at  -> "Mark all as read" baseline (items at or before it count as read)
+  - notification_reads {user_id, item_id, read_at} -> per-item read marks (tapping a row)
+The "Unread" tab = items that are neither individually read nor older than the read-all baseline.
 """
-from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
-from core import db, get_current_user, now, now_iso, public_profile
+from core import db, get_current_user, now_iso, public_profile
 
 router = APIRouter(prefix="/api", tags=["notifications"])
-
-SYSTEM_NOTICES = [
-    {"key": "plus", "icon": "logo", "title": "VOILADI+", "sub": "Unlock more likes, see who liked you and get premium features.", "href": "/profile", "after_hours": 8},
-    {"key": "features", "icon": "bell", "title": "New features are here", "sub": "Discover what's new on VOILADI.", "href": "/explore", "after_hours": 24},
-    {"key": "safe", "icon": "shield", "title": "Your profile is safe", "sub": "We've reviewed your profile and found no issues.", "href": "/legal/safety", "after_hours": 48},
-    {"key": "tips", "icon": "gear", "title": "Tips to get more matches", "sub": "Complete your profile and add photos.", "href": "/profile/edit", "after_hours": 72},
-]
 
 
 async def _blocked(user_id: str) -> set:
@@ -32,19 +29,26 @@ def _first(name: str) -> str:
     return (name or "Someone").split(" ")[0]
 
 
+async def _read_baseline(user: dict) -> str:
+    """Existing accounts: everything they had already seen when this feature shipped counts as read."""
+    base = user.get("notifications_read_all_at")
+    if base:
+        return base
+    base = user.get("notifications_seen_at") or ""
+    await db.users.update_one({"id": user["id"]}, {"$set": {"notifications_read_all_at": base}})
+    return base
+
+
 @router.get("/notifications")
 async def list_notifications(user=Depends(get_current_user)):
     uid = user["id"]
     blocked = await _blocked(uid)
     items = []
 
-    # likes + super likes received
     likes = await db.swipes.find({"to_id": uid, "action": {"$in": ["like", "superlike"]}}, {"_id": 0}).sort("created_at", -1).to_list(150)
-    # matches
     matches = await db.matches.find({"users": uid, "active": True}, {"_id": 0}).sort("created_at", -1).to_list(150)
     match_ids = [m["id"] for m in matches]
     other_of = {m["id"]: next((o for o in m["users"] if o != uid), None) for m in matches}
-    # latest message received per match
     msgs = await db.messages.find({"match_id": {"$in": match_ids}, "sender_id": {"$ne": uid}, "kind": {"$ne": "reaction"}}, {"_id": 0}) \
         .sort("created_at", -1).to_list(400)
     latest_msg = {}
@@ -57,7 +61,7 @@ async def list_notifications(user=Depends(get_current_user)):
 
     def person(u):
         p = public_profile(u, user)
-        return {"id": p["id"], "name": p["name"], "photos": p.get("photos", [])[:1]}
+        return {"id": p["id"], "name": p["name"], "username": p.get("username") or "", "photos": p.get("photos", [])[:1], "verified": bool(p.get("verified"))}
 
     for l in likes:
         u = users.get(l["from_id"])
@@ -65,80 +69,57 @@ async def list_notifications(user=Depends(get_current_user)):
             continue
         superlike = l["action"] == "superlike"
         items.append({
-            "id": f"like:{l['from_id']}:{l['created_at']}",
-            "type": "superlike" if superlike else "like",
-            "title": f"{_first(u['name'])} gave you a Super Like" if superlike else f"{_first(u['name'])} liked your profile",
-            "sub": "Stand out and start a conversation!" if superlike else "They think you're interesting!",
-            "created_at": l["created_at"],
-            "user": person(u),
-            "href": "/likes",
+            "id": f"like:{l['from_id']}:{l['created_at']}", "type": "superlike" if superlike else "like",
+            "actor": u["name"], "text": "sent you a Super Like." if superlike else "liked your profile.",
+            "created_at": l["created_at"], "user": person(u), "href": "/likes",
         })
 
     for m in matches:
         u = users.get(other_of.get(m["id"]))
         if not u:
             continue
-        if (m.get("kind") or "match") == "dm":
-            # a direct message thread: only the recipient gets a "request" notice; the sender gets nothing here
-            if m.get("requested_by") != uid:
-                items.append({
-                    "id": f"dm:{m['id']}",
-                    "type": "message",
-                    "title": f"{_first(u['name'])} sent you a message request",
-                    "sub": "Open it to accept or delete." if m.get("status") == "request" else "You accepted their request.",
-                    "created_at": m["created_at"],
-                    "user": person(u),
-                    "href": f"/chats/{m['id']}",
-                })
-        else:
+        if (m.get("kind") or "match") == "dm" and m.get("requested_by") != uid:
+            pending = m.get("status") == "request"
             items.append({
-                "id": f"match:{m['id']}",
-                "type": "match",
-                "title": f"You matched with {_first(u['name'])}",
-                "sub": "Say hi and break the ice.",
-                "created_at": m["created_at"],
-                "user": person(u),
-                "href": f"/chats/{m['id']}",
+                "id": f"dm:{m['id']}", "type": "request", "status": "pending" if pending else "accepted", "match_id": m["id"],
+                "actor": u["name"], "text": "wants to send you a message." if pending else "can now message you - you accepted their request.",
+                "created_at": m["created_at"], "user": person(u), "href": f"/chats/{m['id']}",
             })
         msg = latest_msg.get(m["id"])
         if msg:
             items.append({
-                "id": f"msg:{msg['id']}",
-                "type": "message",
-                "title": f"{_first(u['name'])} sent you a message",
-                "sub": (msg.get("text") or "Sent you a photo")[:80],
-                "created_at": msg["created_at"],
-                "user": person(u),
-                "href": f"/chats/{m['id']}",
+                "id": f"msg:{msg['id']}", "type": "message", "match_id": m["id"],
+                "actor": u["name"], "text": f"sent you a message: {(msg.get('text') or 'Photo')[:60]}",
+                "created_at": msg["created_at"], "user": person(u), "href": f"/chats/{m['id']}",
             })
 
-    # verification result
+    # account notices (verification review)
     v = user.get("verification") or {}
     if v.get("status") in ("approved", "rejected") and v.get("reviewed_at"):
         ok = v["status"] == "approved"
         items.append({"id": f"verify:{v['reviewed_at']}", "type": "verification", "icon": "badge-check" if ok else "shield-alert",
-                      "title": "You're verified" if ok else "We couldn't verify your selfie",
-                      "sub": "The black tick now shows on your profile." if ok else (v.get("note") or "Take a clearer selfie and try again."),
+                      "actor": "Voiladi", "text": "verified your profile. The black tick now shows on your profile." if ok else
+                      ("couldn't verify your selfie. " + (v.get("note") or "Take a clearer selfie and try again.")),
                       "created_at": v["reviewed_at"], "href": "/profile" if ok else "/verify"})
     elif v.get("status") == "pending" and v.get("submitted_at"):
-        items.append({"id": f"verify:pending", "type": "verification", "icon": "badge-check", "title": "Selfie received",
-                      "sub": "We're reviewing it by hand - usually within a day.", "created_at": v["submitted_at"], "href": "/profile"})
-
-    # system notices, timed from account creation
-    created = user.get("created_at") or now_iso()
-    try:
-        base = datetime.fromisoformat(created)
-    except ValueError:
-        base = now()
-    for n in SYSTEM_NOTICES:
-        at = (base + timedelta(hours=n["after_hours"])).isoformat()
-        if at <= now_iso():
-            items.append({"id": f"sys:{n['key']}", "type": "system", "icon": n["icon"], "title": n["title"], "sub": n["sub"], "created_at": at, "href": n["href"]})
+        items.append({"id": "verify:pending", "type": "verification", "icon": "badge-check", "actor": "Voiladi",
+                      "text": "received your selfie. We review it by hand, usually within a day.", "created_at": v["submitted_at"], "href": "/profile"})
 
     items.sort(key=lambda i: i["created_at"], reverse=True)
-    seen_at = user.get("notifications_seen_at") or created
-    unseen = sum(1 for i in items if i["created_at"] > seen_at)
-    return {"items": items[:120], "seen_at": seen_at, "unseen_count": unseen}
+    items = items[:120]
+
+    baseline = await _read_baseline(user)
+    read_ids = set(r["item_id"] for r in await db.notification_reads.find({"user_id": uid, "item_id": {"$in": [i["id"] for i in items]}}, {"_id": 0, "item_id": 1}).to_list(None))
+    for i in items:
+        i["read"] = i["id"] in read_ids or (bool(baseline) and i["created_at"] <= baseline)
+
+    seen_at = user.get("notifications_seen_at") or user.get("created_at") or ""
+    return {
+        "items": items, "seen_at": seen_at,
+        "unseen_count": sum(1 for i in items if i["created_at"] > seen_at),
+        "unread_count": sum(1 for i in items if not i["read"]),
+        "request_count": sum(1 for i in items if i["type"] == "request" and i.get("status") == "pending"),
+    }
 
 
 @router.post("/notifications/seen")
@@ -146,3 +127,28 @@ async def mark_seen(user=Depends(get_current_user)):
     ts = now_iso()
     await db.users.update_one({"id": user["id"]}, {"$set": {"notifications_seen_at": ts}})
     return {"ok": True, "seen_at": ts}
+
+
+class ReadIn(BaseModel):
+    ids: Optional[List[str]] = None
+    all: bool = False
+
+
+@router.post("/notifications/read")
+async def mark_read(body: ReadIn, user=Depends(get_current_user)):
+    """Mark some notifications (ids) or everything (all=true) as read."""
+    ts = now_iso()
+    if body.all:
+        await db.users.update_one({"id": user["id"]}, {"$set": {"notifications_read_all_at": ts}})
+        await db.notification_reads.delete_many({"user_id": user["id"]})
+        return {"ok": True, "read_all_at": ts}
+    ids = [i for i in (body.ids or []) if isinstance(i, str) and i][:200]
+    if not ids:
+        raise HTTPException(status_code=400, detail="Nothing to mark")
+    for item_id in ids:
+        await db.notification_reads.update_one({"user_id": user["id"], "item_id": item_id}, {"$set": {"read_at": ts}}, upsert=True)
+    return {"ok": True, "count": len(ids)}
+
+
+async def ensure_indexes():
+    await db.notification_reads.create_index([("user_id", 1), ("item_id", 1)], unique=True)
