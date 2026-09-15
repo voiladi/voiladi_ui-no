@@ -5,6 +5,7 @@ import { ChevronLeft, CheckCheck, Heart, Star, MessageCircle, Bell, BadgeCheck, 
 import { useNotifications, markNotificationsSeen, markNotificationsRead } from "@/hooks/useNotifications";
 import { UserPhoto } from "@/components/UserPhoto";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import { GlassSegmented } from "@/components/GlassSegmented";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SkeletonList } from "@/components/Loading";
 import { timeAgo } from "@/lib/format";
@@ -18,9 +19,9 @@ import { notice } from "@/lib/feedback";
  *  message requests carry inline Accept / Delete. Tapping a row marks it read and opens the target.
  */
 const TABS = [
-  { key: "all", label: "All" },
-  { key: "requests", label: "Requests" },
-  { key: "unread", label: "Unread" },
+  { value: "all", label: "All" },
+  { value: "requests", label: "Requests" },
+  { value: "unread", label: "Unread" },
 ];
 
 const BADGE = {
@@ -218,13 +219,7 @@ export default function Notifications() {
         )}
       </header>
 
-      <div className="vo-seg-tabs mt-3" role="tablist" data-testid="notifications-tab-track">
-        {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={`vo-seg-item ${tab === t.key ? "vo-seg-on" : ""}`} data-testid={`notifications-tab-${t.key}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <GlassSegmented options={TABS} value={tab} onChange={setTab} testIdPrefix="notifications-tab" className="vo-seg-inbox mt-4 mb-1" />
 
       {isLoading ? (
         <div className="mt-6">

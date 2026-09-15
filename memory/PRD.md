@@ -231,3 +231,5 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   POST /matches/{id}/accept | DELETE /matches/{id}; header CheckCheck = mark all read; tapping a row marks read (optimistic, hooks/useNotifications
   markNotificationsRead) then navigates; avatar tap -> ProfileSheet via GET /users/{id}. Old .vo-nrow CSS removed.
 - Tests: iteration_32.json (backend 8/9 - 9th is the unverified-account DM limitation, not a bug; frontend 100%). Script: tests/test_notifications_redesign.py.
+- 2026-09-15 fix: user said "Fix the panel" (Notifications tabs looked different from Messages). Notifications now uses the SAME `GlassSegmented`
+  component + `vo-seg-inbox` class as Chats.jsx (options as {value,label}); the custom .vo-seg-tabs CSS was removed. Web redeployed.
