@@ -63,7 +63,7 @@ public class MainActivity extends Activity {
     private static final int REQ_LOCATION = 2;
     private static final int REQ_CAMERA = 3;
     private static final int REQ_NOTIFICATIONS = 3;
-    static final int RES_ICON = 0x7f010000;
+    static final int RES_ICON = R.mipmap.ic_launcher;
 
     private FrameLayout root;
     private WebView web;
@@ -251,12 +251,13 @@ public class MainActivity extends Activity {
         }, 8000);
 
         Notifier.ensureChannel(this);
-        PollService.scheduleIfLoggedIn(this);
+        // signed in already: make sure the API has this device's current FCM token (or fall back to polling)
+        if (getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("token", null) != null) Push.register(this);
     }
 
     /* ---------------------------------------------------------------- web view */
 
-    static final String SHELL_VERSION = "1.7.3";
+    static final String SHELL_VERSION = "1.8.0";
     private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
 
     /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */
@@ -531,7 +532,7 @@ public class MainActivity extends Activity {
         public void setToken(String token) {
             SharedPreferences p = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             p.edit().putString("token", token).apply();
-            PollService.schedule(MainActivity.this);
+            Push.register(MainActivity.this);
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -542,6 +543,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void clearToken() {
+            Push.unregister(MainActivity.this);
             getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove("token").remove("last_notified_at").apply();
             PollService.cancel(MainActivity.this);
         }

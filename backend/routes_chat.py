@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from core import is_verified, db, now_iso, get_current_user, public_profile
 from ws_manager import manager
+import push
 from bots import schedule_bot_reply
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -146,6 +147,8 @@ async def start_dm(user_id: str, user=Depends(get_current_user)):
     }
     await db.matches.insert_one(dict(thread))
     await _thread_event(thread, user_id, "dm_request", target)
+    push.fire(user_id, "request", push.first_name(user), "wants to send you a message",
+              path="/notifications", photo=push.photo_of(user), tag=f"request-{thread['id']}", user=target)
     return await _match_view(thread, uid, {}, user)
 
 
@@ -230,6 +233,10 @@ async def send_message(match_id: str, body: MessageIn, user=Depends(get_current_
                "sender_name": user.get("name") or "Someone", "sender_photo": (user.get("photos") or [None])[0]}
     await manager.send(other, payload)
     await manager.send(user["id"], payload)
+    if not manager.is_online(other):
+        preview = (msg.get("text") or "").strip() or ("Sent a photo" if msg.get("media") else "Sent you a message")
+        push.fire(other, "message", user.get("name") or "Someone", preview[:140], path=f"/chats/{match_id}",
+                  photo=push.photo_of(user), tag=f"chat-{match_id}")
     # sample profiles answer back so chat can be tested end to end (no-op for real people)
     schedule_bot_reply(match, await db.users.find_one({"id": other, "is_seed": True}, {"_id": 0, "id": 1, "name": 1, "photos": 1, "is_seed": 1}), user["id"], text)
     return msg

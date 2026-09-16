@@ -11,6 +11,7 @@ from core import (db, now, now_iso, get_current_user, public_profile, get_prefs,
                   ANYWHERE_KM, SHOW_ME_TO_GENDER)
 from content import INTERESTS, TOPIC_COVERS
 from ws_manager import manager
+import push
 
 router = APIRouter(prefix="/api", tags=["discover"])
 
@@ -356,6 +357,10 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
     )
     matched, match_out = False, None
     if body.action in ("like", "superlike"):
+        # phone push for the person who got liked (one per liker, replaces an older like from the same person)
+        push.fire(target["id"], body.action, push.first_name(user),
+                  "sent you a Super Like" if body.action == "superlike" else "liked your profile",
+                  path="/likes", photo=push.photo_of(user), tag=f"like-{user['id']}", user=target)
         reciprocal = await db.swipes.find_one(
             {"from_id": target["id"], "to_id": user["id"], "action": {"$in": ["like", "superlike"]}}, {"_id": 0})
         blocked = await db.blocks.find_one({"$or": [{"from_id": user["id"], "to_id": target["id"]},
@@ -396,6 +401,8 @@ async def swipe(body: SwipeIn, user=Depends(get_current_user)):
                          "reaction": reaction, "their_reaction": reciprocal.get("reaction")}
             await manager.send(target["id"], {"type": "new_match", "match": {
                 "id": match["id"], "created_at": match["created_at"], "user": public_profile(user, target)}})
+            push.fire(target["id"], "match", "It's a match", f"You and {push.first_name(user)} liked each other. Say hi!",
+                      path=f"/chats/{match['id']}", photo=push.photo_of(user), tag=f"match-{match['id']}", user=target)
     return {"matched": matched, "match": match_out}
 
 

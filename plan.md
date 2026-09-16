@@ -346,6 +346,10 @@
 ## Phase 32 — Notifications redesign (All / Requests / Unread, Instagram-Facebook style) (COMPLETED 2026-09-15)
 **Status: COMPLETED + deployed (web + api)** - matches + promo notices removed, per-item read state, inline Accept/Delete for requests. Details in memory/PRD.md.
 
+## Phase 33 — Phone push notifications via FCM (COMPLETED 2026-09-16, awaiting real-device check)
+**Status: COMPLETED + deployed (api + web + APK 1.7.0)** - Firebase project `voiladi`; APK build moved to aapt2 (qemu) with the FCM SDK bundled;
+backend sender + per-type prefs + Settings page; pushes for likes/matches, message requests, messages (when offline), verification. Details in memory/PRD.md.
+
 ## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
 - Do not implement until incoming/ongoing call UI is provided.
@@ -393,6 +397,7 @@
 - Phase 30b (orb identify-anything + streaming): **COMPLETED**
 - Phase 30d (AI Assistant page redesign, 3 mockups): **COMPLETED**
 - Phase 32 (Notifications redesign): **COMPLETED**
+- Phase 33 (FCM push notifications, APK 1.7.0): **COMPLETED - needs on-device confirmation**
 - Phase 31: **BLOCKED**
 
 ---

@@ -60,7 +60,7 @@ export default function Settings() {
             <SoftRow icon={User} label="Account" onClick={() => navigate("/profile/edit")} testId="settings-account-row" />
             <SoftRow icon={Bookmark} label="Saved" onClick={() => navigate("/saved")} testId="settings-saved-row" />
             <SoftRow icon={SlidersHorizontal} label="Preferences" onClick={() => navigate("/filters")} testId="settings-preferences-row" />
-            <SoftRow icon={Bell} label="Notifications" onClick={() => navigate("/legal/notifications")} testId="settings-notifications-row" />
+            <SoftRow icon={Bell} label="Notifications" onClick={() => navigate("/settings/notifications")} testId="settings-notifications-row" />
             <SoftRow icon={Lock} label="Privacy & Safety" onClick={() => navigate("/legal/safety")} testId="settings-privacy-row" last />
           </SoftCard>
         </section>

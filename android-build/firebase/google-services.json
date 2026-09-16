@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "621272377118",
+    "project_id": "voiladi",
+    "storage_bucket": "voiladi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621272377118:android:6f6475ec8e10c330dc0b0f",
+        "android_client_info": {
+          "package_name": "com.voiladi.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClT5ahjT3nVx4DvQdtwFutR6VyGR1uuY0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

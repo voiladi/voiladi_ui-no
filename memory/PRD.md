@@ -241,3 +241,31 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   (above nav 30, below sheets/drawers 50, toasts 100). (b) New event `voiladi:ink-done`: AiSearchLayer fires it right after captureRegion()
   (or immediately when no AI is linked / connect sheet shown); BottomNav.returnHome registers the listener BEFORE dispatching `voiladi:ink`
   and fades the ink in 0.3s on it (1.6s safety-net timeout). Web redeployed.
+
+## 2026-09-16 — Phase 33: PHONE PUSH NOTIFICATIONS (FCM) — user chose Firebase, all 4 event types, Settings toggles
+- Firebase project `voiladi` (org voiladi.com, Workspace account). User had to grant himself "Organization Policy Administrator" and turn off the
+  managed org policy iam.managed.disableServiceAccountKeyCreation before a service-account key could be generated.
+  Client config: android-build/firebase/google-services.json (committed; package com.voiladi.app, sender 621272377118).
+  Server key: /app/secrets/fcm-service-account.json (gitignored) -> backend/.env FCM_SERVICE_ACCOUNT_FILE; Railway voiladi-api env
+  FCM_SERVICE_ACCOUNT_JSON (compact JSON string). push.py reads either. Without both, push is inert (logs only).
+- APK BUILD REWRITTEN (android-build/build_apk.py; old one kept as build_apk_legacy.py): now uses aapt2 (x86-64 build from Google Maven
+  `com.android.tools.build:aapt2:8.7.3-12006047-linux` in sdk/aapt2-x86/, run via /usr/bin/qemu-x86_64-static + amd64 libc6/libstdc++6
+  installed with dpkg --add-architecture amd64). Pipeline: unpack libs/*.aar|jar -> generate res/values (app_name, firebase strings from
+  google-services.json: google_app_id, gcm_defaultSenderId, google_api_key, project_id) + icons -> aapt2 compile/link (merged text manifest with
+  Firebase/Play components, --extra-packages for lib R classes) -> javac (cp = lib jars) -> d8 (all jars, single dex ~4.9MB) -> align -> sign.
+  fetch_deps.py resolves POMs from maven.google.com (firebase-messaging 24.1.1 + 24 deps; Ktx/coroutines/measurement deps skipped) -> libs/.
+  Only Java ComponentRegistrars are declared (Messaging, Installations, Transport) - Ktx registrars need kotlinx-coroutines (not shipped).
+- Android: VoiladiApp (Application, channel), PushService extends FirebaseMessagingService (onNewToken -> Push.onToken; onMessageReceived data
+  {kind,title,body,path,photo,tag} -> Notifier.post), Push.java (register on login/app start: GoogleApiAvailabilityLight check -> getToken ->
+  POST /api/push/tokens with stored JWT; unregister on logout -> DELETE; no Play services -> PollService 15-min fallback stays).
+  R.mipmap ids replace hardcoded 0x7f ids. SHELL_VERSION 1.8.0, APK 1.7.0 (versionCode 11), frontend/public/voiladi.apk + deploy/android/voiladi-1.7.0.apk.
+- Backend: push.py (google-auth service-account OAuth, FCM v1 data messages, android priority high + collapse_key=tag, per-user prefs
+  users.push_prefs {likes,requests,messages,verification}, UNREGISTERED/invalid -> token deleted), routes_push.py
+  (POST/DELETE /api/push/tokens, GET/PUT /api/push/prefs, POST /api/push/test), collection push_tokens {token unique,user_id,platform,device,
+  app_version}. Triggers: routes_discover.swipe (like/superlike -> "<First> liked your profile" path /likes tag like-<liker>; match -> "It's a match"),
+  routes_chat.start_dm (request), send_message (only if !manager.is_online(recipient); preview text/"Sent a photo"; tag chat-<match>),
+  routes_verification._review (approved/rejected). requirements: google-auth, httpx.
+- Frontend: pages/settings/Notifications.jsx (/settings/notifications; Soft cards, iOS-green switches, phones list, "Send a test notification",
+  "Get the Android app" link when not native). Settings row now points here (was /legal/notifications).
+- Tests: iteration_33.json 14/14 backend + frontend all pass. NOT yet verified on a real phone - user must install APK 1.7.0, sign in,
+  allow notifications, then Settings > Notifications > Send a test.

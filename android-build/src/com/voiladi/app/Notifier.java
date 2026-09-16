@@ -22,7 +22,7 @@ import java.net.URL;
 /** Posts phone notifications for Voiladi activity. */
 final class Notifier {
     static final String CHANNEL = "voiladi_activity";
-    static final int RES_SMALL_ICON = 0x7f010001; // mipmap/ic_notification (white V silhouette)
+    static final int RES_SMALL_ICON = R.mipmap.ic_notification; // white V silhouette
 
     private Notifier() {
     }

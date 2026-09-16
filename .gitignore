@@ -88,3 +88,6 @@ backend/uploads/_thumbs/
 android-build/release.env
 android-build/voiladi-release.keystore
 frontend/node_modules/.cache/default-development/0.pack
+
+# server-only credentials
+secrets/

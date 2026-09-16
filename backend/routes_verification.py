@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from core import db, now_iso, get_current_user, own_profile, calc_age, UPLOAD_DIR
 from routes_admin import require_admin
+import push
 from routes_profile import ALLOWED_TYPES, MAX_UPLOAD, optimize_image
 from ws_manager import manager
 
@@ -102,6 +103,9 @@ async def _review(user_id: str, approve: bool, note: str):
     v.update({"status": "approved" if approve else "rejected", "reviewed_at": now_iso(), "note": (note or "").strip()[:200]})
     await db.users.update_one({"id": user_id}, {"$set": {"verification": v}})
     await manager.send(user_id, {"type": "verification", "status": v["status"], "note": v["note"]})
+    push.fire(user_id, "verification", "Voiladi",
+              "You're verified! The black tick now shows on your profile." if approve else ("We couldn't verify your selfie. " + (v["note"] or "Try again with a clearer photo.")),
+              path="/profile" if approve else "/settings/verification", tag="verification", user=u)
     u["verification"] = v
     return _row(u)
 
