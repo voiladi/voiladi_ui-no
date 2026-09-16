@@ -276,3 +276,15 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   {text, client_id:"notif-<uuid>"} with the stored JWT via goAsync thread, then re-posts the bubble with "You: ..." (setOnlyAlertOnce) or
   postReplyFailed(reason from server detail, e.g. "Verify your profile to send messages"). Opening the chat (notification tap path /chats/<id>,
   or web ChatRoom mount -> bridge chatOpened(matchId) via nativeChatOpened) clears the history + notification.
+
+## 2026-09-16 — Phase 34: FOLLOWERS / FOLLOWING LISTS (user: "Followers following could be inspected... List appears when tapping")
+- Backend routes_discover.py: GET /api/me/followers, GET /api/me/following -> {people:[{id,name,username,photos[0],verified,job,city,
+  followed_by_me,follows_me,match_id}],count} (newest first, blocked hidden, counts == /me/stats); DELETE /api/follow/{user_id} = unfollow
+  (deletes my like swipes; 404 if none; match/chat untouched). Follow = POST /swipe like (existing).
+- Frontend: components/FollowListSheet.jsx (vaul Drawer 92dvh, custom grabber, GlassSegmented vo-seg-inbox tabs "7 followers | 3 following",
+  SoftSearch filter by name/@username, rows 54px avatar + name + inline tick + @username (+ "· Follows you"), SoftPill "Follow back"/"Follow" ->
+  swipe like (toast on match) | "Following" -> ConfirmDialog unfollow-dialog -> DELETE /follow; row tap -> GET /users/{id} -> ProfileSheet).
+  Queries ["followers"],["following"] invalidated with ["stats"],["likes-sent"]. Profile.jsx Stat is now a <button> when onClick given
+  (testids profile-stat-likes-button / profile-stat-following-button) -> setFollowSheet("followers"|"following").
+- VerifiedBadge gained `inline` prop (renders VerifiedMark <span>, no popover) for use inside buttons (FollowListSheet, Notifications rows).
+- Tests: iteration_34.json backend 11/11, frontend pass (nested-button warning fixed after). Deployed api + web.

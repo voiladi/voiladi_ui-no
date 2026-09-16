@@ -6,7 +6,22 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
  * The black tick. Tapping it explains what it means ("Verified Profile").
  * size: px of the circle. `onLight` = badge sits on a photo (adds a white ring so it reads on any picture).
  */
-export const VerifiedBadge = ({ size = 20, onPhoto = false, className = "", testId = "verified-badge" }) => (
+/* Plain (non-interactive) tick for use inside buttons/links, where a nested <button> would be invalid HTML. */
+export const VerifiedMark = ({ size = 16, className = "", testId = "verified-mark" }) => (
+  <span
+    role="img"
+    aria-label="Verified"
+    className={`inline-flex shrink-0 items-center justify-center rounded-full bg-ink text-onink ${className}`}
+    style={{ width: size, height: size }}
+    data-testid={testId}
+  >
+    <Check style={{ width: size * 0.62, height: size * 0.62 }} strokeWidth={3.2} />
+  </span>
+);
+
+export const VerifiedBadge = ({ size = 20, onPhoto = false, className = "", testId = "verified-badge", inline = false }) => inline ? (
+  <VerifiedMark size={size} className={className} testId={testId} />
+) : (
   <Popover>
     <PopoverTrigger asChild>
       <button

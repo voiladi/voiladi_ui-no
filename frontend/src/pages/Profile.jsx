@@ -39,17 +39,28 @@ import {
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
 import { Skeleton, Spinner } from "@/components/Loading";
+import { FollowListSheet } from "@/components/FollowListSheet";
 
 /* ---------- profile screen, transcribed from the neumorphic reference (393 x 852 canvas) ---------- */
 
-const Stat = ({ label, value, testId }) => (
-  <div className="flex min-w-0 flex-1 flex-col items-center px-1">
-    <span className="flex h-[28px] items-center text-[24px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
-      {value ?? <Skeleton className="h-4 w-7 rounded-full" />}
-    </span>
-    <span className="mt-[3px] text-center text-[15.5px] leading-[1.15] tracking-[-0.01em] text-mute">{label}</span>
-  </div>
-);
+const Stat = ({ label, value, testId, onClick }) => {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`flex min-w-0 flex-1 flex-col items-center rounded-[14px] px-1 py-1 ${onClick ? "active:bg-surface focus-visible:outline-none" : ""}`}
+      style={onClick ? { transitionProperty: "background-color", transitionDuration: "120ms" } : undefined}
+      data-testid={onClick ? `${testId}-button` : undefined}
+      aria-label={onClick ? `${label}: ${value ?? ""}` : undefined}
+    >
+      <span className="flex h-[28px] items-center text-[24px] font-bold leading-none tracking-[-0.01em] text-ink" data-testid={testId}>
+        {value ?? <Skeleton className="h-4 w-7 rounded-full" />}
+      </span>
+      <span className="mt-[3px] text-center text-[15.5px] leading-[1.15] tracking-[-0.01em] text-mute">{label}</span>
+    </Tag>
+  );
+};
 
 const StatDivider = () => <span className="h-[38px] w-px shrink-0 bg-line" aria-hidden="true" />;
 
@@ -213,6 +224,7 @@ export default function Profile() {
   const { data: notif } = useNotifications(!!user);
   const unseen = notif?.unseen_count || 0;
   const [boosting, setBoosting] = useState(false);
+  const [followSheet, setFollowSheet] = useState(null); // "followers" | "following" | null
   const boostLeft = useCountdown(
     stats?.boost_active ? stats.boost_until : null,
   );
@@ -357,9 +369,9 @@ export default function Profile() {
 
       {/* followers / following / views */}
       <section className="mt-[22px] flex items-center px-[clamp(14px,5cqi,20px)]" data-testid="profile-stats">
-        <Stat label="Followers" value={stats?.followers} testId="profile-stat-likes" />
+        <Stat label="Followers" value={stats?.followers} testId="profile-stat-likes" onClick={() => setFollowSheet("followers")} />
         <StatDivider />
-        <Stat label="Following" value={stats?.following} testId="profile-stat-following" />
+        <Stat label="Following" value={stats?.following} testId="profile-stat-following" onClick={() => setFollowSheet("following")} />
         <StatDivider />
         <Stat label="Profile views" value={stats?.profile_views} testId="profile-stat-views" />
       </section>
@@ -528,6 +540,8 @@ export default function Profile() {
           </SoftCard>
         </>
       )}
+
+      <FollowListSheet open={!!followSheet} tab={followSheet || "followers"} onTabChange={setFollowSheet} onOpenChange={(o) => !o && setFollowSheet(null)} />
     </div>
   );
 }

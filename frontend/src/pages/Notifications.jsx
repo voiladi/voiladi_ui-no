@@ -75,7 +75,7 @@ const Row = ({ item, onOpen, onOpenProfile, onAccept, onDelete, busy }) => {
           <span className="font-semibold" data-testid="notification-actor">
             {item.actor}
           </span>
-          {item.user?.verified && <VerifiedBadge size={14} className="mx-1 inline-block -translate-y-px" />}
+          {item.user?.verified && <VerifiedBadge size={14} inline className="mx-1 inline-block -translate-y-px" />}
           {" "}
           {item.text}
           {" "}

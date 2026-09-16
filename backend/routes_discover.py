@@ -451,6 +451,59 @@ async def _blocked_ids(uid: str) -> set:
     return out
 
 
+# ---------------------------------------------------------------- followers / following (a follow is a like)
+async def _follow_sets(uid: str):
+    """ids I follow, ids following me, and match ids per other user."""
+    mine = await db.swipes.find({"from_id": uid, "action": {"$in": ["like", "superlike"]}}, {"_id": 0, "to_id": 1, "created_at": 1}).to_list(None)
+    theirs = await db.swipes.find({"to_id": uid, "action": {"$in": ["like", "superlike"]}}, {"_id": 0, "from_id": 1, "created_at": 1}).to_list(None)
+    matches = await db.matches.find({"users": uid, "active": True}, {"_id": 0, "users": 1, "id": 1}).to_list(None)
+    matched = {o: m["id"] for m in matches for o in m["users"] if o != uid}
+    return {s["to_id"]: s["created_at"] for s in mine}, {s["from_id"]: s["created_at"] for s in theirs}, matched
+
+
+async def _people(user: dict, ordered_ids: list, following: dict, followers: dict, matched: dict):
+    blocked = await _blocked_ids(user["id"])
+    ids = [i for i in ordered_ids if i not in blocked]
+    users = {u["id"]: u for u in await db.users.find({"id": {"$in": ids}}, {"_id": 0}).to_list(None)}
+    out = []
+    for i in ids:
+        u = users.get(i)
+        if not u:
+            continue
+        p = public_profile(u, user)
+        out.append({"id": p["id"], "name": p["name"], "username": p.get("username") or "", "photos": p.get("photos", [])[:1],
+                    "verified": bool(p.get("verified")), "job": p.get("job") or "", "city": p.get("city") or "",
+                    "followed_by_me": i in following, "follows_me": i in followers, "match_id": matched.get(i)})
+    return out
+
+
+@router.get("/me/followers")
+async def my_followers(user=Depends(get_current_user)):
+    """Everyone who liked (follows) you, newest first - including people you follow back."""
+    following, followers, matched = await _follow_sets(user["id"])
+    ordered = [i for i, _ in sorted(followers.items(), key=lambda kv: kv[1], reverse=True)]
+    people = await _people(user, ordered, following, followers, matched)
+    return {"people": people, "count": len(people)}
+
+
+@router.get("/me/following")
+async def my_following(user=Depends(get_current_user)):
+    """Everyone you liked (follow), newest first."""
+    following, followers, matched = await _follow_sets(user["id"])
+    ordered = [i for i, _ in sorted(following.items(), key=lambda kv: kv[1], reverse=True)]
+    people = await _people(user, ordered, following, followers, matched)
+    return {"people": people, "count": len(people)}
+
+
+@router.delete("/follow/{user_id}")
+async def unfollow(user_id: str, user=Depends(get_current_user)):
+    """Unfollow = take back your like. An existing chat stays; they can still follow you."""
+    res = await db.swipes.delete_many({"from_id": user["id"], "to_id": user_id, "action": {"$in": ["like", "superlike"]}})
+    if not res.deleted_count:
+        raise HTTPException(status_code=404, detail="You don't follow them")
+    return {"ok": True}
+
+
 @router.get("/likes/received")
 async def likes_received(user=Depends(get_current_user)):
     """People who liked you and are still waiting on your answer."""
