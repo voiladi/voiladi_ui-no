@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { nativeChatOpened } from "@/lib/native";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -230,6 +231,9 @@ export default function ChatRoom() {
   const { meta } = useMeta();
   const [match, setMatch] = useState(null);
   const [messages, setMessages] = useState([]);
+  useEffect(() => {
+    nativeChatOpened(matchId); // dismiss this chat's phone notification / inline-reply bubble
+  }, [matchId]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);

@@ -210,6 +210,15 @@ def build_manifest_xml():
             </intent-filter>
         </service>
 
+        <!-- inline "Reply" from a chat notification -->
+        <receiver
+            android:name="{PKG}.ReplyReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.voiladi.app.REPLY" />
+            </intent-filter>
+        </receiver>
+
         <!-- ===== merged from the Firebase / Play services libraries ===== -->
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="voiladi_activity" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_notification" />

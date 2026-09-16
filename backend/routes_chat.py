@@ -236,7 +236,7 @@ async def send_message(match_id: str, body: MessageIn, user=Depends(get_current_
     if not manager.is_online(other):
         preview = (msg.get("text") or "").strip() or ("Sent a photo" if msg.get("media") else "Sent you a message")
         push.fire(other, "message", user.get("name") or "Someone", preview[:140], path=f"/chats/{match_id}",
-                  photo=push.photo_of(user), tag=f"chat-{match_id}")
+                  photo=push.photo_of(user), tag=f"chat-{match_id}", extra={"match_id": match_id, "sender_id": user["id"]})
     # sample profiles answer back so chat can be tested end to end (no-op for real people)
     schedule_bot_reply(match, await db.users.find_one({"id": other, "is_seed": True}, {"_id": 0, "id": 1, "name": 1, "photos": 1, "is_seed": 1}), user["id"], text)
     return msg

@@ -101,7 +101,7 @@ async def _send_one(client: httpx.AsyncClient, token: str, data: Dict[str, str],
 
 
 async def send(user_id: str, kind: str, title: str, body: str, path: str = "/notifications", photo: Optional[str] = None,
-               tag: Optional[str] = None, user: Optional[dict] = None) -> int:
+               tag: Optional[str] = None, user: Optional[dict] = None, extra: Optional[Dict[str, str]] = None) -> int:
     """Push one notification to every device of user_id. Returns the number of successful deliveries."""
     if not enabled():
         return 0
@@ -118,6 +118,9 @@ async def send(user_id: str, kind: str, title: str, body: str, path: str = "/not
         data["photo"] = photo
     if tag:
         data["tag"] = tag
+    for k, v in (extra or {}).items():
+        if v is not None:
+            data[k] = str(v)[:200]
     ok = 0
     async with httpx.AsyncClient(timeout=15) as client:
         for t in tokens:

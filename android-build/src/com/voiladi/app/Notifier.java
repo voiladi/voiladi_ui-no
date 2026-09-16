@@ -4,8 +4,12 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Person;
+import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.drawable.Icon;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -35,6 +39,116 @@ final class Notifier {
         ch.setDescription("New activity on Voiladi");
         ch.enableVibration(true);
         nm.createNotificationChannel(ch);
+    }
+
+    static final String KEY_REPLY = "reply";
+    private static final int MAX_LINES = 8;
+
+    static int idFor(String tag) {
+        return tag.hashCode();
+    }
+
+    /** Conversation notification for a chat: MessagingStyle history + inline "Reply" (RemoteInput) + open-on-tap. */
+    static void postMessage(Context ctx, String matchId, String senderName, String text, String photoUrl, boolean fromMe) {
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null || matchId == null) return;
+        int id = idFor("chat-" + matchId);
+        String path = "/chats/" + matchId;
+
+        // remember the last few lines so the bubble shows the conversation across pushes / replies
+        SharedPreferences p = ctx.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
+        String key = "conv_" + matchId;
+        String hist = p.getString(key, "");
+        String line = (fromMe ? "M" : "S") + "\u0001" + text.replace("\u0002", " ").replace("\u0001", " ");
+        String[] lines = hist.isEmpty() ? new String[0] : hist.split("\u0002");
+        StringBuilder sb = new StringBuilder();
+        int start = Math.max(0, lines.length - (MAX_LINES - 1));
+        for (int i = start; i < lines.length; i++) sb.append(lines[i]).append("\u0002");
+        sb.append(line);
+        p.edit().putString(key, sb.toString()).putString("conv_name_" + matchId, senderName).putString("conv_photo_" + matchId, photoUrl == null ? "" : photoUrl).apply();
+
+        Intent open = new Intent(ctx, MainActivity.class);
+        open.setAction(Intent.ACTION_MAIN);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        open.putExtra("path", path);
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent openPi = PendingIntent.getActivity(ctx, id, open, piFlags);
+
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(ctx, CHANNEL) : new Notification.Builder(ctx);
+        Bitmap avatar = circle(fetch(photoUrl));
+        b.setSmallIcon(RES_SMALL_ICON)
+                .setContentTitle(senderName)
+                .setContentText(fromMe ? "You: " + text : text)
+                .setAutoCancel(true)
+                .setContentIntent(openPi)
+                .setColor(0xFF111111)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setGroup("voiladi")
+                .setOnlyAlertOnce(fromMe);
+        if (avatar != null) b.setLargeIcon(avatar);
+
+        if (Build.VERSION.SDK_INT >= 28) {
+            Person me = new Person.Builder().setName("You").build();
+            Person.Builder them = new Person.Builder().setName(senderName).setKey(matchId);
+            if (avatar != null) them.setIcon(Icon.createWithBitmap(avatar));
+            Person other = them.build();
+            Notification.MessagingStyle style = new Notification.MessagingStyle(me).setGroupConversation(false);
+            for (String l : sb.toString().split("\u0002")) {
+                int sep = l.indexOf('\u0001');
+                if (sep < 1) continue;
+                boolean mine = l.charAt(0) == 'M';
+                style.addMessage(new Notification.MessagingStyle.Message(l.substring(sep + 1), System.currentTimeMillis(), mine ? null : other));
+            }
+            b.setStyle(style);
+        } else {
+            b.setStyle(new Notification.BigTextStyle().bigText(fromMe ? "You: " + text : text));
+        }
+
+        // inline reply: RemoteInput -> ReplyReceiver -> POST /api/matches/{id}/messages
+        Intent reply = new Intent(ctx, ReplyReceiver.class);
+        reply.setAction(ReplyReceiver.ACTION_REPLY);
+        reply.putExtra("match_id", matchId);
+        reply.putExtra("sender_name", senderName);
+        reply.putExtra("photo", photoUrl);
+        int replyFlags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+        PendingIntent replyPi = PendingIntent.getBroadcast(ctx, id, reply, replyFlags);
+        RemoteInput input = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply to " + senderName.split(" ")[0]).build();
+        Notification.Action action = new Notification.Action.Builder(Icon.createWithResource(ctx, RES_SMALL_ICON), "Reply", replyPi)
+                .addRemoteInput(input)
+                .setAllowGeneratedReplies(true)
+                .build();
+        if (Build.VERSION.SDK_INT >= 29) {
+            action = new Notification.Action.Builder(Icon.createWithResource(ctx, RES_SMALL_ICON), "Reply", replyPi)
+                    .addRemoteInput(input)
+                    .setAllowGeneratedReplies(true)
+                    .setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY)
+                    .build();
+        }
+        b.addAction(action);
+        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH).setDefaults(fromMe ? 0 : Notification.DEFAULT_ALL);
+        nm.notify(id, b.build());
+    }
+
+    /** Replace the chat notification with a short "couldn't send" state (tap opens the chat). */
+    static void postReplyFailed(Context ctx, String matchId, String senderName, String reason) {
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        int id = idFor("chat-" + matchId);
+        Intent open = new Intent(ctx, MainActivity.class);
+        open.setAction(Intent.ACTION_MAIN);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        open.putExtra("path", "/chats/" + matchId);
+        PendingIntent pi = PendingIntent.getActivity(ctx, id, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(ctx, CHANNEL) : new Notification.Builder(ctx);
+        b.setSmallIcon(RES_SMALL_ICON).setContentTitle(senderName).setContentText((reason == null || reason.isEmpty() ? "Couldn't send your reply." : reason) + " Tap to open the chat.")
+                .setAutoCancel(true).setContentIntent(pi).setColor(0xFF111111).setCategory(Notification.CATEGORY_MESSAGE).setGroup("voiladi").setOnlyAlertOnce(true);
+        nm.notify(id, b.build());
+    }
+
+    static void clearConversation(Context ctx, String matchId) {
+        ctx.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).edit().remove("conv_" + matchId).remove("conv_name_" + matchId).remove("conv_photo_" + matchId).apply();
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(idFor("chat-" + matchId));
     }
 
     static void post(Context ctx, int id, String title, String text, String path, String photoUrl) {

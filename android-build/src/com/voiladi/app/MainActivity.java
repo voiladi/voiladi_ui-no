@@ -257,7 +257,7 @@ public class MainActivity extends Activity {
 
     /* ---------------------------------------------------------------- web view */
 
-    static final String SHELL_VERSION = "1.8.0";
+    static final String SHELL_VERSION = "1.8.1";
     private static final String[] ALLOWED_HOSTS = {"voiladi.com", "www.voiladi.com", "api.voiladi.com"};
 
     /** Exact-host allow-list over https only (an "evilvoiladi.com" or http:// link never loads inside the app). */
@@ -414,6 +414,7 @@ public class MainActivity extends Activity {
     /* URL to open for an intent: notification taps carry a "path" extra (e.g. /chats/123). */
     private String targetUrl(Intent intent) {
         String path = intent == null ? null : intent.getStringExtra("path");
+        if (path != null && path.startsWith("/chats/")) Notifier.clearConversation(this, path.substring(7).split("[/?#]")[0]);
         if (path == null || !path.startsWith("/")) return HOME;
         return HOME.substring(0, HOME.length() - 1) + path;
     }
@@ -546,6 +547,11 @@ public class MainActivity extends Activity {
             Push.unregister(MainActivity.this);
             getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove("token").remove("last_notified_at").apply();
             PollService.cancel(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void chatOpened(String matchId) {
+            if (matchId != null && !matchId.isEmpty()) Notifier.clearConversation(MainActivity.this, matchId);
         }
 
         @JavascriptInterface

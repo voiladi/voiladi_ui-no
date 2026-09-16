@@ -269,3 +269,10 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   "Get the Android app" link when not native). Settings row now points here (was /legal/notifications).
 - Tests: iteration_33.json 14/14 backend + frontend all pass. NOT yet verified on a real phone - user must install APK 1.7.0, sign in,
   allow notifications, then Settings > Notifications > Send a test.
+- 2026-09-16 Phase 33b: REPLY FROM NOTIFICATION (APK 1.7.1, code 12, shell 1.8.1). Message pushes now carry match_id + sender_id
+  (push.send(extra=...)). PushService routes kind=message -> Notifier.postMessage(): MessagingStyle conversation (history of last 8 lines kept in
+  prefs conv_<matchId>, sender Person with avatar), inline RemoteInput "Reply" action (FLAG_MUTABLE on 31+, SEMANTIC_ACTION_REPLY),
+  id = ("chat-"+matchId).hashCode(). ReplyReceiver (exported=false, action com.voiladi.app.REPLY) POSTs /api/matches/{id}/messages
+  {text, client_id:"notif-<uuid>"} with the stored JWT via goAsync thread, then re-posts the bubble with "You: ..." (setOnlyAlertOnce) or
+  postReplyFailed(reason from server detail, e.g. "Verify your profile to send messages"). Opening the chat (notification tap path /chats/<id>,
+  or web ChatRoom mount -> bridge chatOpened(matchId) via nativeChatOpened) clears the history + notification.

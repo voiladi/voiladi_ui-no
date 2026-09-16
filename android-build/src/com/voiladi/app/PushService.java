@@ -28,6 +28,11 @@ public class PushService extends FirebaseMessagingService {
         String path = d.get("path");
         String photo = d.get("photo");
         String tag = d.get("tag");
+        String matchId = d.get("match_id");
+        if ("message".equals(d.get("kind")) && matchId != null) {
+            Notifier.postMessage(getApplicationContext(), matchId, title == null ? "Voiladi" : title, body == null ? "" : body, photo, false);
+            return;
+        }
         int id = tag != null ? tag.hashCode() : (int) (System.currentTimeMillis() & 0x7fffffff);
         Notifier.post(getApplicationContext(), id, title == null ? "Voiladi" : title, body == null ? "" : body, path, photo);
     }

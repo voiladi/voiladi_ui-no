@@ -22,6 +22,8 @@ const call = (name, ...args) => {
 
 export const nativeSetToken = (token) => (token ? call("setToken", token) : call("clearToken"));
 export const nativeReady = () => call("ready");
+/* tell the shell a chat is open so its conversation notification (and inline-reply history) is dismissed */
+export const nativeChatOpened = (matchId) => call("chatOpened", matchId);
 export const nativeOpenSettings = () => call("openSettings");
 /* Shell 1.5+: status bar + Android navigation bar follow the app theme ("dark" | "light"). No-op on older shells / web. */
 export const nativeSetTheme = (dark) => call("setTheme", dark ? "dark" : "light");
