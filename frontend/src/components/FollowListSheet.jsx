@@ -24,10 +24,12 @@ const fetchList = (kind) => async () => (await api.get(`/me/${kind}`)).data;
 export const useFollowers = (enabled) => useQuery({ queryKey: ["followers"], queryFn: fetchList("followers"), enabled, staleTime: 30_000 });
 export const useFollowing = (enabled) => useQuery({ queryKey: ["following"], queryFn: fetchList("following"), enabled, staleTime: 30_000 });
 
-const Row = ({ p, tab, onOpen, onFollow, onUnfollow, busy, last }) => {
+const Row = ({ p, tab, onOpen, onFollow, onUnfollow, onRemove, busy, last }) => {
   const following = p.followed_by_me;
+  const pill = "!h-[38px] !px-4 !text-[14.5px] font-semibold";
+  const compact = "!h-[36px] !px-3 !text-[14px] font-semibold";
   return (
-    <div className={`flex items-center gap-3.5 py-[10px] ${last ? "" : "border-b border-line/70"}`} data-testid="follow-row" data-user-id={p.id}>
+    <div className={`flex w-full min-w-0 items-center gap-3 overflow-hidden py-[10px] ${last ? "" : "border-b border-line/70"}`} data-testid="follow-row" data-user-id={p.id}>
       <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-visible:outline-none active:opacity-80" onClick={() => onOpen(p)} data-testid="follow-row-open">
         <UserPhoto src={p.photos?.[0]} name={p.name} size="sm" className="h-[54px] w-[54px] shrink-0 rounded-full text-lg" />
         <span className="min-w-0 flex-1">
@@ -41,13 +43,24 @@ const Row = ({ p, tab, onOpen, onFollow, onUnfollow, busy, last }) => {
           </span>
         </span>
       </button>
-      {following ? (
-        <SoftPill active onClick={() => onUnfollow(p)} disabled={busy === p.id} testId="follow-row-following" className="h-[38px] min-w-[104px] px-4 text-[14.5px] font-semibold">
+      {tab === "followers" ? (
+        <span className="flex shrink-0 items-center gap-2">
+          {!following && (
+            <SoftPill onClick={() => onFollow(p)} disabled={busy === p.id} testId="follow-row-follow" className={compact}>
+              Follow back
+            </SoftPill>
+          )}
+          <SoftPill onClick={() => onRemove(p)} disabled={busy === p.id} testId="follow-row-remove" className={compact} aria-label={`Remove ${p.name} from followers`}>
+            Remove
+          </SoftPill>
+        </span>
+      ) : following ? (
+        <SoftPill active onClick={() => onUnfollow(p)} disabled={busy === p.id} testId="follow-row-following" className={`${pill} min-w-[104px]`}>
           Following
         </SoftPill>
       ) : (
-        <SoftPill onClick={() => onFollow(p)} disabled={busy === p.id} testId="follow-row-follow" className="h-[38px] min-w-[104px] px-4 text-[14.5px] font-semibold">
-          {tab === "followers" ? "Follow back" : "Follow"}
+        <SoftPill onClick={() => onFollow(p)} disabled={busy === p.id} testId="follow-row-follow" className={`${pill} min-w-[104px]`}>
+          Follow
         </SoftPill>
       )}
     </div>
@@ -74,6 +87,7 @@ export const FollowListSheet = ({ open, tab, onTabChange, onOpenChange }) => {
   const [q, setQ] = useState("");
   const [person, setPerson] = useState(null);
   const [unfollowTarget, setUnfollowTarget] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
   const [busy, setBusy] = useState("");
   const followers = useFollowers(open);
   const following = useFollowing(open);
@@ -154,6 +168,27 @@ export const FollowListSheet = ({ open, tab, onTabChange, onOpenChange }) => {
     }
   };
 
+  const removeFollower = async () => {
+    const p = removeTarget;
+    if (!p) return;
+    setBusy(p.id);
+    setRemoveTarget(null);
+    const prev = qc.getQueryData(["followers"]);
+    qc.setQueryData(["followers"], (old) => (old ? { ...old, people: old.people.filter((x) => x.id !== p.id), count: Math.max(0, old.count - 1) } : old));
+    try {
+      await api.delete(`/followers/${p.id}`);
+      qc.invalidateQueries({ queryKey: ["stats"] });
+      qc.invalidateQueries({ queryKey: ["likes"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: ["following"] });
+    } catch (e) {
+      qc.setQueryData(["followers"], prev);
+      notice(errMsg(e));
+    } finally {
+      setBusy("");
+    }
+  };
+
   const empty = tab === "followers"
     ? { title: q ? "No one found" : "No followers yet", sub: q ? "Try another name." : "People who like your profile show up here." }
     : { title: q ? "No one found" : "You're not following anyone", sub: q ? "Try another name." : "Follow people from Explore to see them here." };
@@ -161,7 +196,19 @@ export const FollowListSheet = ({ open, tab, onTabChange, onOpenChange }) => {
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="mx-auto h-[92dvh] max-w-[430px] rounded-t-[28px] border-0 bg-canvas [&>div:first-child]:hidden" data-testid="follow-list-sheet">
+        <DrawerContent
+          className="mx-auto h-[92dvh] max-w-[430px] rounded-t-[28px] border-0 bg-canvas [&>div:first-child]:hidden"
+          onPointerDownOutside={(e) => {
+            // taps on a confirm sheet / profile sheet layered above must not dismiss this list
+            const t = e.target;
+            if (t instanceof Element && t.closest("[role='alertdialog'], [data-testid='profile-sheet'], .vo-sheet, .vo-sheet-overlay")) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            const t = e.target;
+            if (t instanceof Element && t.closest("[role='alertdialog'], [data-testid='profile-sheet'], .vo-sheet, .vo-sheet-overlay")) e.preventDefault();
+          }}
+          data-testid="follow-list-sheet"
+        >
           <div className="mx-auto mt-3 h-[5px] w-12 shrink-0 rounded-full bg-surface2" aria-hidden="true" />
           <div className="flex min-h-0 flex-1 flex-col px-5 pb-[calc(8px+var(--safe-bottom))]">
             <DrawerTitle className="sr-only">{tab === "followers" ? "Followers" : "Following"}</DrawerTitle>
@@ -190,7 +237,7 @@ export const FollowListSheet = ({ open, tab, onTabChange, onOpenChange }) => {
                 </div>
               ) : (
                 shown.map((p, i) => (
-                  <Row key={p.id} p={p} tab={tab} busy={busy} onOpen={openPerson} onFollow={follow} onUnfollow={setUnfollowTarget} last={i === shown.length - 1} />
+                  <Row key={p.id} p={p} tab={tab} busy={busy} onOpen={openPerson} onFollow={follow} onUnfollow={setUnfollowTarget} onRemove={setRemoveTarget} last={i === shown.length - 1} />
                 ))
               )}
             </div>
@@ -199,6 +246,17 @@ export const FollowListSheet = ({ open, tab, onTabChange, onOpenChange }) => {
       </Drawer>
 
       <ProfileSheet profile={person} open={!!person} onOpenChange={(o) => !o && setPerson(null)} />
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(o) => !o && setRemoveTarget(null)}
+        title="Remove follower?"
+        description={`Voiladi won't tell ${removeTarget?.name?.split(" ")[0] || "them"} they were removed from your followers. They can follow you again later.`}
+        confirmText="Remove"
+        danger
+        onConfirm={removeFollower}
+        testId="remove-follower-dialog"
+      />
 
       <ConfirmDialog
         open={!!unfollowTarget}

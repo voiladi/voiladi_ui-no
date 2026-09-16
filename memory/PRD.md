@@ -288,3 +288,8 @@ React 19 + Tailwind + shadcn + framer-motion frontend (src/pages, src/components
   (testids profile-stat-likes-button / profile-stat-following-button) -> setFollowSheet("followers"|"following").
 - VerifiedBadge gained `inline` prop (renders VerifiedMark <span>, no popover) for use inside buttons (FollowListSheet, Notifications rows).
 - Tests: iteration_34.json backend 11/11, frontend pass (nested-button warning fixed after). Deployed api + web.
+- 2026-09-16 Phase 34b: REMOVE FOLLOWER. DELETE /api/followers/{user_id} deletes their like swipes to me (404 if none) + clears their like read-marks;
+  they aren't notified and can follow again. Followers tab rows: compact "Follow back" (only when not following) + "Remove" pills;
+  remove-follower-dialog ("Voiladi won't tell X..."). Optimistic removal from ["followers"] cache; invalidates stats/likes/notifications.
+  FollowListSheet DrawerContent now ignores pointer/interact-outside events coming from .vo-sheet/.vo-sheet-overlay/alertdialog/profile-sheet so
+  confirm sheets don't dismiss the list. Verified via screenshots; deployed api + web.

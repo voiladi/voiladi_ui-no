@@ -504,6 +504,17 @@ async def unfollow(user_id: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 
+@router.delete("/followers/{user_id}")
+async def remove_follower(user_id: str, user=Depends(get_current_user)):
+    """Quietly remove someone from your followers (their like is taken back). They aren't told and can follow again."""
+    res = await db.swipes.delete_many({"from_id": user_id, "to_id": user["id"], "action": {"$in": ["like", "superlike"]}})
+    if not res.deleted_count:
+        raise HTTPException(status_code=404, detail="They don't follow you")
+    # their like no longer counts on the Likes page / notifications either
+    await db.notification_reads.delete_many({"user_id": user["id"], "item_id": {"$regex": f"^like:{user_id}:"}})
+    return {"ok": True}
+
+
 @router.get("/likes/received")
 async def likes_received(user=Depends(get_current_user)):
     """People who liked you and are still waiting on your answer."""
