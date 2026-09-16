@@ -15,9 +15,9 @@
   - **Direct messages (DM Requests)**: **verified users can message any profile**; recipient sees it under **Requests** until they reply/accept
   - **Chat media**: image + video
   - **Android APK shell** with **edge-to-edge** system bars + native bridge
-- **NEW (user-approved, 2026-09-14): AI account linking + orb visual search**
-  - Users can **connect their own AI provider** (ChatGPT/OpenAI, Claude/Anthropic, Gemini/Google) to power orb search.
-  - Orb ink stroke → capture screen region → send to their linked model (vision) → show answer + Voiladi results.
+- **AI Assistant (connected account) + orb visual search**
+  - Users can **connect their AI provider** via **ChatGPT Codex OAuth device flow**.
+  - Orb ink stroke → capture screen region → send to linked model (vision) → show answer + Voiladi results.
 - **Top priority** remains: **pixel-perfect UI replication** of the user’s provided interface photos / reference boards.
   - No “AI generated” look, no creative liberties.
   - Preserve neumorphic/glass tokens and iOS-like spacing/typography.
@@ -29,7 +29,7 @@
   - Media delivery supports Range streaming
 - Security target: strong server + client hardening.
   - Keep existing rate limiting, lockouts, security headers, WebView lockdown, release signing.
-  - Sensitive secrets (AI keys) must be **encrypted at rest** and **never returned to clients**.
+  - Sensitive secrets must be **encrypted at rest** and **never returned to clients**.
 
 ---
 
@@ -183,172 +183,150 @@
 **Status: COMPLETED**
 - Long press detaches orb, draws SVG ink trail, dispatches `window` event `voiladi:ink`.
 - **Hold time adjusted:** 0.65s → **0.40s** (`HOLD_MS=400`).
-- APK bumped and published: **APK 1.6.2** (shell 1.7.2) + web deployed.
 
 ---
 
 ## Phase 30 — Connect your AI + Orb Visual Search (NEW, P0)
-**Status: COMPLETED (2026-09-14) - tests iteration_29 100%, api + web deployed, APK 1.6.3 live. 30b: replaced API-key UI with Sign in with ChatGPT (Codex device-code OAuth); Claude/Gemini hidden for now**
-
-### 30.1 Binding decisions (locked with user)
-- Settings adds a new row: **Settings → AI Assistant** (`/settings/ai`).
-- Providers: **ChatGPT (OpenAI)**, **Claude (Anthropic)**, **Gemini (Google)**.
-- Linking method: **Bring-your-own-key (BYOK)** but made to feel like **account linking**:
-  - Provider card → “Connect” sheet → button opens provider key page in browser (user logs into their account there) → user pastes key → we verify → show **Connected**.
-  - **Why key?** Because public “Apple-style login that lets third-party apps use the user’s ChatGPT/Claude/Gemini subscription” is not available. Keys are the only workable integration today.
-- Keys must be:
-  - Stored **server-side only**, **encrypted at rest**, never returned to the client.
-  - Only a **hint** may be shown (e.g., last-4) after successful connect.
-- Orb behavior:
-  - If user draws with orb and releases → show AI result sheet.
-  - If nothing linked → show iOS action sheet: **“Connect your AI”** → navigates to `/settings/ai`.
-- Orb result sheet must:
-  - Answer about what was circled (vision).
-  - Also show **Found in Voiladi**: matching **people / posts / communities**.
-- Style: must match existing iOS glass + Settings soft-UI exactly (no new visual language).
-
-### 30.2 Backend (FastAPI + MongoDB)
-**New file:** `backend/routes_ai.py` (mounted in `server.py`)
-
-**Collections**
-- `ai_links`:
-  - `user_id`
-  - `provider`: `openai | anthropic | gemini`
-  - `ciphertext`: encrypted API key
-  - `hint`: last-4 / masked label (non-sensitive)
-  - `model`: selected model id
-  - `active`: bool
-  - `created_at`, `updated_at`, `last_validated_at`
-
-**Encryption**
-- Use `cryptography.Fernet`.
-- Secret from env `AI_KEY_SECRET` (preferred). Fallback: derive from `JWT_SECRET` (stable) if env absent.
-
-**Endpoints**
-- `GET    /api/ai/links` → list connected providers (no keys)
-- `POST   /api/ai/links` → connect provider (accept key + provider + optional model)
-  - Validate key by calling provider models endpoint.
-  - Save encrypted key + default model.
-- `PUT    /api/ai/links/{provider}` → update model / active
-- `DELETE /api/ai/links/{provider}` → disconnect
-
-**Orb lookup endpoint**
-- `POST /api/ai/lookup`
-  - Input: `{ provider?, model?, image_data_url, bbox, page_text, question?, history? }`
-  - Steps:
-    1) Resolve active provider/model for user.
-    2) Call provider vision endpoint with:
-       - cropped JPEG (base64)
-       - prompt that includes: question + page_text context
-    3) Extract:
-       - `answer_text`
-       - `keywords` / `entities` (ask model to output JSON)
-    4) Search inside Voiladi:
-       - People: reuse `GET /api/explore/search?q=` via internal function (or factor search logic to a helper)
-       - Topics: `content.INTERESTS` match
-       - Posts: query `posts` by caption/location regex, plus author username match
-    5) Return: `{ answer, results: { profiles, posts, topics }, provider, model }`
-
-**Rate limits & body size**
-- Add a stricter rule for `/api/ai/*` (protect from abuse).
-- Ensure body cap allows images (e.g., 2–4MB JPEG). If needed, keep under existing MAX_BODY and compress client-side.
-
-### 30.3 Frontend (React)
-
-**Settings UI**
-- Add Settings row: **AI Assistant** in Settings → App section (or Account section if you prefer; keep to reference grouping).
-- New page: `frontend/src/pages/settings/AiAssistant.jsx`
-  - Three provider cards:
-    - status: Not connected / Connected
-    - Connect / Disconnect
-    - Model picker (only after connect)
-  - Connect flow:
-    - iOS glass sheet with:
-      - “Open OpenAI / Anthropic / Google” button (opens key creation URL)
-      - secure paste field (type=password)
-      - Verify & Connect
-
-**Orb AI Search Layer**
-- New component: `frontend/src/components/ai/AiSearchLayer.jsx`
-  - Listens to `window` event `voiladi:ink`.
-  - On event:
-    1) Capture screenshot (see capture strategy below)
-    2) Crop to bbox (+ padding)
-    3) Generate text context:
-       - visible headings/buttons in current screen (DOM scan)
-       - current route + active post id/profile id if present
-    4) Call `POST /api/ai/lookup`
-    5) Show a glass **result drawer**:
-       - Top: AI answer
-       - Below: “Found in Voiladi” sections
-         - People: reuse existing profile cards/sheets
-         - Posts: small tiles that open `/p/:id`
-         - Communities: open topic sheet
-       - Follow-up composer (optional v1): user asks a follow-up question (keeps short history)
-
-**Capture strategy**
-- Web browsers:
-  - Use `html2canvas` (or `modern-screenshot`) to capture `#vo-main` (not the whole page background).
-  - Keep image small: downscale and JPEG compress.
-- Android shell:
-  - Add native bridge `VoiladiNative.capture()` using **PixelCopy** (Phase 30.4).
-  - Web receives `voiladi:capture` event with base64 PNG/JPEG.
-
-**BottomNav orb tweak**
-- When a stroke exists on release:
-  - Instead of flying home immediately, allow the AI layer to take over (orb can dissolve/fade and then return after results open).
-  - Keep existing feel; no new visuals.
-
-### 30.4 Android shell updates (APK)
-**Target shell:** 1.7.3 (APK 1.6.3)
-- Add `@JavascriptInterface capture()`:
-  - Use PixelCopy to capture the WebView to a bitmap.
-  - Encode to JPEG (quality ~0.75) or PNG.
-  - Dispatch to the page via `evaluateJavascript`:
-    - `window.dispatchEvent(new CustomEvent('voiladi:capture',{detail:{dataUrl:'data:image/jpeg;base64,...'}}))`
-
-### 30.5 Testing plan
-- Backend:
-  - Unit-test provider adapters with mocked httpx responses (no real keys in CI).
-  - Verify encryption: ciphertext stored, key never returned.
-  - Lookup returns answer + structured results.
-- Frontend:
-  - Settings connect/disconnect states.
-  - If no link: orb release opens “Connect your AI” sheet.
-  - If linked: orb release opens results drawer with answer + results.
-  - Ensure capture works on web (html2canvas).
-- APK:
-  - Verify PixelCopy capture fires event and results open.
-
-### 30.6 Deploy plan
-- Deploy **API + Web** to Railway.
-- Build and publish **APK 1.6.3** using `android-build/build_apk.py`.
-- Update `memory/PRD.md` with the new AI phase, security notes, and rollout details.
+**Status: COMPLETED**
+- Codex OAuth Device Flow for ChatGPT.
+- Orb visual search layer + streaming lookup.
 
 ---
 
 ## Phase 30b — Orb search: identify anything, faster (COMPLETED 2026-09-14)
-**Status: COMPLETED + deployed (web + api on Railway; no APK change needed - the shell loads the live web)**
-- User asked the orb to "find whatever the user marks - products, people, places, anything - with a description, fast and accurate".
-- Decision: keep Codex OAuth sign-in (the ONLY way to use the user's own ChatGPT Plus). "Sign in with ChatGPT" is an invite-only,
-  identity-only beta; ChatGPT "Developer mode connectors" run the opposite direction (ChatGPT -> our server) so they can't power the orb.
-  The "Codex" label on OpenAI's consent page is OpenAI's branding and can't be changed. User will redesign the connect screen himself later.
-- Backend `routes_ai.py`: Lens-style SYSTEM prompt -> `TITLE:` / `KIND:` / description / `TERMS:`; `_parse_answer()`; `web_query`;
-  new `POST /api/ai/lookup/stream` (NDJSON delta/done/error) sharing `_prepare_lookup()` with `/lookup`.
-- Backend `chatgpt_account.py`: `codex_stream()` async generator (SSE deltas), `codex_answer()` wraps it.
-- Frontend `lib/aiStream.js` (fetch + ReadableStream client, `parseLive`, `KIND_LABEL`, `webSearchUrl`), `AiSearchLayer.jsx` streams
-  words as they arrive (caret), bold title + kind label, "Search the web" chip (Google), falls back to `/lookup` if streaming fails.
-- Tests: `/app/test_reports/iteration_30.json` - 16/16 pass. Test scripts moved to `/app/tests/`.
+**Status: COMPLETED + deployed**
+
+---
 
 ## Phase 30d — AI Assistant page redesign to the owner's 3 mockups (COMPLETED 2026-09-14)
-**Status: COMPLETED + deployed (web)** - not connected card + connect sheet, code/waiting state, connected card + Disconnect. Details in memory/PRD.md.
+**Status: COMPLETED + deployed (web)**
+
+---
 
 ## Phase 32 — Notifications redesign (All / Requests / Unread, Instagram-Facebook style) (COMPLETED 2026-09-15)
-**Status: COMPLETED + deployed (web + api)** - matches + promo notices removed, per-item read state, inline Accept/Delete for requests. Details in memory/PRD.md.
+**Status: COMPLETED + deployed (web + api)**
+
+---
 
 ## Phase 33 — Phone push notifications via FCM (COMPLETED 2026-09-16, awaiting real-device check)
-**Status: COMPLETED + deployed (api + web + APK 1.7.0)** - Firebase project `voiladi`; APK build moved to aapt2 (qemu) with the FCM SDK bundled;
-backend sender + per-type prefs + Settings page; pushes for likes/matches, message requests, messages (when offline), verification. Details in memory/PRD.md.
+**Status: COMPLETED + deployed (api + web + APK 1.7.1)**
+
+---
+
+## Phase 34 — Followers / Following sheet + Remove follower (COMPLETED 2026-09-16)
+**Status: COMPLETED + deployed (web + api)**
+- Followers/Following bottom sheet with search.
+- Follow/unfollow from the list.
+- **Remove follower** (silent) via `DELETE /api/me/followers/{user_id}`.
+
+---
+
+## Phase 35 — Instagram-style New Post flow (P0)
+**Status: COMPLETED + deployed (web + api) — tested iteration_35 (backend 34/35, the miss was a test-setup mismatch; tag notifications verified manually)**
+
+### Shipped
+- 3-step flow in `NewPost.jsx`: Pick (X / New post / Next, square preview, Recents + 4-col grid, Camera + Gallery tiles, expand toggle) → Edit (crop pinch/drag, aspect chips, 16 filter presets, 6 adjust sliders; baked with canvas in `lib/imageEdit.js`) → Details (thumb + caption, Add location / Tag people / Advanced settings rows, pinned blue Share).
+- New components: `components/post/{CropView,PhotoEditor,TagPeopleSheet,LocationSheet}.jsx`.
+- Backend: `tagged`, `hide_likes`, `comments_off` on posts (image + video), `tagged_users` decoration, likes=null for non-owners when hidden, 403 on comments when off, `tag` notification rows + push (kind "tag", pref "likes").
+- Feed: "with @user" line on PostCard, hidden like count, comments-off notice in CommentsSheet.
+
+### 35.1 Binding decisions (locked with user)
+- Replace the current single-screen `NewPost.jsx` with an **Instagram-style 3-step flow**:
+  1) **Picker step**
+     - Header: **X** (close), centered **New post**, right **Next**.
+     - Body: **large square preview** at top.
+     - Bottom: **gallery grid** (recent media), tappable thumbnails.
+  2) **Edit step**
+     - **Crop** UI: pinch/drag reposition.
+     - Toggle: **1:1 ↔ Original (expand)**.
+     - **Filters** row + **Adjust** sliders.
+     - Must export the final image by baking edits to a canvas and producing a Blob for upload.
+  3) **Details step**
+     - Row: **small square thumbnail on the left** + **Write a caption…** field to the right.
+     - Rows below (chevrons): **Add location**, **Tag people**, **Advanced settings**.
+     - Bottom: **full-width blue Share button pinned** above safe-area.
+
+- Additional user request: **“can crop edit etc”** → implement minimal Instagram-like crop + basic filters/adjust now; keep room to expand later.
+
+### 35.2 Frontend (React)
+**Rewrite**: `frontend/src/pages/NewPost.jsx`
+- Convert into a step-based state machine (Picker → Edit → Details).
+- Keep edge-to-edge + safe-bottom correctness.
+
+**New components**
+- `frontend/src/components/post/CropView.jsx`
+  - Gestures: drag to reposition image, pinch to zoom.
+  - Aspect: 1:1 and “Original” toggle.
+  - Outputs crop rectangle/transform state.
+- `frontend/src/components/post/PhotoEditor.jsx`
+  - Filter strip + Adjust sliders (brightness/contrast/saturation/temp as baseline).
+  - Feeds parameters into `imageEdit.js` export.
+- `frontend/src/components/post/TagPeopleSheet.jsx`
+  - Bottom sheet using existing Drawer pattern.
+  - Search input → `GET /api/search?q=`.
+  - Multi-select users; show selected chips.
+  - Produces `tagged: [user_id]`.
+- `frontend/src/components/post/LocationSheet.jsx`
+  - Bottom sheet with free text input + suggestion list.
+  - Suggestions include: current user city + recent typed values (local) + common entries.
+- `frontend/src/lib/imageEdit.js`
+  - `exportEditedImage({ fileOrImage, crop, filters, adjust, outType, quality }) -> Blob`
+  - Uses canvas to apply crop + transforms + filter matrix and returns a new uploadable file.
+
+**Integrations / wiring**
+- Update `frontend/src/lib/media.js` `uploadPostVideo(...)` to accept and send new fields:
+  - `tagged`, `hide_likes`, `comments_off` (as part of init body)
+- Post creation payloads:
+  - Image posts: append `tagged`, `hide_likes`, `comments_off` to `FormData`.
+  - Video posts: include the same fields in `/posts/video/init`.
+
+### 35.3 Backend (FastAPI)
+Update: `backend/routes_posts.py`
+- Extend post schema with:
+  - `tagged: [user_id]` (default `[]`)
+  - `hide_likes: bool` (default `False`)
+  - `comments_off: bool` (default `False`)
+- Apply to **both** image and video posts:
+  - `POST /api/posts` (multipart): accept these fields via `Form(...)`.
+  - `POST /api/posts/video/init`: accept in `VideoInitIn`.
+  - Ensure persisted into the `posts` document.
+
+Decorators / serializers
+- Extend `_decorate(...)` to include:
+  - `tagged_users`: public profiles of tagged ids (limited list)
+  - Preserve `tagged` raw ids if needed for edit screens (or omit and only return `tagged_users`).
+
+Comments enforcement
+- If `comments_off` is true:
+  - Block `POST /api/posts/{post_id}/comments` (return 403/400 with clear message).
+
+Likes privacy
+- If `hide_likes` is true:
+  - Return likes count as 0 or `null` to non-owners (final behavior to match Instagram-style privacy).
+  - Owner still sees accurate count.
+
+### 35.4 Feed UI impact
+Update:
+- `frontend/src/components/feed/PostCard.jsx`
+  - Display a “tagged” line or compact tagged indicator if `tagged_users` is present.
+  - Respect `hide_likes` by hiding or neutralizing the like count in the rail (Instagram-style).
+- `frontend/src/components/feed/PostSheets.jsx`
+  - Comments sheet and composer should be disabled/hidden when `comments_off` is true.
+
+### 35.5 Testing plan
+- Frontend:
+  - Picker grid loads + selecting updates preview.
+  - Edit step: crop gestures + aspect toggle work; exported blob uploads successfully.
+  - Tag people sheet: search, select/deselect, persists into Details.
+  - Advanced settings: toggles for hide likes / comments off reflect in created post.
+  - Share button pinned; safe-area correct on small Android devices.
+- Backend:
+  - Create image post with new fields.
+  - Create video post init with new fields.
+  - Comments blocked when `comments_off`.
+  - Decorator returns `tagged_users` and applies hide-likes behavior.
+
+---
 
 ## Phase 31 — Voice + Video calls (WebRTC) (P0)
 **Status: BLOCKED (waiting on UI mockups from user)**
@@ -357,48 +335,41 @@ backend sender + per-type prefs + Settings page; pushes for likes/matches, messa
 ---
 
 ## 3) Next Actions
-1) **Phase 30: Connect your AI + Orb Visual Search**
-   - Backend `routes_ai.py` + encrypted key storage.
-   - Settings `/settings/ai` UI.
-   - Orb AI layer: capture → lookup → results drawer.
-   - Android PixelCopy capture bridge + APK 1.6.3.
-   - Test + deploy.
+1) **Phase 35: Instagram-style New Post flow (P0)**
+   - Implement Picker → Edit → Details.
+   - Add tagging + advanced settings.
+   - Add backend fields + enforce comments_off/hide_likes.
+   - Update feed/comment UI to respect privacy toggles.
+   - Test and deploy.
 2) **Phase 31: WebRTC voice/video calls** (blocked)
    - Wait for user UI mockups.
 3) **Move servers to Singapore (Asia)** (optional biggest speed gain for India)
    - Requires explicit approval + maintenance window.
-4) **Admin Reports screen UI** (expand `/admin/verify`)
+4) **Admin Reports screen UI** (expand `/admin/verify`).
 
 ---
 
 ## 4) Success Criteria
 - UI matches user references pixel-for-pixel.
-- Orb UX:
-  - Detach at 0.40s hold.
-  - Drawing is smooth and responsive.
-  - Release triggers AI (linked) or connect sheet (not linked).
-- AI linking:
-  - Providers connect/disconnect reliably.
-  - Keys are encrypted and never exposed.
-  - Model selection works.
-- AI results:
-  - Answer is relevant to circled content.
-  - “Found in Voiladi” returns useful people/posts/communities.
+- New Post flow:
+  - 3-step Instagram-style flow is accurate (header, grid, edit controls, pinned Share).
+  - Crop + filter export produces the exact uploaded media.
+  - Tag people + location + advanced settings work end-to-end.
+- Privacy controls:
+  - `hide_likes` respected in feed UI and API responses.
+  - `comments_off` fully blocks new comments and disables UI affordances.
 - No regressions to Discover feed, chat, explore, edge-to-edge shell.
 
 ---
 
 ## 5) Status Log
 - Phase 1–29: **COMPLETED**
-  - Includes Discover overhaul, Circle feed, dark mode + edge-to-edge fixes, and orb/ink feature.
-  - Orb hold time updated to **0.40s**.
-  - APK published: **1.6.2**.
-- Phase 30: **COMPLETED** (APK 1.6.3)
-- Phase 30b (orb identify-anything + streaming): **COMPLETED**
-- Phase 30d (AI Assistant page redesign, 3 mockups): **COMPLETED**
-- Phase 32 (Notifications redesign): **COMPLETED**
-- Phase 33 (FCM push notifications, APK 1.7.0): **COMPLETED - needs on-device confirmation**
-- Phase 31: **BLOCKED**
+- Phase 30 / 30b / 30d: **COMPLETED**
+- Phase 32: **COMPLETED**
+- Phase 33: **COMPLETED** (needs on-device confirmation)
+- Phase 34 (Followers/Following + Remove follower): **COMPLETED**
+- Phase 35 (Instagram-style New Post flow): **COMPLETED + deployed**
+- Phase 31 (WebRTC calls): **BLOCKED**
 
 ---
 
@@ -412,7 +383,6 @@ backend sender + per-type prefs + Settings page; pushes for likes/matches, messa
 - P1 iPhone app packaging
 - P2 Admin Reports screen UI
 - P2 Community join (topic sheet → shows on profile)
-- P2 Notification settings
 - P2 Unblock list
 - P3 Recent searches
 - P3 Extra haptics polish

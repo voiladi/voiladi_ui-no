@@ -22,12 +22,14 @@ export const usePostActions = (setPosts) => {
   const like = useCallback(
     async (post) => {
       const was = post.liked;
-      patch(post.id, (p) => ({ liked: !was, likes: Math.max(0, (p.likes || 0) + (was ? -1 : 1)) }));
+      const hidden = post.likes == null; // author hid the count - keep it hidden
+      const bump = (p, d) => (hidden ? null : Math.max(0, (p.likes || 0) + d));
+      patch(post.id, (p) => ({ liked: !was, likes: bump(p, was ? -1 : 1) }));
       try {
         const { data } = await api.post(`/posts/${post.id}/like`);
-        patch(post.id, () => ({ liked: data.liked, likes: data.likes }));
+        patch(post.id, () => ({ liked: data.liked, likes: hidden ? null : data.likes }));
       } catch (e) {
-        patch(post.id, (p) => ({ liked: was, likes: Math.max(0, (p.likes || 0) + (was ? 1 : -1)) }));
+        patch(post.id, (p) => ({ liked: was, likes: bump(p, was ? 1 : -1) }));
         notice(errMsg(e));
       }
     },

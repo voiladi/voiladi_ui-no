@@ -22,7 +22,7 @@ logger = logging.getLogger("push")
 SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 
 # kind -> preference key (users.push_prefs[key], default True)
-PREF_OF = {"like": "likes", "superlike": "likes", "match": "likes", "request": "requests", "message": "messages", "verification": "verification", "test": None}
+PREF_OF = {"like": "likes", "superlike": "likes", "match": "likes", "tag": "likes", "request": "requests", "message": "messages", "verification": "verification", "test": None}
 DEFAULT_PREFS = {"likes": True, "requests": True, "messages": True, "verification": True}
 
 _creds = None

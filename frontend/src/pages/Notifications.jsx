@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, CheckCheck, Heart, Star, MessageCircle, Bell, BadgeCheck, ShieldAlert } from "lucide-react";
+import { ChevronLeft, CheckCheck, Heart, Star, MessageCircle, Bell, BadgeCheck, ShieldAlert, AtSign } from "lucide-react";
 import { useNotifications, markNotificationsSeen, markNotificationsRead } from "@/hooks/useNotifications";
 import { UserPhoto } from "@/components/UserPhoto";
 import { ProfileSheet } from "@/components/ProfileSheet";
@@ -29,6 +29,7 @@ const BADGE = {
   superlike: { bg: "#7C5CFF", Icon: Star },
   request: { bg: "#22C55E", Icon: MessageCircle },
   message: { bg: "#22C55E", Icon: MessageCircle },
+  tag: { bg: "#3478F6", Icon: AtSign },
 };
 
 const sectionOf = (iso) => {

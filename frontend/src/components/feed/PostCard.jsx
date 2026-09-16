@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircleMore, Send, Bookmark, Ellipsis, MapPin, Heart, Volume2, VolumeX } from "lucide-react";
+import { MessageCircleMore, Send, Bookmark, Ellipsis, MapPin, Heart, Volume2, VolumeX, UserRound } from "lucide-react";
 import { photoUrl } from "@/lib/api";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { UserPhoto } from "@/components/UserPhoto";
@@ -195,13 +195,13 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
 
       {/* right rail */}
       <div className="absolute right-[10px] flex flex-col items-center gap-[10px]" style={{ bottom: "calc(var(--nav-h) + var(--nav-gap) + var(--safe-bottom) + 58px)" }} data-testid="feed-rail">
-        <RailButton label={post.liked ? "Unlike" : "Like"} count={post.likes} onClick={() => onLike(post)} testId="post-like-button" active={post.liked}>
+        <RailButton label={post.liked ? "Unlike" : "Like"} count={post.likes == null ? undefined : post.likes} onClick={() => onLike(post)} testId="post-like-button" active={post.liked}>
           <motion.span key={post.liked ? "on" : "off"} initial={{ scale: 0.7 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 520, damping: 16 }} className="flex">
             <PinkHeart liked={post.liked} className="h-[34px] w-[34px]" />
           </motion.span>
         </RailButton>
-        <RailButton label="Comments" count={post.comments} onClick={() => onComment(post)} testId="post-comment-button">
-          <MessageCircleMore className={ICON} strokeWidth={1.9} style={ICON_SHADOW} />
+        <RailButton label="Comments" count={post.comments_off ? undefined : post.comments} onClick={() => onComment(post)} testId="post-comment-button">
+          <MessageCircleMore className={ICON} strokeWidth={1.9} style={{ ...ICON_SHADOW, opacity: post.comments_off ? 0.55 : 1 }} />
         </RailButton>
         <RailButton label="Share" count={post.shares} onClick={() => onShare(post)} testId="post-share-button">
           <Send className={ICON} strokeWidth={1.9} style={ICON_SHADOW} />
@@ -239,6 +239,23 @@ export const PostCard = ({ post, onLike, onComment, onShare, onSave, onMore, onF
             )}
           </div>
         </div>
+        {post.tagged_users?.length > 0 && (
+          <div className="mt-[5px] flex items-center gap-1.5 pl-0.5 text-[15px] leading-[18px] tracking-[-0.005em]" data-testid="post-tagged">
+            <UserRound className="h-[15px] w-[15px]" strokeWidth={2.4} />
+            <span className="truncate">
+              with{" "}
+              {post.tagged_users.slice(0, 2).map((t, i) => (
+                <React.Fragment key={t.id}>
+                  {i > 0 && ", "}
+                  <button type="button" onClick={() => onOpenAuthor({ author: t })} className="font-semibold focus-visible:outline-none active:opacity-80" data-testid="post-tagged-user" data-user-id={t.id}>
+                    @{t.username || t.name}
+                  </button>
+                </React.Fragment>
+              ))}
+              {post.tagged_users.length > 2 && ` and ${post.tagged_users.length - 2} other${post.tagged_users.length > 3 ? "s" : ""}`}
+            </span>
+          </div>
+        )}
         {post.location && (
           <div className="mt-[5px] flex items-center gap-1.5 pl-0.5 text-[15px] leading-[18px] tracking-[-0.005em]" data-testid="post-location">
             <MapPin className="h-[16px] w-[16px]" strokeWidth={2.2} fill="currentColor" style={{ color: "#fff" }} />

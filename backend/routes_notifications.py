@@ -46,6 +46,7 @@ async def list_notifications(user=Depends(get_current_user)):
     items = []
 
     likes = await db.swipes.find({"to_id": uid, "action": {"$in": ["like", "superlike"]}}, {"_id": 0}).sort("created_at", -1).to_list(150)
+    tags = await db.posts.find({"tagged": uid, "status": {"$ne": "failed"}}, {"_id": 0, "id": 1, "user_id": 1, "created_at": 1}).sort("created_at", -1).to_list(100)
     matches = await db.matches.find({"users": uid, "active": True}, {"_id": 0}).sort("created_at", -1).to_list(150)
     match_ids = [m["id"] for m in matches]
     other_of = {m["id"]: next((o for o in m["users"] if o != uid), None) for m in matches}
@@ -55,13 +56,22 @@ async def list_notifications(user=Depends(get_current_user)):
     for m in msgs:
         latest_msg.setdefault(m["match_id"], m)
 
-    ids = set(l["from_id"] for l in likes) | set(v for v in other_of.values() if v)
+    ids = set(l["from_id"] for l in likes) | set(v for v in other_of.values() if v) | set(t["user_id"] for t in tags)
     ids -= blocked
     users = {u["id"]: u for u in await db.users.find({"id": {"$in": list(ids)}}, {"_id": 0}).to_list(None)}
 
     def person(u):
         p = public_profile(u, user)
         return {"id": p["id"], "name": p["name"], "username": p.get("username") or "", "photos": p.get("photos", [])[:1], "verified": bool(p.get("verified"))}
+
+    for t in tags:
+        u = users.get(t["user_id"])
+        if not u:
+            continue
+        items.append({
+            "id": f"tag:{t['id']}", "type": "tag", "actor": u["name"], "text": "tagged you in a post.",
+            "created_at": t["created_at"], "user": person(u), "href": f"/p/{t['id']}",
+        })
 
     for l in likes:
         u = users.get(l["from_id"])

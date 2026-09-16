@@ -34,6 +34,49 @@ CAPTION_MAX = 300
 LOCATION_MAX = 80
 COMMENT_MAX = 500
 FEED_PAGE = 8
+TAG_MAX = 20
+
+
+def _parse_tagged(raw) -> List[str]:
+    """`tagged` arrives as a JSON list (video init) or a comma-separated string (multipart form). Dedupe, cap."""
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return []
+        if raw.startswith("["):
+            import json
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                return []
+        else:
+            raw = raw.split(",")
+    out, seen = [], set()
+    for t in raw:
+        t = str(t or "").strip()
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out[:TAG_MAX]
+
+
+async def _valid_tagged(ids: List[str], uid: str) -> List[str]:
+    """Only real, onboarded accounts that haven't blocked (or been blocked by) the author; never yourself."""
+    ids = [i for i in ids if i != uid]
+    if not ids:
+        return []
+    blocked = await _blocked_ids(uid)
+    rows = await db.users.find({"id": {"$in": ids}, "onboarded": True}, {"_id": 0, "id": 1}).to_list(None)
+    ok = {r["id"] for r in rows} - blocked
+    return [i for i in ids if i in ok]
+
+
+def _flag(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    return str(v or "").strip().lower() in ("1", "true", "yes", "on")
 
 
 class CommentIn(BaseModel):
@@ -74,20 +117,32 @@ async def _decorate(posts: List[dict], viewer: dict) -> List[dict]:
     saved = {r["post_id"] for r in await db.post_saves.find({"user_id": uid, "post_id": {"$in": pids}}, {"_id": 0, "post_id": 1}).to_list(None)}
     followed = {r["to_id"] for r in await db.swipes.find(
         {"from_id": uid, "to_id": {"$in": author_ids}, "action": {"$in": ["like", "superlike"]}}, {"_id": 0, "to_id": 1}).to_list(None)}
+    # tagged people (Instagram "with @x, @y")
+    tag_ids = list({t for p in posts for t in (p.get("tagged") or [])} - set(users))
+    if tag_ids:
+        for u in await db.users.find({"id": {"$in": tag_ids}}, {"_id": 0}).to_list(None):
+            users[u["id"]] = u
     out = []
     for p in posts:
         row = {k: v for k, v in p.items() if k != "_id"}
+        mine = p["user_id"] == uid
         row["author"] = _author(users.get(p["user_id"]))
         row["liked"] = p["id"] in liked
         row["saved"] = p["id"] in saved
         row["followed"] = p["user_id"] in followed
-        row["mine"] = p["user_id"] == uid
+        row["mine"] = mine
         row.setdefault("kind", "image")
         row.setdefault("status", "ready")
         row.setdefault("video", None)
         row.setdefault("duration", None)
+        row["tagged"] = list(p.get("tagged") or [])
+        row["tagged_users"] = [_author(users[t]) for t in row["tagged"] if t in users]
+        row["hide_likes"] = bool(p.get("hide_likes"))
+        row["comments_off"] = bool(p.get("comments_off"))
         for k in ("likes", "comments", "shares", "saves"):
             row[k] = int(row.get(k) or 0)
+        if row["hide_likes"] and not mine:
+            row["likes"] = None  # the author still sees the real number
         out.append(row)
     return out
 
@@ -170,7 +225,9 @@ async def user_posts(user_id: str, user=Depends(get_current_user)):
 # ------------------------------------------------------------------ create / delete
 
 @router.post("/posts", status_code=201)
-async def create_post(file: UploadFile = File(...), caption: str = Form(""), location: str = Form(""), user=Depends(get_current_user)):
+async def create_post(file: UploadFile = File(...), caption: str = Form(""), location: str = Form(""),
+                      tagged: str = Form(""), hide_likes: str = Form("false"), comments_off: str = Form("false"),
+                      user=Depends(get_current_user)):
     ctype = (file.content_type or "").lower()
     if ctype not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP, GIF or HEIC images are allowed")
@@ -185,6 +242,7 @@ async def create_post(file: UploadFile = File(...), caption: str = Form(""), loc
         raise HTTPException(status_code=400, detail=f"Keep the caption under {CAPTION_MAX} characters")
     if len(location) > LOCATION_MAX:
         raise HTTPException(status_code=400, detail="That place name is too long")
+    tag_ids = await _valid_tagged(_parse_tagged(tagged), user["id"])
     data, ext = await asyncio.to_thread(optimize_image, data, ctype)
     # dimensions (for the skeleton aspect while the photo loads)
     width = height = None
@@ -200,10 +258,26 @@ async def create_post(file: UploadFile = File(...), caption: str = Form(""), loc
     post = {
         "id": str(uuid.uuid4()), "user_id": user["id"], "image": f"/api/uploads/{fname}", "width": width, "height": height,
         "caption": caption, "location": location, "created_at": now_iso(),
+        "tagged": tag_ids, "hide_likes": _flag(hide_likes), "comments_off": _flag(comments_off),
         "likes": 0, "comments": 0, "shares": 0, "saves": 0,
     }
     await db.posts.insert_one(dict(post))
+    await _notify_tagged(post, user)
     return (await _decorate([post], user))[0]
+
+
+async def _notify_tagged(post: dict, author: dict):
+    """Ping the people tagged in a post (push; the in-app row is derived from posts.tagged), best effort."""
+    ids = [t for t in (post.get("tagged") or []) if t != author["id"]]
+    if not ids:
+        return
+    try:
+        import push
+        for tid in ids:
+            push.fire(tid, "tag", push.first_name(author), "tagged you in a post", path=f"/p/{post['id']}",
+                      photo=push.photo_of(author), tag=f"tag-{post['id']}")
+    except Exception:
+        pass
 
 
 @router.delete("/posts/{post_id}")
@@ -253,6 +327,9 @@ class VideoInitIn(BaseModel):
     duration: Optional[float] = None
     caption: str = ""
     location: str = ""
+    tagged: Optional[List[str]] = None
+    hide_likes: bool = False
+    comments_off: bool = False
 
 
 @router.post("/posts/video/init")
@@ -275,9 +352,11 @@ async def post_video_init(body: VideoInitIn, user=Depends(get_current_user)):
     if len(location) > LOCATION_MAX:
         raise HTTPException(status_code=400, detail="That place name is too long")
     upload_id = str(uuid.uuid4())
+    tag_ids = await _valid_tagged(_parse_tagged(body.tagged), user["id"])
     await db.media_uploads.insert_one({
         "id": upload_id, "user_id": user["id"], "match_id": None, "purpose": "post", "kind": "video", "content_type": ct,
         "size": body.size, "view_once": False, "client_id": None, "caption": caption, "location": location,
+        "tagged": tag_ids, "hide_likes": bool(body.hide_likes), "comments_off": bool(body.comments_off),
         "received": 0, "chunks": 0, "created_at": now_iso(), "ts": time.time(),
     })
     (TMP_DIR / upload_id).mkdir(parents=True, exist_ok=True)
@@ -323,9 +402,11 @@ async def post_video_complete(upload_id: str, user=Depends(get_current_user)):
         "id": post_id, "user_id": user["id"], "kind": "video", "status": "processing",
         "video": public_url(fname), "image": None, "width": None, "height": None, "duration": None,
         "caption": up.get("caption") or "", "location": up.get("location") or "", "created_at": now_iso(),
+        "tagged": list(up.get("tagged") or []), "hide_likes": bool(up.get("hide_likes")), "comments_off": bool(up.get("comments_off")),
         "likes": 0, "comments": 0, "shares": 0, "saves": 0,
     }
     await db.posts.insert_one(dict(post))
+    await _notify_tagged(post, user)
     asyncio.create_task(_finish_post_video(post_id, raw, MEDIA_DIR / fname, MEDIA_DIR / pname, upload_id))
     return (await _decorate([post], user))[0]
 
@@ -404,6 +485,8 @@ async def add_comment(post_id: str, body: CommentIn, user=Depends(get_current_us
         raise HTTPException(status_code=400, detail=f"Keep it under {COMMENT_MAX} characters")
     if post["user_id"] != user["id"] and await _blocked_between(user["id"], post["user_id"]):
         raise HTTPException(status_code=403, detail="You can't comment on this post")
+    if post.get("comments_off") and post["user_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="Comments are turned off for this post")
     c = {"id": str(uuid.uuid4()), "post_id": post_id, "user_id": user["id"], "text": text, "created_at": now_iso()}
     await db.post_comments.insert_one(dict(c))
     await db.posts.update_one({"id": post_id}, {"$inc": {"comments": 1}})
@@ -473,6 +556,7 @@ async def ensure_indexes():
     await db.posts.create_index("id", unique=True)
     await db.posts.create_index([("created_at", -1)])
     await db.posts.create_index("user_id")
+    await db.posts.create_index("tagged")
     await db.post_likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
     await db.post_likes.create_index([("user_id", 1), ("created_at", -1)])
     await db.post_saves.create_index([("post_id", 1), ("user_id", 1)], unique=True)

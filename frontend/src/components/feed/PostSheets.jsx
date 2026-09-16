@@ -97,6 +97,11 @@ export const CommentsSheet = ({ post, open, onOpenChange, onCount }) => {
           )}
           <div ref={endRef} />
         </div>
+        {post?.comments_off && !post?.mine ? (
+          <div className="flex items-center justify-center border-t border-line/70 px-4 pt-3 text-center text-[14.5px] text-mute" style={{ paddingBottom: "calc(14px + var(--safe-bottom))" }} data-testid="comments-off-notice">
+            Comments on this post have been turned off.
+          </div>
+        ) : (
         <form onSubmit={send} className="flex items-center gap-2.5 border-t border-line/70 px-3 pt-2.5" style={{ paddingBottom: "calc(10px + var(--safe-bottom))" }}>
           <UserPhoto src={user?.photos?.[0]} name={user?.name} size="xs" className="h-[36px] w-[36px] shrink-0 rounded-full text-[13px]" />
           <div className="flex h-[42px] min-w-0 flex-1 items-center rounded-full bg-surface2 pl-4 pr-1">
@@ -113,6 +118,7 @@ export const CommentsSheet = ({ post, open, onOpenChange, onCount }) => {
             </button>
           </div>
         </form>
+        )}
       </DrawerContent>
     </Drawer>
   );

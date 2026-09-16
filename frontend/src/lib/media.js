@@ -87,13 +87,16 @@ export const uploadChatMedia = async ({ file, matchId, viewOnce = false, clientI
 export const POST_VIDEO_MAX_SECONDS = 60;
 export const POST_VIDEO_MAX_BYTES = 300 * 1024 * 1024;
 
-export const uploadPostVideo = async ({ file, caption = "", location = "", duration, onProgress, signal }) => {
+export const uploadPostVideo = async ({ file, caption = "", location = "", duration, tagged = [], hideLikes = false, commentsOff = false, onProgress, signal }) => {
   const { data: init } = await api.post("/posts/video/init", {
     content_type: file.type || "video/mp4",
     size: file.size,
     duration: duration || undefined,
     caption,
     location,
+    tagged,
+    hide_likes: !!hideLikes,
+    comments_off: !!commentsOff,
   });
   const chunk = init.chunk_size || 8 * 1024 * 1024;
   const total = Math.ceil(file.size / chunk);
